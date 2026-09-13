@@ -88,6 +88,11 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .team-table .col-3{background:rgba(255,140,66,.12);}
 .team-table .b2-h{color:var(--green);}
 .team-table .b3-h{color:#ff8c42;}
+/* 净胜球数：正绿负红零灰，跟主站的「涨跌」提示保持一致 */
+.team-table .gd-pos{color:var(--green);}
+.team-table .gd-neg{color:#e74c3c;}
+.team-table .gd-zero{color:var(--text-muted);}
+.team-table .total-h{color:var(--text-muted);font-weight:600;}
 .expand-toggle{padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle;}
 .team-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;}
 .season-tabs { display:flex; flex-wrap:wrap; gap:6px; justify-content:center; padding:8px 0 2px; flex:1 1 auto; min-width:0; }

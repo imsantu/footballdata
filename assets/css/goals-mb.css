@@ -124,6 +124,13 @@ main{padding:0 12px;}
 .team-table td.freeze{background:var(--card);}
 .team-table td{height:46px;padding:0 4px;text-align:center;border-bottom:1px solid var(--border);
   min-width:50px;}
+/* 进球数 / 失球数 / 净胜球数：三列样式跟主站保持一致（正绿负红零灰） */
+.team-table .gd-pos{color:var(--green);}
+.team-table .gd-neg{color:#e74c3c;}
+.team-table .gd-zero{color:var(--text-muted);}
+.team-table .total-h{color:var(--text-muted);font-weight:700;}
+/* 排序条上同样给「进球/失球/净胜」胶囊一个略强的字重 */
+.sortbar .pill.total-h{font-weight:700;}
 .team-table tbody tr:last-child td{border-bottom:none;}
 .tcell{display:flex;align-items:center;gap:6px;overflow:hidden;}
 .tcell .rk{color:var(--rk);font-weight:700;font-size:12px;flex:0 0 auto;min-width:14px;}

@@ -319,6 +319,16 @@ function renderTeams(){
   // 每队每轮只踢 1 场，故「已赛场次」= 经历轮次
   var roundsOfT=function(t){ return BUCKETS.reduce(function(s,bb){ return s+(t.b[bb]||0); },0); };
   var avgKey=function(t,n){ var r=roundsOfT(t); var c=(n===2?t.count2:t.count3); return (c&&r)? r/c : null; };
+  // 进球数 / 失球数 / 净胜球数：直接从 seq23Matches 汇总（每条 score 都是已规范化的球队视角）
+  var goalsOf=function(t){
+    var ms=(t && t.seq23Matches) || [];
+    var gf=0, ga=0;
+    for (var i=0;i<ms.length;i++){
+      var sp=String((ms[i] && ms[i].score) || '').split('-');
+      if (sp.length===2){ gf += (+sp[0])||0; ga += (+sp[1])||0; }
+    }
+    return {gf:gf, ga:ga, gd:gf-ga};
+  };
   var hasSeq=sc.teams.some(function(t){ return t.seq23 && t.seq23.length; });
   var k=teamSort.key, dir=teamSort.dir;
   teams.sort(function(a,b){
@@ -326,6 +336,9 @@ function renderTeams(){
     if(k==='rank'){ va=a.rank; vb=b.rank; }
     else if(k==='gap2'){ va=a.gap2; vb=b.gap2; }
     else if(k==='gap3'){ va=a.gap3; vb=b.gap3; }
+    else if(k==='gf'){ va=goalsOf(a).gf; vb=goalsOf(b).gf; }
+    else if(k==='ga'){ va=goalsOf(a).ga; vb=goalsOf(b).ga; }
+    else if(k==='gd'){ va=goalsOf(a).gd; vb=goalsOf(b).gd; }
     else if(k==='avg2'){ va=avgKey(a,2); vb=avgKey(b,2); }
     else if(k==='avg3'){ va=avgKey(a,3); vb=avgKey(b,3); }
     else if(k==='streak2'){ va=a.streak2; vb=b.streak2; }
@@ -341,6 +354,10 @@ function renderTeams(){
   var head='<tr><th class="freeze">球队</th>';
   // 列太多时默认只保留 2 球 / 3 球两档，其余折叠进「展开明细」
   BUCKETS.forEach(function(b,i){ var hide=(!teamGoalsShowAll && i!==2 && i!==3); head+='<th'+(hide?' style="display:none"':'')+'>'+SHORT[i]+'</th>'; });
+  // 赛季汇总：进球数 / 失球数 / 净胜球数（短列名以适配移动端窄屏）
+  head+='<th class="total-h" title="该队全赛季累计进球数">进球</th>';
+  head+='<th class="total-h" title="该队全赛季累计失球数">失球</th>';
+  head+='<th class="total-h" title="净胜球数 = 进球 - 失球">净胜</th>';
   if(hasSeq) head+='<th class="b2-h" title="平均每隔多少轮（场）打出一次 2 球">均2</th><th class="b3-h" title="平均每隔多少轮（场）打出一次 3 球">均3</th>';
   head+='<th title="最长连续多少轮（场）该队总进球 ≠ 2 球">不出2球</th><th title="最长连续多少轮（场）该队总进球 ≠ 3 球">不出3球</th>';
   if(hasSeq) head+='<th class="b2-h" title="最长连续多少场打出 2 球">连2</th><th class="b3-h" title="最长连续多少场打出 3 球">连3</th>';
@@ -371,6 +388,13 @@ function renderTeams(){
       var hide=(!teamGoalsShowAll && i!==2 && i!==3);
       cells+='<td class="'+bcls+(hide?'" style="display:none':'')+'">'+c+'</td>';
     });
+    // 进球数 / 失球数 / 净胜球数：每队赛季累计（从 seq23Matches 即地汇总）
+    var mg=goalsOf(t);
+    var mgdCls = mg.gd>0 ? ' gd-pos' : (mg.gd<0 ? ' gd-neg' : ' gd-zero');
+    var mgdDisp = (mg.gd>0?'+':'')+mg.gd;
+    cells+='<td class="total-h" style="text-align:center;font-weight:600" title="赛季累计进球">'+mg.gf+'</td>';
+    cells+='<td class="total-h" style="text-align:center;font-weight:600" title="赛季累计失球">'+mg.ga+'</td>';
+    cells+='<td class="'+mgdCls.trim()+'" style="text-align:center;font-weight:700" title="进球 '+mg.gf+' − 失球 '+mg.ga+'">'+mgdDisp+'</td>';
     if(hasSeq){
       var rnd=roundsOfT(t);
       var a2=(t.count2&&rnd)?(rnd/t.count2).toFixed(1):'—';
@@ -395,13 +419,17 @@ function renderTeams(){
   });
   chips+='<span class="pill tap-target'+(teamSort.key==='gap2'?' active':'')+'" data-k="gap2">不出2球'+arr('gap2')+'</span>';
   chips+='<span class="pill tap-target'+(teamSort.key==='gap3'?' active':'')+'" data-k="gap3">不出3球'+arr('gap3')+'</span>';
+  // 赛季汇总排序列：进球数 / 失球数 / 净胜球数（点击切换并高亮表格里对应列）
+  chips+='<span class="pill tap-target total-h'+(teamSort.key==='gf'?' active':'')+'" data-k="gf">进球'+arr('gf')+'</span>';
+  chips+='<span class="pill tap-target total-h'+(teamSort.key==='ga'?' active':'')+'" data-k="ga">失球'+arr('ga')+'</span>';
+  chips+='<span class="pill tap-target total-h'+(teamSort.key==='gd'?' active':'')+'" data-k="gd">净胜'+arr('gd')+'</span>';
   chips+='</div>'+CHEV+'</div>';
 
   var flag=sc.note?'<span class="note-flag">'+sc.note+'</span>':'';
   document.getElementById('teams').innerHTML=
     '<div class="section-title">'+lg.cn+' '+dispSeason(currentSeason)+' · 各队分布'+flag
     +'<button class="gap-toggle" onclick="toggleTeamGoals()" style="margin-left:10px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (teamGoalsShowAll?'隐藏 4–7+ 球列':'显示全部进球数')+'</button></div>'
-    +'<div class="note">每格数字 = 该队参与（主 or 客）且全场总进球落在该区间的场次数。<b>表格与上方「排序」条均可左右滑动</b>（见右侧 › 箭头）；升班马标「升」，降班马标「降」。</div>'
+    +'<div class="note">每格数字 = 该队参与（主 or 客）且全场总进球落在该区间的场次数。<b>表格与上方「排序」条均可左右滑动</b>（见右侧 › 箭头）；升班马标「升」，降班马标「降」。新增「进球 / 失球 / 净胜」三列 = 各队赛季累计得失球与净胜差（净胜正绿负红）。</div>'
     +chips
     +'<div class="tw-wrap"><div class="tw"><table class="team-table"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table></div>'+CHEV+'</div>';
 

@@ -264,6 +264,16 @@ function renderTeams(){
   // 每队每轮只踢 1 场，故「已赛场次」= 经历轮次
   const roundsOfT = t => BUCKETS.reduce((s,bb)=>s+(t.b[bb]||0),0);
   const avgKey = (t,n) => { const r=roundsOfT(t); const c=(n===2?t.count2:t.count3); return (c&&r)? r/c : null; };
+  // 进球数 / 失球数 / 净胜球数：直接从 seq23Matches 汇总（每条 score 都是已规范化的球队视角）
+  const goalsOf = t => {
+    const ms = (t && t.seq23Matches) || [];
+    let gf=0, ga=0;
+    for (const m of ms) {
+      const sp = String((m && m.score) || '').split('-');
+      if (sp.length === 2) { gf += +sp[0] || 0; ga += +sp[1] || 0; }
+    }
+    return { gf, ga, gd: gf - ga };
+  };
   const k=teamSort.key, dir=teamSort.dir;
   teams.sort((a,b)=>{
     let va,vb;
@@ -271,6 +281,9 @@ function renderTeams(){
     else if(k==='total'){ va=a.total; vb=b.total; }
     else if(k==='gap2'){ va=a.gap2; vb=b.gap2; }
     else if(k==='gap3'){ va=a.gap3; vb=b.gap3; }
+    else if(k==='gf'){ va=goalsOf(a).gf; vb=goalsOf(b).gf; }
+    else if(k==='ga'){ va=goalsOf(a).ga; vb=goalsOf(b).ga; }
+    else if(k==='gd'){ va=goalsOf(a).gd; vb=goalsOf(b).gd; }
     else if(k==='avg2'){ va=avgKey(a,2); vb=avgKey(b,2); }
     else if(k==='avg3'){ va=avgKey(a,3); vb=avgKey(b,3); }
     else if(k==='streak2'){ va=a.streak2; vb=b.streak2; }
@@ -290,6 +303,10 @@ function renderTeams(){
     const hide = (!teamGoalsShowAll && i!==2 && i!==3);
     head+='<th class="sortable'+(String(teamSort.key)===String(b)?' sorted':'')+(hide?'" style="display:none':'')+'" data-k="'+b+'">'+LABELS[i]+arr(b)+'</th>';
   });
+  // 赛季汇总：进球数 / 失球数 / 净胜球（各队赛季累计的得失球 + 净胜球，所有列均可点表头参与排序）
+  head+='<th class="sortable total-h'+(teamSort.key==='gf'?' sorted':'')+'" data-k="gf" title="该队全赛季累计进球数（进球总和）">进球数'+arr('gf')+'</th>';
+  head+='<th class="sortable total-h'+(teamSort.key==='ga'?' sorted':'')+'" data-k="ga" title="该队全赛季累计失球数（失球总和）">失球数'+arr('ga')+'</th>';
+  head+='<th class="sortable total-h'+(teamSort.key==='gd'?' sorted':'')+'" data-k="gd" title="净胜球数 = 进球数 - 失球数（正数=净胜、负数=净负）">净胜球数'+arr('gd')+'</th>';
   if(hasSeq){
     head+='<th class="sortable b2-h'+(teamSort.key==='avg2'?' sorted':'')+'" data-k="avg2" title="该队平均每隔多少轮（场）打出一次 2 球">平均出2球'+arr('avg2')+'</th>';
     head+='<th class="sortable b3-h'+(teamSort.key==='avg3'?' sorted':'')+'" data-k="avg3" title="该队平均每隔多少轮（场）打出一次 3 球">平均出3球'+arr('avg3')+'</th>';
@@ -324,6 +341,13 @@ function renderTeams(){
       const hide = (!teamGoalsShowAll && i!==2 && i!==3);
       cells+='<td class="'+tdcls.trim()+(hide?'" style="display:none':'')+'">'+c+'</td>';
     });
+    // 进球数 / 失球数 / 净胜球数 三列：在数据驱动的循环里就地计算，不依赖预存字段
+    const g = goalsOf(t);
+    const gdCls = g.gd>0 ? ' gd-pos' : (g.gd<0 ? ' gd-neg' : ' gd-zero');
+    const gdDisp = (g.gd>0?'+':'') + g.gd;
+    cells+='<td class="'+(teamSort.key==='gf'?'col-sel':'')+'" style="text-align:center;font-weight:600">'+g.gf+'</td>';
+    cells+='<td class="'+(teamSort.key==='ga'?'col-sel':'')+'" style="text-align:center;font-weight:600">'+g.ga+'</td>';
+    cells+='<td class="'+(teamSort.key==='gd'?'col-sel':'')+gdCls+'" style="text-align:center;font-weight:700" title="进球 '+g.gf+' − 失球 '+g.ga+'">'+gdDisp+'</td>';
     if(hasSeq){
       const rnd=roundsOfT(t);
       const a2=(t.count2&&rnd)?(rnd/t.count2).toFixed(1):'—';
@@ -344,7 +368,7 @@ function renderTeams(){
   document.getElementById('teams').innerHTML=
     '<div class="section-title">'+lg.cn+' · 各球队总进球分布'+flag
     +'<button class="gap-toggle" onclick="toggleTeamGoals()" style="margin-left:10px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (teamGoalsShowAll?'隐藏 4–7+ 球列':'显示全部进球数')+'</button></div>'
-    +'<div class="note">当前赛季请使用上方赛季 Tab 切换。每格数字 = 该队参与（主 or 客）且全场总进球落在该区间的比赛场次数。默认按当赛季积分榜排名排序（点击表头可切换并高亮整列；升班马标「升」，降班马标「降」）。<b>0/1/4/5/6/7+ 球列默认隐藏</b>，点「显示全部进球数」展开；「不出2球 / 不出3球」= 该队最长连续多少轮（场）总进球 ≠ 2 / 3 球。</div>'
+    +'<div class="note">当前赛季请使用上方赛季 Tab 切换。每格数字 = 该队参与（主 or 客）且全场总进球落在该区间的比赛场次数。默认按当赛季积分榜排名排序（点击表头可切换并高亮整列；升班马标「升」，降班马标「降」）。<b>0/1/4/5/6/7+ 球列默认隐藏</b>，点「显示全部进球数」展开；「不出2球 / 不出3球」= 该队最长连续多少轮（场）总进球 ≠ 2 / 3 球。<b>进球数 / 失球数 / 净胜球数</b> = 该队全赛季累计进球 / 失球 / 净胜差（净胜球正绿负红）。</div>'
     +'<table class="team-table"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>';
   document.querySelectorAll('.team-table th.sortable').forEach(th=>{
     th.onclick=()=>{ const kk=th.getAttribute('data-k');
