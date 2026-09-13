@@ -1,0 +1,326 @@
+/* ==========================================================================
+   平局页 · H5 移动端样式（仅手机端生效）
+   配合 assets/js/draws-mb.js 使用：PC 端不加载本文件（由页面脚本按宽度注入）。
+
+   设计已定稿：仅浅色、竖屏卡片化、宽表走横屏、hover 改轻点气泡。
+   PC 端已有的渲染结果被复用，本文件负责把桌面布局「翻译」成手机阅读习惯的形态。
+   ========================================================================== */
+
+html[data-h5="on"] {
+  --h5-bg: #f4f6fa;
+  --h5-card: #fff;
+  --h5-border: #eaeef5;
+  --h5-text: #0e131a;
+  --h5-muted: #7c8899;
+  --h5-dim: #a3adba;
+  --h5-accent: #2f7bdc;
+  --h5-green: #0a9b73;
+}
+
+/* 移动端隐藏桌面专属外壳 */
+html[data-h5="on"] .site-head,
+html[data-h5="on"] .scroll-nav,
+html[data-h5="on"] .stickynav,
+html[data-h5="on"] .site-top,
+html[data-h5="on"] .site-top-spacer {
+  display: none !important;
+}
+
+html[data-h5="on"] body {
+  background: var(--h5-bg);
+}
+
+html[data-h5="on"] .container {
+  max-width: none;
+  margin: 0;
+  padding-left: 14px;
+  padding-right: 14px;
+  /* 避让固定外壳：上让 AppBar + 展开的筛选面板，下让底部 tabbar + 安全区。
+     这两个变量由 h5-shell.js 维护，收起筛选时 --h5-filter = 0px。 */
+  padding-top: calc(var(--h5-appbar, 44px) + var(--h5-filter, 0px) + 8px);
+  padding-bottom: calc(var(--h5-tabbar-h, 56px) + env(safe-area-inset-bottom, 0px) + 20px);
+  transition: padding-top .22s ease;
+}
+
+/* 段标题：App 规范 —— 主标题 15px/600，层级要明显高于正文 13px。
+   附带的 .note-flag 长说明默认折叠，点标题右侧的「口径」展开，
+   避免几十上百 px 的说明文字把正文挤到屏幕外。 */
+html[data-h5="on"] .section-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--h5-text);
+  margin: 20px 0 10px;
+  line-height: 1.4;
+  letter-spacing: -.2px;
+}
+html[data-h5="on"] .section-title .note-flag {
+  display: none;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--h5-muted);
+  line-height: 1.65;
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #f7f9fc;
+  border-radius: 8px;
+}
+html[data-h5="on"] .section-title.h5-note-open .note-flag { display: block; }
+/* 口径开关 */
+html[data-h5="on"] .h5-note-tog {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  height: 24px;
+  padding: 0 9px;
+  margin-left: 8px;
+  border: 0;
+  border-radius: 12px;
+  background: #eef2f8;
+  color: var(--h5-accent);
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 500;
+  vertical-align: 1px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-h5="on"] .h5-note-tog:active { background: #e2eaf6; }
+
+/* 卡片化：把所有面板统一成白卡 + 微阴影（替代硬描边） */
+html[data-h5="on"] #overview,
+html[data-h5="on"] #trend,
+html[data-h5="on"] #findings,
+html[data-h5="on"] #viewOverview,
+html[data-h5="on"] #viewBig5 {
+  background: var(--h5-card);
+  border-radius: 13px;
+  box-shadow: 0 1px 2px rgba(16, 20, 28, .05), 0 0 0 .5px #eaeef5;
+  padding: 13px 13px 12px;
+  margin-bottom: 12px;
+}
+
+/* 图表去掉桌面图表卡的额外留白（外层已包卡） */
+html[data-h5="on"] .chart-card {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  margin: 0 0 12px;
+}
+html[data-h5="on"] #viewOverview .chart-card,
+html[data-h5="on"] #viewBig5 .chart-card {
+  margin: 10px 0 0;
+}
+html[data-h5="on"] .chart-card svg {
+  max-width: 100%;
+}
+
+/* 说明文字：App 里这类「口径/脚注」不该占据正文流。
+   默认收成一行浅灰提示，点「展开」才显示全文。 */
+html[data-h5="on"] .note,
+html[data-h5="on"] .ov-note {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--h5-muted);
+  background: #f7f9fc;
+  border: 0;
+  border-radius: 9px;
+  padding: 10px 12px;
+  margin: 10px 0 0;
+  max-height: 62px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-h5="on"] .note.h5-note-open,
+html[data-h5="on"] .ov-note.h5-note-open {
+  max-height: none;
+}
+/* 收起时的渐隐遮罩 + 「展开」提示 */
+html[data-h5="on"] .note:not(.h5-note-open)::after,
+html[data-h5="on"] .ov-note:not(.h5-note-open)::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 26px;
+  border-radius: 0 0 9px 9px;
+  background: linear-gradient(to top, #f7f9fc 42%, rgba(247, 249, 252, 0));
+  pointer-events: none;
+}
+
+/* 指标卡：2×2 网格（PC 是横排 6 个） */
+html[data-h5="on"] .stat-strip {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0 0 6px;
+}
+html[data-h5="on"] .stat-strip > * {
+  background: var(--h5-card);
+  border-radius: 12px;
+  padding: 12px 13px !important;
+  box-shadow: 0 1px 3px rgba(16, 20, 28, .05);
+  border: 0 !important;
+  min-height: 74px;
+}
+/* 指标卡内部层级：标签 11px 灰 → 数值 22px 深 */
+html[data-h5="on"] .stat-strip .k {
+  font-size: 11px !important;
+  color: var(--h5-muted) !important;
+  font-weight: 400 !important;
+  margin-bottom: 5px;
+}
+html[data-h5="on"] .stat-strip .v {
+  font-size: 22px !important;
+  font-weight: 600 !important;
+  color: var(--h5-text) !important;
+  line-height: 1.15;
+  letter-spacing: -.4px;
+}
+html[data-h5="on"] .stat-strip .v .stat-team {
+  font-size: 12px !important;
+  font-weight: 400 !important;
+  color: var(--h5-muted) !important;
+}
+
+/* 工具条（展开比分明细 / 排序 / 范围筛选）：次级按钮样式，横向可滑不折行 */
+html[data-h5="on"] .teamtools,
+html[data-h5="on"] .top-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+html[data-h5="on"] .teamtools::-webkit-scrollbar,
+html[data-h5="on"] .top-tools::-webkit-scrollbar { display: none; }
+html[data-h5="on"] .teamtools .ttbtn,
+html[data-h5="on"] .top-tools .ttbtn,
+html[data-h5="on"] .top-tools button {
+  flex: 0 0 auto;
+  font-size: 12.5px;
+  font-weight: 500;
+  padding: 0 12px;
+  height: 32px;
+  border-radius: 16px;
+  border: 0;
+  background: #eef2f8;
+  color: #4a5560;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-h5="on"] .teamtools .ttbtn.on,
+html[data-h5="on"] .top-tools .ttbtn.on,
+html[data-h5="on"] .top-tools button.on {
+  background: #dbe8fa;
+  color: var(--h5-accent);
+}
+html[data-h5="on"] .top-tools .cnt-note {
+  flex: 0 0 auto;
+  font-size: 12px;
+  color: var(--h5-muted);
+  margin-left: auto;
+}
+
+/* 宽表容器：竖屏不横滑，整块交给「横屏查看」按钮 */
+html[data-h5="on"] .tw-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+}
+html[data-h5="on"] .tw-wrap .more-hint {
+  display: none !important;
+}
+html[data-h5="on"] .tw {
+  overflow: hidden;
+}
+html[data-h5="on"] .team-table,
+html[data-h5="on"] .cmp-table {
+  min-width: 0 !important;
+}
+
+/* 竖屏宽表：只保留前两列 + 首列冻结的视觉，其余裁掉并靠气泡/横屏看 */
+html[data-h5="on"] .tw-wrap.h5-clip::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 34px;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(255, 255, 255, 0), rgba(255, 255, 255, .96));
+}
+
+/* 表格字号压缩 */
+html[data-h5="on"] .team-table th,
+html[data-h5="on"] .team-table td,
+html[data-h5="on"] .cmp-table th,
+html[data-h5="on"] .cmp-table td {
+  font-size: 11px !important;
+  padding: 8px 6px !important;
+}
+
+/* 胜平负走势色带自适应 */
+html[data-h5="on"] .form5-strips {
+  overflow: hidden;
+}
+html[data-h5="on"] .form5-filter {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+/* 轻点热区统一加大 */
+html[data-h5="on"] [data-tap] {
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 页脚 */
+html[data-h5="on"] .footer {
+  font-size: 10px;
+  color: var(--h5-dim);
+  text-align: center;
+  line-height: 1.7;
+  padding: 16px 4px 8px;
+  border-top: .5px solid var(--h5-border);
+  margin-top: 18px;
+}
+
+/* ==========================================================================
+   进球数页（goals-mb 骨架）接入新外壳后的适配
+   旧骨架自带 .appbar / .stickynav 胶囊行，与 h5-shell 的 AppBar + 下拉重复，
+   这里统一隐藏；正文顶距改由 h5-shell 的 padding-top 控制。
+   ========================================================================== */
+html[data-h5="on"] .appbar,
+html[data-h5="on"] #stickynav,
+html[data-h5="on"] .stickynav,
+html[data-h5="on"] .site-top,
+html[data-h5="on"] .site-top-spacer,
+html[data-h5="on"] .site-head,
+html[data-h5="on"] .scroll-nav {
+  display: none !important;
+}
+html[data-h5="on"] main {
+  padding-top: 0;
+}
+/* 进场球数页的容器类名与平局页不同，这里统一给主内容加内边距 */
+html[data-h5="on"] body.mode-mb main {
+  padding-left: 14px;
+  padding-right: 14px;
+}
+html[data-h5="on"] body.mode-mb .fab {
+  display: none !important;
+}
+/* 移动骨架里的提示层与新外壳气泡二选一：保留骨架的 seq 浮层（含赛程信息），
+   但把 .tap-tip 隐藏，统一用 h5-shell 的气泡 */
+html[data-h5="on"] .tap-tip {
+  display: none !important;
+}

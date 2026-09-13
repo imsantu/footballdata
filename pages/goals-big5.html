@@ -3,11 +3,12 @@
 <head data-page-node-id="1UicHN5wLhiSGraL1qonxd">
 <meta charset="UTF-8" data-page-node-id="xhl0WyiUvBGCwGYZFWr3DH">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" data-page-node-id="Y2z780vNUE1PuxX2ucZVzg">
-<meta name="theme-color" content="#0f1117" data-page-node-id="TpZLzwSay0W3mrXfkXIsOU">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1117">
-<!-- 首帧前定主题（消除刷新 / 切页闪黑，详见 index.html 同名注释） -->
-<script>(function(){try{var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',t==='dark'?'#0f1117':'#eef1f6');}catch(e){}})();</script>
+<meta name="theme-color" content="#f4f6fa" data-page-node-id="TpZLzwSay0W3mrXfkXIsOU">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6fa">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f4f6fa">
+<!-- 移动端固定浅色：手机端直接把主题钉成 light，不读 localStorage / 不读系统外观，
+     杜绝任何深色闪现。桌面端仍由 site.js 的三态主题接管。 -->
+<script>(function(){try{var mb=!window.matchMedia||!matchMedia('(min-width:820px)').matches;if(mb){var r=document.documentElement;r.setAttribute('data-theme','light');r.style.colorScheme='light';return;}var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;}catch(e){}})();</script>
 <meta name="description" content="叕中啦 · 欧洲五大联赛（英超/西甲/德甲/意甲/法甲）各赛季单场总进球数分布、球队进球榜与走势。" data-page-node-id="r6CtBDKSPPvmHhpTeBhPJL">
 <title>欧洲五大联赛 · 总进球分布</title>
 <link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="C1lvxDb4mEvnaRmaQitwU4">
@@ -93,14 +94,12 @@
   <div class="footer">逐场赛果：<a href="https://www.football-data.co.uk/data.php" target="_blank">Football-Data.co.uk</a>　｜　<span title="原始赛果文件最近一次抓取落盘的时间">数据源更新 <b id="ftSrc">–</b></span>　｜　<span title="本页最近一次重新生成的时间">本页更新 <b id="ftGen">–</b></span></div>
 </div></script>
 
-<script type="text/plain" id="mbBody"><div class="appbar">
-  <div class="brand">
-    <svg class="mark" viewBox="0 0 40 40" aria-hidden="true"><defs><linearGradient id="qzlGoalMbGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a9eff"/><stop offset="1" stop-color="#00b894"/></linearGradient></defs><rect width="40" height="40" rx="11" fill="url(#qzlGoalMbGrad)"/><g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="9.4"/><path d="M20 15 L24.76 18.55 L22.94 24.05 L17.06 24.05 L15.24 18.55 Z" fill="#fff" stroke="none"/><path d="M20 15 V10.6"/><path d="M24.76 18.55 L28.99 17.26"/><path d="M22.94 24.05 L25.53 27.61"/><path d="M17.06 24.05 L14.47 27.61"/><path d="M15.24 18.55 L11.01 17.26"/></g></svg>
-    <span class="brand-txt"><span class="nm">叕中啦</span><span class="sl">叕中啦 · 五大联赛数据站</span></span>
-  </div>
-  <button class="theme-btn" id="themeBtn" onclick="toggleTheme()">🌓 浅色</button>
-</div>
-
+<script type="text/plain" id="mbBody">
+<!-- 移动端骨架：AppBar / 筛选条 / 底部 3 tab 由 h5-shell.js 统一提供。
+     注意：下面 .stickynav 里的 #leagueTabs / #seasonTabs / #winSwitch 必须保留——
+     goals-mb.js 的 buildLeagueTabs()/buildSeasonTabs()/buildWinSwitch() 会把胶囊渲染进去，
+     删掉这些容器会导致 render() 中途抛错、正文全空。
+     它们在视觉上由 goals-mb.css 隐藏（新外壳的顶栏胶囊已取代其功能）。 -->
 <div class="stickynav" id="stickynav">
   <div class="pillrow" id="leagueTabs"></div>
   <div class="pillrow seasonrow" id="seasonTabs"></div>
@@ -115,10 +114,11 @@
   <div class="footer">数据源：<a href="https://www.football-data.co.uk/data.php" target="_blank">Football-Data.co.uk</a>（逐场赛果）<br><span title="原始赛果文件最近一次抓取落盘的时间">数据源更新 <b id="ftSrc">–</b></span>　｜　<span title="本页最近一次重新生成的时间">本页更新 <b id="ftGen">–</b></span></div>
 </main>
 
-<button class="fab" id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" aria-label="回到顶部"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
 <div class="tap-tip" id="tip"></div></script>
 
 <!-- defer：4MB 数据脚本不再阻塞 HTML 解析与首屏渲染（两个 defer 保证按序执行） -->
+<script defer src="../assets/js/landscape.js"></script>
+<script defer src="../assets/js/h5-shell.js"></script>
 <script defer src="../assets/js/goals-data.js"></script>
 <script defer src="../assets/js/goals-app.js"></script>
 </body>

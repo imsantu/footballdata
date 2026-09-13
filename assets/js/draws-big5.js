@@ -1085,3 +1085,27 @@ window.addEventListener('scroll', ()=>{ hideRowTip(); }, {passive:true});
 
 // 真实内容已渲染完毕，通知外壳把首屏骨架淡出
 try{ if(window.QZL_BOOT_DONE) window.QZL_BOOT_DONE(); }catch(e){}
+
+/* ---------------- 移动端适配桥（供 assets/js/draws-mb.js 调用） ----------------
+   本文件顶层就是全局作用域，把状态与 setter 显式挂到 window，避免移动层
+   依赖「隐式全局变量」这种脆弱写法。 */
+window.setLeague = function(code){
+  if(!code || code === curLeague) return;
+  if(!DATA.leagues.some(l=>l.code===code)) return;
+  curLeague = code; showBig5 = false;
+  hideRowTip();
+  render();
+};
+window.setView = function(k){
+  if(!k) return;
+  if(k === '__overview__'){ curView = '__overview__'; showBig5 = false; }
+  else {
+    // 校验赛季存在
+    if(!DATA.seasonOrder.some(s=>s===k)) return;
+    curView = k; currentSeason = k; showBig5 = false;
+  }
+  hideRowTip();
+  render();
+};
+window.getDrawsState = function(){ return { curLeague:curLeague, curView:curView, season:currentSeason, win:SEASON_WIN, big5:showBig5 }; };
+window.winSeq = winSeq;

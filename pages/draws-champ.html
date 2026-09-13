@@ -3,11 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0f1117">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1117">
-<!-- 首帧前定主题（消除刷新 / 切页闪黑，详见 index.html 同名注释） -->
-<script>(function(){try{var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',t==='dark'?'#0f1117':'#eef1f6');}catch(e){}})();</script>
+<meta name="theme-color" content="#f4f6fa">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6fa">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f4f6fa">
+<!-- 移动端固定浅色：手机端直接把主题钉成 light，不读 localStorage / 不读系统外观，
+     杜绝任何深色闪现。桌面端仍由 site.js 的三态主题接管。 -->
+<script>(function(){try{var mb=!window.matchMedia||!matchMedia('(min-width:820px)').matches;if(mb){var r=document.documentElement;r.setAttribute('data-theme','light');r.style.colorScheme='light';return;}var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;}catch(e){}})();</script>
 <meta name="description" content="叕中啦 · 五大次级联赛（英冠/西乙/德乙/法乙/意乙）近五赛季平局数据专题：平局率、比分分布、各轮走势与各队平局统计。">
 <title>叕中啦 · 五大次级联赛近五赛季平局数据（英冠/西乙/德乙/法乙/意乙）</title>
 <link rel="stylesheet" href="../assets/css/draws-champ.css">
@@ -170,5 +171,21 @@
 <div class="trend-tip" id="formTip" style="max-width:300px"></div>
 <script defer src="../assets/js/draws-champ-data.js"></script>
 <script defer src="../assets/js/draws-champ.js"></script>
+<!-- 移动端外壳与适配层：仅在 <820px 生效，桌面端加载后立即返回，零副作用 -->
+<link rel="stylesheet" href="../assets/css/draws-mb.css" media="(max-width:819.98px)">
+<script>
+window.DRAWS_MB_CFG = {
+  title: '平局 · 次级',
+  leagueGroups: [
+    { label: '次级联赛', options: [
+      { code: 'en', cn: '英冠' }, { code: 'es', cn: '西乙' }, { code: 'de', cn: '德乙' },
+      { code: 'it', cn: '意乙' }, { code: 'fr', cn: '法乙' }
+    ] }
+  ]
+};
+</script>
+<script defer src="../assets/js/landscape.js"></script>
+<script defer src="../assets/js/h5-shell.js"></script>
+<script defer src="../assets/js/draws-mb.js"></script>
 </body>
 </html>

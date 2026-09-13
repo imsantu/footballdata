@@ -88,7 +88,7 @@ cd "$SITE" || { echo "[FAIL] 站点目录不存在"; exit 1; }
 if [ ! -d .git ]; then
     echo "[SKIP] 站点尚未 git init，跳过提交"
 else
-    git add 'assets/js/*-data.js'  # 只提交数据文件，页面/外壳改动不纳入自动化提交
+    git add 'assets/js/*-data.js' 'assets/js/meta.js'  # 只提交数据文件（含轻量 meta.js），页面/外壳改动不纳入自动化提交
     if git diff --cached --quiet; then
         echo "[SKIP] 没有需要提交的改动"
     else

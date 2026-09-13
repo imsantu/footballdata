@@ -707,3 +707,14 @@ syncNavH();
   window.addEventListener('scroll', onScroll, {passive:true});
   onScroll();
 })();
+
+/* ==========================================================================
+   移动端桥接（仅追加，不改动上方任何渲染逻辑）
+   上方 render() 等函数是本文件作用域内的声明，没有挂到 window，
+   导致 goals-app.js 里的「横屏按钮挂载」与「外壳筛选同步」拿不到 render()。
+   这里把必要的入口暴露出去，让外层能在每次渲染后同步交互层。
+   ========================================================================== */
+window.render = render;
+window.getGoalsState = function(){
+  return { league: currentLeague, season: currentSeason, win: SEASON_WIN };
+};
