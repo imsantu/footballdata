@@ -319,13 +319,19 @@ function renderTeams(){
   // 每队每轮只踢 1 场，故「已赛场次」= 经历轮次
   var roundsOfT=function(t){ return BUCKETS.reduce(function(s,bb){ return s+(t.b[bb]||0); },0); };
   var avgKey=function(t,n){ var r=roundsOfT(t); var c=(n===2?t.count2:t.count3); return (c&&r)? r/c : null; };
-  // 进球数 / 失球数 / 净胜球数：直接从 seq23Matches 汇总（每条 score 都是已规范化的球队视角）
+  // 进球数 / 失球数 / 净胜球数：从 seq23Matches 汇总。
+  // 注意 score 的口径是「主客视角」= 主队进球-客队进球（不是球队视角！），
+  // 必须按 ha 取自己那一侧，否则所有客场的进失球会整体颠倒。
   var goalsOf=function(t){
     var ms=(t && t.seq23Matches) || [];
     var gf=0, ga=0;
     for (var i=0;i<ms.length;i++){
-      var sp=String((ms[i] && ms[i].score) || '').split('-');
-      if (sp.length===2){ gf += (+sp[0])||0; ga += (+sp[1])||0; }
+      var m=ms[i];
+      var sp=String((m && m.score) || '').split('-');
+      if (sp.length!==2) continue;
+      var a=(+sp[0])||0, b=(+sp[1])||0;
+      if (m.ha === 'A'){ gf += b; ga += a; }   // 客场：自己是后者
+      else             { gf += a; ga += b; }   // 主场：自己是前者
     }
     return {gf:gf, ga:ga, gd:gf-ga};
   };

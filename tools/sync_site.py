@@ -29,6 +29,16 @@ SITE = "/Users/santu/soccerdata/football-data-site"
 AUTO = os.path.join(SITE, "tools")
 BACKUP_DIR = os.path.join(AUTO, "backups")
 
+# 进数球比分视角归一化：enrich 只覆盖平局数据里查得到的队，查不到的（升降级队）
+# 会保持生成器的「球队视角」，与其余队的「主客视角」不一致，导致得失球在客场
+# 场次整体颠倒。这里统一成主客视角，并用「总进球守恒」兜底校验。
+if AUTO not in sys.path:
+    sys.path.insert(0, AUTO)
+from fix_goals_perspective import (  # noqa: E402
+    normalize as normalize_goals_perspective,
+    check_conservation as check_goals_conservation,
+)
+
 CUR_SEASON = "2026-27"
 
 JOBS = [
@@ -228,6 +238,17 @@ def main():
             n_hit, n_team, n_cell = enrich_goals(new, draws_obj)
             print(f"    回填主客场/轮次：命中 {n_hit} 场，"
                   f"按日期重排 {n_team} 支球队 / {n_cell} 格（派生 gap/streak 已重算）")
+            # 统一比分视角（主客视角=主队在前），否则得失球统计会在客场场次整体颠倒
+            fixed = normalize_goals_perspective(new)
+            if fixed:
+                head = "、".join(f"{lg} {s} {cn}" for lg, s, cn, _ in fixed[:5])
+                print(f"    统一比分视角：修复 {len(fixed)} 支球队（{head}"
+                      f"{' …' if len(fixed) > 5 else ''}）")
+            bad = check_goals_conservation(new)
+            if bad:
+                detail = "; ".join(f"{lg} {s} 进球{gf}≠失球{ga} 差{d}"
+                                   for lg, s, gf, ga, d in bad)
+                die(f"{name}: 总进球不守恒（比分视角仍不一致）：{detail}")
         cur_text = open(dst, encoding="utf-8").read()
         old = extract(dst, marker)
 
