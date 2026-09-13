@@ -117,7 +117,7 @@ def build_ha_round_index(draws):
                     p = str(raw).split("|")
                     if len(p) < 3 or not p[1]:
                         continue
-                    by_date[p[1]] = (p[2], p[0])
+                    by_date[p[1]] = (p[2], p[0], p[4] if len(p) > 4 else "")
                 per_team[t.get("name")] = by_date
             per_season[season] = per_team
         idx[lg.get("code")] = per_season
@@ -136,12 +136,12 @@ def longest_run(seq, pred):
 
 
 def enrich_goals(goals, draws):
-    """给进数球数据的 seq23Matches 补 ha / round，并把色带重排成轮次顺序。
+    """给进数球数据的 seq23Matches 补 ha / round，并把色带统一重排成日期顺序。
 
-    背景：进数球生成器只按日期贪心排列，且根本没输出主客场，于是
-      · 色带顺序 = 日期序，遇到补赛 / 提前进行的轮次就与真实轮次错位
+    背景：进数球生成器只按日期排列，且最初没输出主客场，于是
       · 悬浮框判不出主客，只能一律按「本队主场」渲染，客场比赛的比分方向是错的
-    平局报告的 formDetail 带官方轮次与主客场，用它按（队名 + 日期）回填。
+    平局报告的 formDetail 带官方轮次、主客场和球队视角比分，用它按（队名 + 日期）
+    回填，并把进球数页的比分统一成原始主客队视角（客场时翻转球队视角比分）。
 
     重排会改变 gap2/gap3/streak2/streak3（这几个字段依赖数组顺序），必须一并
     重算，算法与生成侧完全一致：gapN = 最长连续 != N，streakN = 最长连续 == N。
@@ -168,16 +168,25 @@ def enrich_goals(goals, draws):
                 for gm in live:
                     v = by_date.get(gm.get("date"))
                     if v:
-                        gm["ha"], gm["round"] = v[0], v[1]
+                        ha, rnd, team_score = v
+                        gm["ha"], gm["round"] = ha, rnd
+                        # formDetail 的比分是「该队-对手」视角；进球数页统一存
+                        # 原始主客队视角，方便所有悬浮框用同一套渲染规则。
+                        sp = str(team_score or "").split("-")
+                        if len(sp) == 2 and all(x.strip().isdigit() for x in sp):
+                            gm["score"] = (sp[0] + "-" + sp[1]) if ha == "H" else (sp[1] + "-" + sp[0])
                         hit += 1
                 n_hit += hit
-                # 只有「进行中的赛季」才重排：历史赛季官方轮次虽可信，但重排会改变
-                # 已展示过的 gap/streak，违背本流水线「历史赛季绝不改动」的原则。
-                if hit != len(live) or season != CUR_SEASON:
-                    continue                      # 覆盖不全 / 历史赛季，不重排
+                # 覆盖不全（升降级队在平局数据里查无该赛季）的球队整队跳过，保持原状。
+                if hit != len(live):
+                    continue
+                # 全季覆盖：按「比赛真实发生日期」重排色带，并同步重算依赖数组顺序的 gap/streak。
+                # 用户确认：色块要反映球队数据的真实演变，日期序 = 真实比赛序，才是最准确的口径；
+                # 轮次号可能不单调（补赛/提前进行的轮次会让日期与轮次错位），但这是可接受的代价，
+                # gap/streak（最长连续未出/连出 N 球）必须跟着日期序一起重算。
                 n_team += 1
                 pairs = sorted(zip(sq, ms),
-                               key=lambda p: (as_int(p[1].get("round")), p[1].get("date") or ""))
+                               key=lambda p: (p[1].get("date") or "", as_int(p[1].get("round"))))
                 t["seq23"] = [p[0] for p in pairs]
                 t["seq23Matches"] = [p[1] for p in pairs]
                 n_cell += len(pairs)
@@ -218,7 +227,7 @@ def main():
         if job["kind"] == "goals" and draws_obj is not None:
             n_hit, n_team, n_cell = enrich_goals(new, draws_obj)
             print(f"    回填主客场/轮次：命中 {n_hit} 场，"
-                  f"按轮次重排 {n_team} 支球队 / {n_cell} 格（派生 gap/streak 已重算）")
+                  f"按日期重排 {n_team} 支球队 / {n_cell} 格（派生 gap/streak 已重算）")
         cur_text = open(dst, encoding="utf-8").read()
         old = extract(dst, marker)
 
