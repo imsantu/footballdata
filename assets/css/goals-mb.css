@@ -192,6 +192,7 @@ td.col-sel{background:var(--col-sel-bg);}
 .seq-eye{font-size:9px;color:var(--text-muted);margin-left:auto;}
 .seq-team-toggle:not(.on){opacity:.55;}
 .seq-row.seq-hidden{opacity:.6;}
+.seq-row.seq-hidden .seq-cnt{display:none;}
 .seq-strip{display:flex;flex:1;gap:2px;min-width:200px;}
 .sq{flex:1 1 0;height:18px;border-radius:2px;min-width:3px;}
 .sq.s0{background:var(--border);}
@@ -213,3 +214,24 @@ td.col-sel{background:var(--col-sel-bg);}
 .seq-table td.name{text-align:left;font-weight:600;color:var(--text-strong);white-space:nowrap;}
 .seq-table td.name img.crest{width:18px;height:18px;vertical-align:middle;margin-right:4px;}
 .seq-table tbody tr:last-child td{border-bottom:none;}
+
+/* ==========================================================================
+   新移动外壳（h5-shell.js）接管后的收口样式
+   AppBar / 筛选胶囊 / 底部 3 tab 统一由外壳提供，本页自带的旧顶栏与
+   sticky 胶囊行在视觉上隐藏；但 #leagueTabs / #seasonTabs / #winSwitch
+   这三个容器必须留在 DOM 里（goals-mb.js 会往里渲染），故只隐藏不删除。
+   ========================================================================== */
+.appbar{display:none !important;}
+#stickynav,.stickynav{display:none !important;}
+.fab{display:none !important;}
+.tap-tip{display:none !important;}
+
+/* 内容区避让固定外壳：上让 AppBar+筛选，下让 tabbar+安全区 */
+body.mode-mb main{
+  padding-top:calc(var(--h5-appbar,44px) + var(--h5-filter,0px) + 12px);
+  padding-bottom:calc(var(--h5-tabbar-h,56px) + env(safe-area-inset-bottom,0px) + 20px);
+  padding-left:14px;padding-right:14px;
+  transition:padding-top .22s ease;
+}
+/* 外壳的浅色变量与本页变量对齐，避免两种浅色混用出现色差 */
+[data-theme="light"] body.mode-mb{background:#f4f6fa;}

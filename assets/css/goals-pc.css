@@ -82,6 +82,7 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .seq-teams{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px;}
 .seq-chip{padding:4px 11px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-muted);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .15s;opacity:.5;}
 .seq-chip.on{opacity:1;color:var(--text-strong);border-color:var(--accent);background:var(--card2);}
+.seq-row.seq-hidden .seq-cnt{display:none;}
 /* ---- 合并球队表（分布 + 2/3 指标）---- */
 .team-table .col-2{background:rgba(0,184,148,.10);}
 .team-table .col-3{background:rgba(255,140,66,.12);}

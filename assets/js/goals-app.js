@@ -34,81 +34,82 @@ window.BUCKETS = window.DATA.buckets;
   // 后置模块：横屏全屏按钮 + 连续场次浮层，需要等版本脚本把 render() 挂到全局后再跑
   function postModules(){
 
+// H5 移动端外壳：手机端把顶部的 pill 行换成「联赛 / 赛季 下拉 + 范围分段」，
+// 并挂上底部 3 tab。桌面端整段跳过，页面上原本的外壳（site.js）保持不动。
+(function(){
+  var force = /[?&]forcemb\b/.test(location.search||'');
+  var isMobile = force || !isPC;
+  if(!isMobile) return;                       // 桌面端跳过：保留 site.js 的顶部外壳
+  if(!window.QZL_SHELL) return;
+  if(window.__goalsH5Mounted) return; window.__goalsH5Mounted=true;
+
+  document.documentElement.setAttribute('data-h5','on');
+
+  function leagueFilter(){
+    var D=window.DATA;
+    return {
+      type:'select', id:'gLg', label:'联赛',
+      value:(typeof currentLeague!=='undefined'?currentLeague:(D.leagues[0]&&D.leagues[0].code)),
+      options:[{v:'__all__',t:'走势总览'}].concat((D.leagues||[]).map(function(l){ return {v:l.code,t:l.cn}; }))
+    };
+  }
+  function seasonFilter(){
+    var D=window.DATA, lg=(D.leagues||[]).find(function(l){ return l.code===currentLeague; });
+    var opts=[];
+    if(lg && lg.scopes){
+      var win=(typeof SEASON_WIN!=='undefined'?SEASON_WIN:5);
+      var seq=(lg.order||[]).filter(function(k){ return true; }).slice(0,win);
+      seq.forEach(function(k){ opts.push({v:k,t:seasonLabel(k)+(lg.scopes[k]?'（'+lg.scopes[k].totalMatches+'场）':'')}); });
+    }
+    return { type:'select', id:'gSn', label:'赛季', value:(typeof currentSeason!=='undefined'?currentSeason:''), options:opts };
+  }
+  function seasonLabel(s){ var m=/^(\d{4})-(\d{2})$/.exec(s||''); return m?(m[1]+'-'+(m[1].slice(0,2)+m[2])):s; }
+
+  window.QZL_SHELL.mount({
+    page:'进球数 · 五大',
+    tab:'goals',
+    filters:[
+      leagueFilter(),
+      seasonFilter(),
+      { type:'segment', id:'gWin', label:'赛季范围', value:(typeof SEASON_WIN!=='undefined'?SEASON_WIN:5),
+        options:[{v:5,t:'近五季'},{v:3,t:'近三季'}] }
+    ],
+    onChange:function(id,v){
+      if(id==='gLg'){ if(typeof currentLeague!=='undefined'){ currentLeague=v; if(typeof hideTip==='function')hideTip(); render(); } }
+      else if(id==='gSn'){ if(typeof currentSeason!=='undefined'){ currentSeason=v; if(typeof hideTip==='function')hideTip(); render(); } }
+      else if(id==='gWin'){ if(typeof setWin==='function') setWin(+v); }
+    }
+  });
+
+  var _r=window.render;
+  if(typeof _r==='function' && !window.__goalsH5Wrapped){
+    window.__goalsH5Wrapped=true;
+    window.render=function(){
+      _r.apply(this,arguments);
+      if(window.QZL_SHELL){
+        window.QZL_SHELL.setFilter('gLg', currentLeague);
+        window.QZL_SHELL.setFilter('gSn', currentSeason);
+        window.QZL_SHELL.setFilter('gWin', SEASON_WIN);
+      }
+    };
+  }
+})();
+
+// 横屏全屏：实现已抽到公共文件 assets/js/landscape.js（页面里以 <script> 引入）。
+// 这里只负责「何时启用 + 用哪些面板」，并保证每次 render() 后按钮跟得上。
 (function(){
   var force = /[?&]forcemb\b/.test(location.search||'');
   var isMobile = force || !(window.matchMedia && window.matchMedia('(min-width:820px)').matches);
   if(!isMobile) return;
+  if(!window.QZL_LANDSCAPE) return;          // 未引入公共模块则静默跳过
   if(window.__landscapeMod) return; window.__landscapeMod=true;
 
-  var ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px"><path d="M21 9V5a2 2 0 0 0-2-2h-4M3 15v4a2 2 0 0 0 2 2h4M21 15v4a2 2 0 0 1-2 2h-4M3 9V5a2 2 0 0 1 2-2h4"/></svg>';
-  var css=''
-    +'.land-overlay{position:fixed;inset:0;z-index:9999;background:var(--bg);overflow:auto;-webkit-overflow-scrolling:touch;}'
-    +'.land-stage{position:absolute;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);transform-origin:center;overflow:auto;}'
-    +'.land-stage>.land-clone{width:100%;}'
-    +'.land-exit{position:fixed;top:14px;right:14px;z-index:10001;display:inline-flex;align-items:center;gap:6px;padding:11px 17px;border:0;border-radius:22px;background:linear-gradient(135deg,#e0533a,#ff7a59);color:#fff;font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 5px 16px rgba(224,83,58,.4);font-family:inherit;appearance:none;-webkit-appearance:none;}'
-    +'.land-exit:active{transform:scale(.96);}'
-    +'.land-hint{position:fixed;left:0;right:0;bottom:18px;z-index:10001;text-align:center;color:var(--text-muted);font-size:12px;pointer-events:none;}'
-    +'.land-btn{appearance:none;-webkit-appearance:none;display:inline-flex;align-items:center;gap:6px;margin:4px 0 10px;padding:9px 15px;border:1px solid var(--border);border-radius:20px;background:linear-gradient(135deg,#2f7bdc,#4a9eff);color:#fff;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(47,123,220,.3);font-family:inherit;line-height:1;}'
-    +'.land-btn:active{transform:scale(.97);}'
-    +'.land-btn.on{background:linear-gradient(135deg,#e0533a,#ff7a59);box-shadow:0 3px 10px rgba(224,83,58,.3);}'
-    +'.land-btn svg{width:15px;height:15px;}';
-  var st=document.createElement('style'); st.id='landscapeStyle'; st.textContent=css; (document.head||document.documentElement).appendChild(st);
-
-  var overlay=null, stage=null, openPanelId=null;
-  function ensureOverlay(){
-    if(overlay) return;
-    overlay=document.createElement('div'); overlay.className='land-overlay'; overlay.id='landOverlay'; overlay.style.display='none';
-    var scrim=document.createElement('div'); scrim.className='land-scrim'; scrim.style.position='absolute'; scrim.style.inset='0';
-    stage=document.createElement('div'); stage.className='land-stage';
-    var exitBtn=document.createElement('button'); exitBtn.type='button'; exitBtn.className='land-exit'; exitBtn.textContent='✕ 退出横屏';
-    var hintEl=document.createElement('div'); hintEl.className='land-hint'; hintEl.textContent='横屏阅读更佳 · 可拖动查看 · 点 ✕ 或按 Esc 退出';
-    overlay.appendChild(scrim); overlay.appendChild(stage); overlay.appendChild(exitBtn); overlay.appendChild(hintEl);
-    document.body.appendChild(overlay);
-    exitBtn.addEventListener('click', closeLandscape);
-    overlay.addEventListener('click', function(e){ if(e.target===overlay||e.target===scrim) closeLandscape(); });
+  function boot(){ window.QZL_LANDSCAPE.init({ panels:['overview','teams','trend','seq23'] }); }
+  if(typeof window.render==='function'){
+    var _o=window.render;
+    window.render=function(){ _o.apply(this,arguments); boot(); };
   }
-  function setBtn(pid,on){ var b=document.getElementById('landBtn-'+pid); if(!b) return; b.classList.toggle('on',!!on); b.innerHTML= on? '✕ 退出横屏' : (ICON+' 横屏全屏'); }
-  function openLandscape(panel){
-    ensureOverlay();
-    if(openPanelId) closeLandscape();
-    openPanelId=panel.id;
-    var clone=panel.cloneNode(true); clone.className=(clone.className||'')+' land-clone'; clone.removeAttribute('id');
-    stage.innerHTML=''; stage.appendChild(clone);
-    overlay.style.display='block'; document.body.classList.add('land-open');
-    setBtn(openPanelId,true);
-    if(overlay.requestFullscreen) try{ overlay.requestFullscreen(); }catch(e){}
-  }
-  function closeLandscape(){
-    if(!openPanelId) return;
-    var pid=openPanelId; openPanelId=null;
-    if(stage) stage.innerHTML='';
-    if(overlay) overlay.style.display='none';
-    document.body.classList.remove('land-open');
-    if(document.fullscreenElement && document.exitFullscreen) try{ document.exitFullscreen(); }catch(e){}
-    setBtn(pid,false);
-  }
-  function makeBtn(pid){
-    var id='landBtn-'+pid, b=document.getElementById(id);
-    if(b) return b;
-    b=document.createElement('button'); b.type='button'; b.id=id; b.className='land-btn'; b.innerHTML=ICON+' 横屏全屏';
-    b.addEventListener('click', function(){ var p=document.getElementById(pid); if(!p) return; if(openPanelId===pid) closeLandscape(); else openLandscape(p); });
-    return b;
-  }
-  function activePanels(){
-    var out=[];
-    var t=document.getElementById('trend'); if(t && t.innerHTML.trim()!=='') out.push('trend');
-    ['overview','teams','seq23'].forEach(function(pid){ var p=document.getElementById(pid); if(p && p.innerHTML.trim()!=='') out.push(pid); });
-    return out;
-  }
-  function attachLandscapeButtons(){
-    var active=activePanels();
-    ['overview','teams','seq23','trend'].forEach(function(pid){ var b=document.getElementById('landBtn-'+pid); if(b && active.indexOf(pid)<0) b.remove(); });
-    active.forEach(function(pid){ var p=document.getElementById(pid); if(!p) return; var b=makeBtn(pid); if(b.parentNode!==p.parentNode || b.nextSibling!==p) p.parentNode.insertBefore(b, p); });
-  }
-  if(typeof window.render==='function'){ var _o=window.render; window.render=function(){ _o.apply(this,arguments); attachLandscapeButtons(); }; }
-  document.addEventListener('keydown', function(e){ if(e.key==='Escape' && openPanelId) closeLandscape(); });
-  document.addEventListener('fullscreenchange', function(){ if(!document.fullscreenElement && openPanelId) closeLandscape(); });
-  attachLandscapeButtons();
+  boot();
 })();
 
   (function(){
@@ -125,7 +126,7 @@ window.BUCKETS = window.DATA.buckets;
       var home=el.getAttribute('data-home'), away=el.getAttribute('data-away'), score=el.getAttribute('data-score'), date=el.getAttribute('data-date'), round=el.getAttribute('data-round'), ha=el.getAttribute('data-ha'), season=el.getAttribute('data-season');
       if(!home && !away) return;
       var line=home+' <b>'+score+'</b> '+away, sp=(''+score).split('-');
-      if(ha!=='H' && sp.length===2) line=away+' <b>'+sp[1]+'-'+sp[0]+'</b> '+home;
+      if(ha!=='H' && sp.length===2) line=away+' <b>'+score+'</b> '+home;
       tip.innerHTML='<b>'+season+' 第 '+round+' 轮</b> · '+date+' · '+(ha==='H'?'主场':'客场')+'<br>'+line;
       tip.style.display='block';
       var x=e.clientX, y=e.clientY; if((x==null)&&e.touches&&e.touches[0]){x=e.touches[0].clientX;y=e.touches[0].clientY;}
