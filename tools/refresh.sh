@@ -14,6 +14,24 @@ SITE="/Users/santu/soccerdata/football-data-site"
 AUTO="$SITE/tools"
 PY="/usr/bin/python3"
 
+# ── 防重入 + 随机错峰 ──
+# 运行锁：避免 catchup.sh 在下方随机等待期间误判「窗口错过」而重复拉起本任务
+REFRESH_LOCK="$AUTO/.refresh.lock"
+if [ -e "$REFRESH_LOCK" ]; then
+    _pid=$(cat "$REFRESH_LOCK" 2>/dev/null)
+    if [ -n "$_pid" ] && kill -0 "$_pid" 2>/dev/null; then
+        echo "[SKIP] 已有 refresh 进程在运行 (pid $_pid)，退出"
+        exit 0
+    fi
+    rm -f "$REFRESH_LOCK"
+fi
+echo $$ > "$REFRESH_LOCK"
+trap 'rm -f "$REFRESH_LOCK"' EXIT
+# 随机错峰：本任务由 launchd 在周一/周四 15:00 触发，这里再随机等待 0~3599 秒，
+# 使实际抓取/同步落在 15:00~16:00 之间任意时刻，避免整点集中打数据源。
+echo "════════ 随机错峰等待（0~3599s）════════"
+sleep $(( RANDOM % 3600 ))
+
 # 0) 路径护栏：站点必须位于 ~/soccerdata，绝不允许落在桌面。
 #    历史事故：站点曾放在 ~/Desktop/soccerdata，迁移后 launchd 仍指向旧路径，
 #    导致桌面上被反复重建出 soccerdata 目录。这里主动兜底。
@@ -79,7 +97,7 @@ step "更新：进球数统计 2026-27" "$PY" "$WS/update_seq23_2627.py"
 # 5) 同步数据块到站点
 step "同步数据到站点" "$PY" "$AUTO/sync_site.py"
 
-# 6) 提交并推送
+# 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
 SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"
 echo
 echo "──────── git 提交与推送 ────────"
@@ -88,28 +106,46 @@ cd "$SITE" || { echo "[FAIL] 站点目录不存在"; exit 1; }
 if [ ! -d .git ]; then
     echo "[SKIP] 站点尚未 git init，跳过提交"
 else
-    git add 'assets/js/*-data.js' 'assets/js/meta.js'  # 只提交数据文件（含轻量 meta.js），页面/外壳改动不纳入自动化提交
-    if git diff --cached --quiet; then
-        echo "[SKIP] 没有需要提交的改动"
-    else
+    pushed=0
+    for attempt in 1 2 3; do
+        # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
+        # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
+        rm -f .git/index.lock
+        if ! git add 'assets/js/*-data.js' 'assets/js/meta.js'; then
+            echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
+            rm -f .git/index.lock; sleep 3; continue
+        fi
+        if git diff --cached --quiet; then
+            echo "[SKIP] 没有需要提交的改动"
+            pushed=1; break
+        fi
         MSG="chore(data): 同步 2026-27 赛果 $(date '+%F')"
-        [ -n "$SUMMARY" ] && MSG="$MSG
-
-$SUMMARY"
-        git commit -q -F - <<< "$MSG" || { echo "[FAIL] git commit 失败"; exit 1; }
-        echo "[OK] 已提交：$(git log -1 --format='%h %s')"
-        if git remote get-url origin >/dev/null 2>&1; then
-            if git push origin HEAD 2>&1; then
-                echo "[OK] 已推送到 origin"
-                notify "足球数据已更新" "${SUMMARY:-数据已同步}"
+        [ -n "$SUMMARY" ] && MSG="$(printf '%s\n\n%s' "$MSG" "$SUMMARY")"
+        if git commit -q -F - <<< "$MSG"; then
+            echo "[OK] 已提交：$(git log -1 --format='%h %s')"
+            if git remote get-url origin >/dev/null 2>&1; then
+                if git push origin HEAD 2>&1; then
+                    echo "[OK] 已推送到 origin"
+                    notify "足球数据已更新" "${SUMMARY:-数据已同步}"
+                    pushed=1; break
+                else
+                    echo "[WARN] git push 失败（第 $attempt 次），清锁后重试"
+                    rm -f .git/index.lock; sleep 3
+                fi
             else
-                echo "[FAIL] git push 失败（提交已保留在本地，下次会重试推送）"
-                notify "足球数据推送失败" "提交已在本地，需检查 SSH/仓库"
-                exit 1
+                echo "[SKIP] 未配置 origin 远程仓库，仅提交到本地"
+                pushed=1; break
             fi
         else
-            echo "[SKIP] 未配置 origin 远程仓库，仅提交到本地"
+            echo "[WARN] git commit 失败（第 $attempt 次），清锁后重试"
+            rm -f .git/index.lock; sleep 3
         fi
+    done
+    if [ "$pushed" -ne 1 ]; then
+        echo "[FAIL] git 提交/推送在重试后仍然失败，站点数据已本地更新但未上线"
+        echo "日志：$LOG"
+        notify "足球数据推送失败" "本地数据已更新但推送失败，需检查 SSH/仓库/锁冲突"
+        exit 1
     fi
 fi
 

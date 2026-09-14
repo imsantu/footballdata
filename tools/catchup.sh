@@ -9,6 +9,17 @@ AUTO="$SITE/tools"
 LR="$AUTO/.lastrun"
 REFRESH="$AUTO/refresh.sh"
 
+# 若 refresh 正在运行（随机错峰等待中），跳过，避免重复拉起
+REFRESH_LOCK="$AUTO/.refresh.lock"
+if [ -e "$REFRESH_LOCK" ]; then
+    _pid=$(cat "$REFRESH_LOCK" 2>/dev/null)
+    if [ -n "$_pid" ] && kill -0 "$_pid" 2>/dev/null; then
+        echo "$(date '+%F %T') [catchup] refresh 正在运行（pid $_pid），跳过"
+        exit 0
+    fi
+    rm -f "$REFRESH_LOCK"
+fi
+
 # 路径护栏：站点绝不允许落在桌面（历史事故：旧 launchd 路径在桌面重建 soccerdata 目录）
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
 case "$SITE" in
@@ -34,7 +45,7 @@ best=""
 for ((i=0;i<14;i++)); do
     day_epoch=$(date -v-${i}d -v0H -v0M -v0S +%s)
     wd=$(date -v-${i}d +%w)
-    slot=$(( day_epoch + 9*3600 + 3*60 ))
+    slot=$(( day_epoch + 15*3600 ))
     if [ "$wd" = "1" ] || [ "$wd" = "4" ]; then
         if [ "$slot" -le "$NOW" ]; then
             if [ -z "$best" ] || [ "$slot" -gt "$best" ]; then
