@@ -19,19 +19,12 @@
 (function () {
   'use strict';
 
-  // 移动端（<820px）：站点外壳整体让位给 H5 移动外壳（assets/js/h5-shell.js）。
+  // 站点导航与首页卡片共用同一份配置：必须先挂到 window 再做桌面/移动分叉。
+  // 否则手机上 4 张入口卡片（#homeCards）会因为 SITE_NAV 未定义而消失，只剩标题。
+  //
+  // 移动端（<820px）：站点外壳整体让位给 H5 移动外壳（assets/js/h5-shell.js）；
   // 桌面顶栏、三态主题、下拉菜单在手机上都是多余且会打架的东西，直接不建。
   // 页面脚本仍会照常渲染数据，只是顶栏交给移动端自己的 AppBar + 底部 tab。
-  try {
-    if (window.matchMedia && !window.matchMedia('(min-width:820px)').matches) {
-      var r = document.documentElement;
-      r.setAttribute('data-theme', 'light');
-      r.style.colorScheme = 'light';
-      var mt = document.querySelector('meta[name="theme-color"]');
-      if (mt) mt.setAttribute('content', '#f4f6fa');
-      return;
-    }
-  } catch (e) {}
 
   var SITE_NAV = [
     {
@@ -62,6 +55,17 @@
   // 暴露给首页复用（首页直接按这份配置渲染卡片，避免两处维护）
   window.SITE_NAV = SITE_NAV;
   window.SITE_PAGE_URL = function (f) { return (window.SITE_ROOT || '') + 'pages/' + f; };
+
+  try {
+    if (window.matchMedia && !window.matchMedia('(min-width:820px)').matches) {
+      var r = document.documentElement;
+      r.setAttribute('data-theme', 'light');
+      r.style.colorScheme = 'light';
+      var mt = document.querySelector('meta[name="theme-color"]');
+      if (mt) mt.setAttribute('content', '#f4f6fa');
+      return;
+    }
+  } catch (e) {}
 
   var ROOT = window.SITE_ROOT || '';         // 根目录页为 ''；pages/ 下的页为 '../'
   var NO_SEL = !!window.SITE_NO_SEL;          // 首页：去掉顶部 3 个下拉（统计主题/联赛层级/范围）
