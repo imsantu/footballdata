@@ -25,6 +25,9 @@ import time
 import unicodedata
 
 WS = "/Users/santu/WorkBuddy AI/2026-09-02-02-18-19"
+if WS not in sys.path:
+    sys.path.insert(0, WS)
+from standings import compute_table, compute_goals, deduct_map, TIE_RULE
 GOALS_WS = "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
 SITE = "/Users/santu/soccerdata/football-data-site"
 AUTO = os.path.join(SITE, "tools")
@@ -45,7 +48,7 @@ CUR_SEASON = "2026-27"
 JOBS = [
     {
         "name": "平局统计 · 五大联赛",
-        "src": f"{WS}/football_big5_draws_report.html",
+        "src": f"{WS}/football_big5_draws.html",
         "marker": "const DATA = ",
         "dst": f"{SITE}/assets/js/draws-big5-data.js",
         "kind": "draws",
@@ -53,14 +56,14 @@ JOBS = [
     },
     {
         "name": "平局统计 · 次级联赛",
-        "src": f"{WS}/football_champ_draws_report.html",
+        "src": f"{WS}/football_champ_draws.html",
         "marker": "const DATA = ",
         "dst": f"{SITE}/assets/js/draws-champ-data.js",
         "kind": "draws",
     },
     {
         "name": "进球数统计",
-        "src": f"{GOALS_WS}/football_en_goals_buckets_report.html",
+        "src": f"{GOALS_WS}/football_big5_goals.html",
         "marker": "window.DATA = ",
         "dst": f"{SITE}/assets/js/goals-data.js",
         "kind": "goals",
@@ -209,133 +212,11 @@ def enrich_goals(goals, draws):
     return n_hit, n_team, n_cell
 
 
-# ===========================================================================
-# 部署前最后一道闸：进球数页 2026-27 的内嵌名次/积分/总进球必须与赛果一致
-# ---------------------------------------------------------------------------
-# 历史事故：同步赛果后 update_seq23_2627.py 只补了 seq23/进球分布，从不重算内嵌
-# 积分榜，导致线上「积分」永远停在初版静态值（如曼城仍显示 9 分）。为此加了
-# 自动重算；这里再加一道独立校验 —— 任何一次同步若没能把 2026-27 积分榜刷新成
-# 赛果实算值，整批中止、绝不静默上线。逻辑与 analyze_all.compute_table 一致。
-# ===========================================================================
-_GOALS_ALIAS = {
-    "Paris Saint-Germain": "Paris Saint-Germain FC", "RC Lens": "Racing Club de Lens",
-    "Olympique Marseille": "Olympique de Marseille", "Stade Rennais": "Stade Rennais FC 1901",
-    "AS Monaco": "AS Monaco FC", "RC Strasbourg": "RC Strasbourg Alsace",
-}
-_TIE = {"en": "gd", "es": "h2h", "it": "h2h", "de": "gd", "fr": "gd"}
-_DEDUCT_ALL = json.load(open(os.path.join(WS, "assets", "deductions.json"), encoding="utf-8"))
-_LEGAL_TOK = {"fc","cf","sc","sv","vfl","vfb","tsv","spvgg","ssv","sg","rb","tsg",
-              "us","as","ss","ac","uc","rc","rcd","cd","sd","ud","ad","sad",
-              "usl","afc","real","club",
-              "deportivo","calcio","a","the","de","del","la","le","les","du","des",
-              "da","do","di","der","dem","den"}
-_TRANS = {"\u00df":"ss","\u00f8":"o","\u00d8":"o","\u0142":"l","\u0131":"i",
-          "\u00e6":"ae","\u0153":"oe","\u00fe":"th","\u00f0":"d"}
-_MARK_RE = re.compile(r"[\u0300-\u036f]")
-
-def _strip_accents(s):
-    s = unicodedata.normalize("NFD", s)
-    return _MARK_RE.sub("", s)
-
-def _club_core(name):
-    s = str(name).lower()
-    for _a, _b in _TRANS.items():
-        s = s.replace(_a, _b)
-    s = _strip_accents(s)
-    s = re.sub(r"[^a-z0-9 ]", " ", s)
-    s = re.sub(r"\b\d+\b", " ", s)
-    return " ".join(t for t in s.split() if t and t not in _LEGAL_TOK)
-
-def _goals_canon(n):
-    return _GOALS_ALIAS.get(n, n)
-
-def _deduct_map(code, season):
-    node = (_DEDUCT_ALL.get("top") or {}).get(code, {}).get(season) or []
-    return {_club_core(x["en"]): int(x["deduct"]) for x in node}
-
-def _parse_score(m):
-    s = m.get("score")
-    if isinstance(s, dict):
-        ft = s.get("ft")
-        return tuple(ft[:2]) if ft else None
-    if isinstance(s, list):
-        return tuple((list(s) + [None, None])[:2])
-    return None
-
 def _standings_from_results(ms, code):
-    """由赛果算 (积分榜, 总进球)。与 analyze_all.compute_table 同款逻辑。"""
-    tb = {}
-    for m in ms:
-        p = _parse_score(m)
-        if not p or None in p:
-            continue
-        h, a = p
-        t1, t2 = _goals_canon(m["team1"]), _goals_canon(m["team2"])
-        for t in (t1, t2):
-            if t not in tb:
-                tb[t] = {"W":0,"D":0,"L":0,"gf":0,"ga":0,"pts":0,"h2h":{}}
-        tb[t1]["gf"] += h; tb[t1]["ga"] += a
-        tb[t2]["gf"] += a; tb[t2]["ga"] += h
-        if h > a:
-            tb[t1]["W"] += 1; tb[t2]["L"] += 1
-        elif a > h:
-            tb[t2]["W"] += 1; tb[t1]["L"] += 1
-        else:
-            tb[t1]["D"] += 1; tb[t2]["D"] += 1
-    for r in tb.values():
-        r["pts"] = r["W"]*3 + r["D"]
-    ded = _deduct_map(code, CUR_SEASON)
-    if ded:
-        for t, r in tb.items():
-            r["pts"] -= ded.get(_club_core(t), 0)
-    for m in ms:
-        p = _parse_score(m)
-        if not p or None in p:
-            continue
-        h, a = p
-        t1, t2 = _goals_canon(m["team1"]), _goals_canon(m["team2"])
-        if t1 not in tb or t2 not in tb:
-            continue
-        if h > a:
-            p1, gf1, ga1, p2, gf2, ga2 = 3, h, a, 0, a, h
-        elif a > h:
-            p1, gf1, ga1, p2, gf2, ga2 = 0, h, a, 3, a, h
-        else:
-            p1, gf1, ga1, p2, gf2, ga2 = 1, h, a, 1, a, h
-        e1 = tb[t1]["h2h"].setdefault(t2, [0,0,0]); e1[0]+=p1; e1[1]+=gf1; e1[2]+=ga1
-        e2 = tb[t2]["h2h"].setdefault(t1, [0,0,0]); e2[0]+=p2; e2[1]+=gf2; e2[2]+=ga2
-    by_pts = {}
-    for t, r in tb.items():
-        by_pts.setdefault(r["pts"], []).append(t)
-    final = []
-    rule = _TIE.get(code, "gd")
-    for pts in sorted(by_pts, reverse=True):
-        grp = by_pts[pts]
-        if len(grp) == 1:
-            final.append(grp[0]); continue
-        sub = {t: {"pts":0,"gd":0,"gf":0} for t in grp}
-        for t in grp:
-            for o in grp:
-                if o == t: continue
-                hv = tb[t]["h2h"].get(o)
-                if hv:
-                    sub[t]["pts"] += hv[0]; sub[t]["gd"] += hv[1]-hv[2]; sub[t]["gf"] += hv[1]
-        if rule == "h2h":
-            key = lambda t: (-sub[t]["pts"], -sub[t]["gd"], -sub[t]["gf"],
-                             -(tb[t]["gf"]-tb[t]["ga"]), -tb[t]["gf"])
-        else:
-            key = lambda t: (-(tb[t]["gf"]-tb[t]["ga"]), -tb[t]["gf"],
-                             -sub[t]["pts"], -sub[t]["gd"], -sub[t]["gf"])
-        final.extend(sorted(grp, key=key))
-    tbl = {t: (i+1, tb[t]["pts"]) for i, t in enumerate(final)}
-    goals = {t1: 0 for t1 in tb}
-    for m in ms:
-        p = _parse_score(m)
-        if not p or None in p:
-            continue
-        t1, t2 = _goals_canon(m["team1"]), _goals_canon(m["team2"])
-        goals[t1] = goals.get(t1, 0) + p[0]
-        goals[t2] = goals.get(t2, 0) + p[1]
+    """由赛果算 (积分榜, 总进球)。与 standings.compute_table 同款逻辑。"""
+    ded = deduct_map(code, CUR_SEASON, "top")
+    tbl = compute_table(ms, TIE_RULE.get(code, "gd"), ded)
+    goals = compute_goals(ms)
     return tbl, goals
 
 def verify_goals_standings(goals):
