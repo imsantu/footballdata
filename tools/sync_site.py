@@ -353,12 +353,16 @@ def write_meta_js():
             obj = extract(job["dst"], job["marker"])
             m = obj.get("meta") if isinstance(obj.get("meta"), dict) else {}
             metas[job["dst"].split("/")[-1]] = m
-        # 取「数据源更新」里最新的一个（正常情况下三份一致）
+        # 「数据源更新」取三份数据里最新的一个（正常情况下三份一致）
         src_vals = [m.get("srcUpdated") for m in metas.values() if m.get("srcUpdated")]
-        gen_vals = [m.get("generated") for m in metas.values() if m.get("generated")]
+        # 「本页更新」= 本次真正把数据同步进站点的时刻（= now），不要取各数据文件里
+        # 内嵌 generated 的 max —— 当某份数据「无变化」未被重写时，其内嵌 generated 会
+        # 停留在旧值，max 会把整站时间拉回过去，造成「进球数页比平局页旧」这类不一致。
+        # 统一以 sync_site.py 的运行时刻为准；纯代码提交的 generated 则由 pre-commit
+        # 钩子（bump_meta.py）刷新，二者都是「最近一次部署时间」，方向永远向前。
         payload = {
             "srcUpdated": max(src_vals) if src_vals else "",
-            "generated": max(gen_vals) if gen_vals else "",
+            "generated": time.strftime("%Y-%m-%d %H:%M"),
         }
         out = os.path.join(SITE, "assets/js/meta.js")
         text = "window.SITE_META = " + json.dumps(payload, ensure_ascii=False) + ";\n"

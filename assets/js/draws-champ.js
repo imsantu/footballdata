@@ -1082,11 +1082,12 @@ function render(){
 
 render(); bindBkToggle(); bindScrollHint(); bindScrollBtns();
 
-// 页脚：填上「数据源更新时间」与「本页最近更新」（来自数据层 meta）
+// 页脚：填上「数据源更新时间」与「本页最近更新」（统一读站点 meta.js 的 SITE_META，
+// 与进球数页、更多页同一份账本，保证几页时间永远一致；generated 由每次提交刷新）
 (function(){
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = (v && v !== '–') ? v : '–'; };
-  set('ftSrc', (DATA.meta && DATA.meta.srcUpdated) || '');
-  set('ftGen', (DATA.meta && DATA.meta.generated) || '');
+  set('ftSrc', (window.SITE_META && window.SITE_META.srcUpdated) || '');
+  set('ftGen', (window.SITE_META && window.SITE_META.generated) || '');
 })();
 
 // 滚动时收起悬停浮层，避免浮层跟着页面漂走

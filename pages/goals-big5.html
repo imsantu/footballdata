@@ -116,9 +116,11 @@
 
 <div class="tap-tip" id="tip"></div></script>
 
-<!-- defer：4MB 数据脚本不再阻塞 HTML 解析与首屏渲染（两个 defer 保证按序执行） -->
+<!-- defer：4MB 数据脚本不再阻塞 HTML 解析与首屏渲染（defer 保证按序执行） -->
 <script defer src="../assets/js/landscape.js"></script>
 <script defer src="../assets/js/h5-shell.js"></script>
+<!-- 站点统一时间账本（数据源更新 / 本页更新），所有页面页脚都读它，保证几页时间一致 -->
+<script defer src="../assets/js/meta.js"></script>
 <script defer src="../assets/js/goals-data.js"></script>
 <script defer src="../assets/js/goals-app.js"></script>
 </body>

@@ -108,6 +108,9 @@ if [ ! -d .git ]; then
 else
     pushed=0
     for attempt in 1 2 3; do
+        # 刷新「本页更新时间」为本机当前时间（与 pre-commit 钩子 bump_meta.py 双重保险；
+        # 钩子未被安装时这里兜底，保证任何一次同步提交都会让页脚「本页更新」前进）
+        "$PY" "$AUTO/bump_meta.py" || true
         # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
