@@ -1,6 +1,7 @@
 #!/bin/bash
 # 足球数据站 · 自动更新
-#   1. 从 football-data.co.uk / openfootball 抓取 2026-27 最新赛果
+#   1. 从 ESPN 隐藏 API（site.api.espn.com）抓取 2026-27 最新赛果（免费、实时，
+#      摆脱 openfootball / football-data.co.uk 结果录入滞后；build_2026_27.py 现以 ESPN 为主源）
 #   2. 重算三份报告的数据（平局·五大 / 平局·次级 / 进球数）
 #   3. 把数据块同步进静态站点（带备份 + 体检，历史赛季绝不改动）
 #   4. git 提交并推送到 GitHub
