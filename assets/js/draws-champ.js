@@ -588,7 +588,8 @@ function renderTrend(){
   let rects='';
   pr.forEach((d,i)=>{
     const bh=maxV?Math.round(d.n/maxV*(H-padT-padB)):0;
-    rects+='<rect class="bar" x="'+(padL+i*bw+1.5)+'" y="'+(H-padB-bh)+'" width="'+(bw-3)+'" height="'+bh+'" rx="2" fill="url(#gg)" data-r="第'+rnum(d,i)+'轮" data-n="'+d.n+'"></rect>';
+    const drs=(d.draws||[]).map(x=>({h:x.h,a:x.a,hs:x.hs,as:x.as}));
+    rects+='<rect class="bar" x="'+(padL+i*bw+1.5)+'" y="'+(H-padB-bh)+'" width="'+(bw-3)+'" height="'+bh+'" rx="2" fill="url(#gg)" data-r="第'+rnum(d,i)+'轮" data-n="'+d.n+'" data-draws="'+encodeURIComponent(JSON.stringify(drs))+'"></rect>';
   });
   const yt=[]; for(let v=0;v<=maxV;v++){ const y=H-padB-Math.round(v/maxV*(H-padT-padB)); yt.push('<line x1="'+padL+'" y1="'+y+'" x2="'+(W-padR)+'" y2="'+y+'" stroke="var(--axis)" stroke-width="1"/><text x="'+(padL-6)+'" y="'+(y+4)+'" text-anchor="end" font-size="10" fill="var(--text-muted)">'+v+'</text>'); }
   const xt=[]; for(let i=0;i<n;i+=Math.max(1,Math.ceil(n/9))){ xt.push('<text x="'+(padL+i*bw+bw/2)+'" y="'+(H-padB+16)+'" text-anchor="middle" font-size="10" fill="var(--text-muted)">'+rnum(pr[i],i)+'</text>'); }

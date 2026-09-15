@@ -245,8 +245,7 @@ def verify_goals_standings(goals):
 
 def main():
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    bdir = os.path.join(BACKUP_DIR, stamp)
-    os.makedirs(bdir, exist_ok=True)
+    bdir = os.path.join(BACKUP_DIR, stamp)   # 仅在有真正写入时才 mkdir（见写入阶段）
 
     planned = []          # [(job, new_text, summary_lines)]
     print("=== 体检阶段（此时尚未写入任何文件）===")
@@ -337,7 +336,6 @@ def main():
         for line in changed:
             print(line)
 
-        shutil.copy2(dst, os.path.join(bdir, os.path.basename(dst)))
         planned.append((job, new, cur_text, same))
 
     updatable = [p for p in planned if not p[3]]
@@ -345,6 +343,30 @@ def main():
         print("\n=== 三份数据均无变化，跳过写入 ===")
         print("SUMMARY|无变化")
         return
+
+    # 仅在确有写入时才落地备份：把「被覆盖前」的线上数据文件原样拷到备份目录，
+    # 并附一份 BACKUP_META.txt 记录来源报告与时间戳，确保「备份 == 生成备份那一刻的线上文件」。
+    os.makedirs(bdir, exist_ok=True)
+    for job, _, _, _ in updatable:
+        shutil.copy2(job["dst"], os.path.join(bdir, os.path.basename(job["dst"])))
+    try:
+        lines = [f"# 备份自述（生成于 {stamp}）",
+                 "# 本目录是 sync_site.py 在写入新数据【之前】对线上数据文件的逐字节快照。",
+                 "# 备份文件与本页当时线上内容一致；下方记录其来源报告与生成时间，便于事后溯源。", ""]
+        for job in JOBS:
+            src, dst = job["src"], job["dst"]
+            src_mt = os.path.getmtime(src) if os.path.exists(src) else 0
+            dst_mt = os.path.getmtime(dst) if os.path.exists(dst) else 0
+            lines.append(f"- {os.path.basename(dst)}")
+            lines.append(f"    源报告: {src}")
+            lines.append(f"    源报告 mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(src_mt))}")
+            lines.append(f"    备份前线上文件 mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dst_mt))}")
+            lines.append(f"    备份前大小: {os.path.getsize(dst):,} 字节")
+        with open(os.path.join(bdir, "BACKUP_META.txt"), "w", encoding="utf-8") as f:
+            f.write("\n".join(lines) + "\n")
+        print(f"  [OK] 备份自述已写入 {os.path.join(bdir, 'BACKUP_META.txt')}")
+    except Exception as e:
+        print(f"  [WARN] 备份自述写入失败，跳过：{e}")
 
     print(f"\n=== 写入阶段（备份已存于 {bdir}）===")
     for job, new, cur_text, _ in updatable:

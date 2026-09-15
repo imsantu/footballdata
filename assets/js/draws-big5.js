@@ -598,8 +598,19 @@ function renderTrend(){
     yt.join('')+rects+avgLine+xt.join('')+'<text x="'+padL+'" y="10" font-size="11" fill="var(--text-dim)">平局/轮</text></svg>';
   const tip=document.getElementById('avgTip');
   document.querySelectorAll('#trend rect.bar').forEach(r=>{
-    r.addEventListener('mousemove',e=>{ tip.style.display='block'; tip.innerHTML='<b>'+r.getAttribute('data-r')+'</b>　平局 <b>'+r.getAttribute('data-n')+'</b> 场';
-      tip.style.left=Math.min(e.clientX+12,window.innerWidth-140)+'px'; tip.style.top=(e.clientY+12)+'px'; });
+    r.addEventListener('mousemove',e=>{
+      tip.style.display='block';
+      let html='<b>'+r.getAttribute('data-r')+'</b>　平局 <b>'+r.getAttribute('data-n')+'</b> 场';
+      try{
+        const ds=JSON.parse(decodeURIComponent(r.getAttribute('data-draws')||'[]'));
+        if(ds&&ds.length){
+          html+='<div class="tip-sep"></div>'+ds.map(x=>
+            '<div class="tip-draw"><span class="tm">'+x.h+'</span> <span class="sc">'+x.hs+'-'+x.as+'</span> <span class="tm">'+x.a+'</span></div>').join('');
+        }
+      }catch(err){}
+      tip.innerHTML=html;
+      tip.style.left=Math.min(e.clientX+12,window.innerWidth-220)+'px'; tip.style.top=(e.clientY+12)+'px';
+    });
     r.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
   });
 }
