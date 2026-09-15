@@ -1,6 +1,6 @@
 #!/bin/bash
 # 错过窗口补跑检查器（由 launchd 以 StartInterval 周期调用，唤醒/登录即触发）
-# 逻辑：算出「最近一个 周一(1)/周四(4) 09:03」窗口；
+# 逻辑：算出「最近一个 每天 06:00」窗口；
 #       若该窗口已过去、且上次成功更新早于该窗口，则补跑 refresh.sh；否则零成本跳过。
 set -u
 
@@ -40,17 +40,16 @@ fi
 
 NOW=$(date +%s)
 
-# 找最近一个 <= now 的 周一/周四 09:03
+# 找最近一个 <= now 的 每天 06:00
 best=""
 for ((i=0;i<14;i++)); do
     day_epoch=$(date -v-${i}d -v0H -v0M -v0S +%s)
     wd=$(date -v-${i}d +%w)
-    slot=$(( day_epoch + 15*3600 ))
-    if [ "$wd" = "1" ] || [ "$wd" = "4" ]; then
-        if [ "$slot" -le "$NOW" ]; then
-            if [ -z "$best" ] || [ "$slot" -gt "$best" ]; then
-                best=$slot
-            fi
+    slot=$(( day_epoch + 6*3600 ))
+    # 每天 15:00 均为更新窗口（去掉原仅周一/周四的限制，实现「每天都更新」）
+    if [ "$slot" -le "$NOW" ]; then
+        if [ -z "$best" ] || [ "$slot" -gt "$best" ]; then
+            best=$slot
         fi
     fi
 done
