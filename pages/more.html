@@ -83,7 +83,6 @@ body{
 
   <div class="card" data-page-node-id="7Md59EVdWAEfvEQD9QYxma">
     <h2 data-page-node-id="1bSkO2llzOZN28wn9ERu26">更新时间</h2>
-    <div class="row" data-page-node-id="ByMJ7k588FuX8bmQ0Ixyl6"><span class="k" data-page-node-id="StRJHla0yiRmqEe8y0ypuw">数据源更新</span><span class="v" id="ftSrc" data-page-node-id="vxhP7k6NidszD7HljOBCZ3">–</span></div>
     <div class="row" data-page-node-id="Hr2m44LU8TThKpv26balj7"><span class="k" data-page-node-id="eHWgIxgBnw7QkROzGX6k9P">本页更新</span><span class="v" id="ftGen" data-page-node-id="3fNGcT8MvbbrRjoMykifPH">–</span></div>
     <div class="row" data-page-node-id="iardJaj0KR3MnLei4KgHib"><span class="k" data-page-node-id="MLGD8X0u69bn4UbsEfHD52">自动更新</span><span class="v" data-page-node-id="C79muPjYNAdf9MbLjMNxUL">每周一 / 周四 09:03</span></div>
   </div>
@@ -142,8 +141,7 @@ body{
 (function(){
   try{
     var m = window.SITE_META || {};
-    var s = document.getElementById('ftSrc'), g = document.getElementById('ftGen');
-    if(s) s.textContent = m.srcUpdated || '–';
+    var g = document.getElementById('ftGen');
     if(g) g.textContent = m.generated || '–';
   }catch(e){}
 })();

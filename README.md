@@ -136,7 +136,7 @@ python3 -m http.server 8000
 - 数据源：
   [openfootball/football.json](https://github.com/openfootball/football.json)、
   [Football-Data.co.uk](https://www.football-data.co.uk/data.php)；队徽来自 Wikipedia。
-- 每页页脚标注「数据源更新时间」与「本页更新时间」，以页面内标注为准。
+- 每页页脚标注「本页更新时间」，以页面内标注为准。
 
 ## 自动化任务
 

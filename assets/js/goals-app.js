@@ -139,13 +139,12 @@ window.BUCKETS = window.DATA.buckets;
     document.addEventListener('mouseout',hide);
   })();
 
-    // 页脚：填入「数据源更新时间」与「本页更新时间」（统一读站点 meta.js 的 SITE_META，
+    // 页脚：填入「本页更新时间」（统一读站点 meta.js 的 SITE_META，
     // 与平局页、更多页同一份账本，保证几页时间永远一致；generated 由每次提交刷新）
     (function(){
       try{
         var m = window.SITE_META || {};
-        var s = document.getElementById('ftSrc'), g = document.getElementById('ftGen');
-        if(s) s.textContent = m.srcUpdated || '–';
+        var g = document.getElementById('ftGen');
         if(g) g.textContent = m.generated || '–';
       }catch(e){}
     })();

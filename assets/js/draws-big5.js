@@ -1085,11 +1085,10 @@ function render(){
 
 render(); bindBkToggle(); bindScrollHint(); bindScrollBtns();
 
-// 页脚：填上「数据源更新时间」与「本页最近更新」（统一读站点 meta.js 的 SITE_META，
+// 页脚：填上「本页最近更新」（统一读站点 meta.js 的 SITE_META，
 // 与进球数页、更多页同一份账本，保证几页时间永远一致；generated 由每次提交刷新）
 (function(){
   const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = (v && v !== '–') ? v : '–'; };
-  set('ftSrc', (window.SITE_META && window.SITE_META.srcUpdated) || '');
   set('ftGen', (window.SITE_META && window.SITE_META.generated) || '');
 })();
 

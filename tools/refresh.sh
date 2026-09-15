@@ -79,10 +79,8 @@ rm -f /tmp/fd_*_2627.csv
 # 1) 抓取并重建 2026-27（五大联赛 + 五大次级联赛）
 step "抓取 2026-27 最新赛果" "$PY" "$WS/build_2026_27.py"
 
-# 1b) 记录「数据源真正更新时间」：只有赛果内容真的变了才刷新时间戳。
-#     之前 srcUpdated 是用数据文件 mtime 反推的，而抓取每次都会重写这些文件，
-#     导致「数据源更新」永远等于「本页更新」。
-step "记录数据源更新时间戳" "$PY" "$WS/mark_fetch_stamp.py"
+# 1b) 站点已不再展示「数据源更新时间」，mark_fetch_stamp.py 步骤已移除（其写入的
+#     srcUpdated 现在无人读取，保留 mark_fetch_stamp.py 脚本本身以备将来复用）。
 
 # 2) 平局统计 · 五大联赛
 step "分析：平局·五大联赛"  "$PY" "$WS/analyze_all.py"
