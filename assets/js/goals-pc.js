@@ -9,10 +9,17 @@ function defaultSeason(lg){
   return lg.order[0];
 }
 let currentLeague = DATA.leagues[0].code;
-let currentSeason = defaultSeason(DATA.leagues[0]);
+// 默认落在进行中的最新赛季 2026-2027（用户要求两个页默认都进该赛季；切换联赛 tab 时赛季保持不变）
+let currentSeason = (DATA.leagues[0].order || []).includes('2026-27') ? '2026-27' : defaultSeason(DATA.leagues[0]);
 let teamSort = {key:'rank', dir:1};
 let teamGoalsShowAll = false;
 function toggleTeamGoals(){ teamGoalsShowAll = !teamGoalsShowAll; renderTeams(); }
+// 进球数 / 失球数 / 净胜球数 三列（得失球）折叠状态：2026-27 默认收起，其余赛季默认显示；用户点「显示得失球」后锁定
+let teamTotalsShow = true;
+let teamTotalsPinned = null; // null = 跟随赛季默认；true/false = 用户手动设定
+function toggleTeamTotals(){ const cur=(teamTotalsPinned===null)?(currentSeason!=='2026-27'):teamTotalsPinned; teamTotalsPinned=!cur; renderTeams(); }
+// 不出预警：从最近一场往前，连续多少轮（场）该队总进球既 ≠2 也 ≠3（即只打出 0/1/4+ 球）
+function trailingNot23(seq){ if(!seq||!seq.length) return 0; let n=0; for(let i=seq.length-1;i>=0;i--){ const x=seq[i]; if(x!==2&&x!==3) n++; else break; } return n; }
 // 2/3 球走势面板筛选状态：关键词、2 球 / 3 球开关、被隐藏的球队
 let seqQuery = '', seqShow2 = true, seqShow3 = true, seqHidden = {};
 
@@ -100,7 +107,7 @@ function buildLeagueTabs(){
     const badge=sc?sc.avgGoals.toFixed(2):'–';
     const logo=l.logo?('<img src="'+l.logo+'" alt="'+l.cn+'">'):lgCrestHtml(l.code,l.cn);
     b.innerHTML=logo+'<span>'+l.cn+'</span><span class="rt">'+badge+'</span>';
-    b.onclick=()=>{ currentLeague=l.code; currentSeason=defaultSeason(l); render(); };
+    b.onclick=()=>{ currentLeague=l.code; render(); };   // 切换联赛：保留当前赛季不变
     el.appendChild(b);
   });
   const all=document.createElement('div');
@@ -133,8 +140,8 @@ function buildWinSwitch(){
   const el=document.getElementById('winSwitch');
   if(!el) return;
   const opt=(n,label)=>'<button type="button" class="wbtn'+(SEASON_WIN===n?' on':'')+'" data-win="'+n+
-    '" title="跨赛季统计口径切换为最近 '+n+' 个赛季">'+label+'</button>';
-  el.innerHTML='<span class="wlab" title="跨赛季统计的赛季范围"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>范围</span>'+
+    '">'+label+'</button>';
+  el.innerHTML='<span class="wlab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/></svg>范围</span>'+
     opt(5,'近五季')+opt(3,'近三季');
   el.querySelectorAll('[data-win]').forEach(b=>{ b.onclick=()=>setWin(+b.getAttribute('data-win')); });
 }
@@ -253,6 +260,8 @@ function renderOverview(){
 
 function renderTeams(){
   const lg=leagueOf(currentLeague); const sc=lg.scopes[currentSeason];
+  // 进入 2026-27 时若停留在历史赛季的「最大同时不出」排序键，复位回默认（该列在 2026-27 已移除）
+  if(currentSeason==='2026-27' && teamSort.key==='gap23'){ teamSort={key:'rank',dir:1}; }
   const total=sc.totalMatches;
   const idx=lg.order.indexOf(currentSeason);
   const prevKey = (idx>=0 && idx+1<lg.order.length) ? lg.order[idx+1] : null;
@@ -286,6 +295,8 @@ function renderTeams(){
     else if(k==='total'){ va=a.total; vb=b.total; }
     else if(k==='gap2'){ va=a.gap2; vb=b.gap2; }
     else if(k==='gap3'){ va=a.gap3; vb=b.gap3; }
+    else if(k==='gap23'){ va=a.gap23; vb=b.gap23; }
+    else if(k==='warn23'){ va=trailingNot23(a.seq23); vb=trailingNot23(b.seq23); }
     else if(k==='gf'){ va=goalsOf(a).gf; vb=goalsOf(b).gf; }
     else if(k==='ga'){ va=goalsOf(a).ga; vb=goalsOf(b).ga; }
     else if(k==='gd'){ va=goalsOf(a).gd; vb=goalsOf(b).gd; }
@@ -303,41 +314,48 @@ function renderTeams(){
   let head='<tr><th class="sortable'+(teamSort.key==='rank'?' sorted':'')+'" data-k="rank">排名'+arr('rank')+'</th>'
     +'<th class="left">球队</th>';
   const hasSeq = sc.teams.some(t=>t.seq23 && t.seq23.length);
+  // 「不出预警 / 快要🀄️了」列 + 「显示得失球」按钮：仅 2026-27 赛季提供（历史赛季不显示、不收起、不加按钮）
+  const showWarn = (currentSeason==='2026-27');
   BUCKETS.forEach((b,i)=>{
     // 列太多时默认只保留 2 球 / 3 球两档，其余进球档折叠，点「展开明细」再看
     const hide = (!teamGoalsShowAll && i!==2 && i!==3);
     head+='<th class="sortable'+(String(teamSort.key)===String(b)?' sorted':'')+(hide?'" style="display:none':'')+'" data-k="'+b+'">'+LABELS[i]+arr(b)+'</th>';
   });
-  // 赛季汇总：进球数 / 失球数 / 净胜球（各队赛季累计的得失球 + 净胜球，所有列均可点表头参与排序）
-  head+='<th class="sortable total-h'+(teamSort.key==='gf'?' sorted':'')+'" data-k="gf" title="该队全赛季累计进球数（进球总和）">进球数'+arr('gf')+'</th>';
-  head+='<th class="sortable total-h'+(teamSort.key==='ga'?' sorted':'')+'" data-k="ga" title="该队全赛季累计失球数（失球总和）">失球数'+arr('ga')+'</th>';
-  head+='<th class="sortable total-h'+(teamSort.key==='gd'?' sorted':'')+'" data-k="gd" title="净胜球数 = 进球数 - 失球数（正数=净胜、负数=净负）">净胜球数'+arr('gd')+'</th>';
-  if(hasSeq){
-    head+='<th class="sortable b2-h'+(teamSort.key==='avg2'?' sorted':'')+'" data-k="avg2" title="该队平均每隔多少轮（场）打出一次 2 球">平均出2球'+arr('avg2')+'</th>';
-    head+='<th class="sortable b3-h'+(teamSort.key==='avg3'?' sorted':'')+'" data-k="avg3" title="该队平均每隔多少轮（场）打出一次 3 球">平均出3球'+arr('avg3')+'</th>';
+  // 进球数 / 失球数 / 净胜球（得失球）三列：仅 2026-27 默认收起（点「显示得失球」可展开/收起）；
+  // 历史赛季始终展开，且不受 teamTotalsPinned 影响（历史赛季没有「显示得失球」按钮，不能让它们陷于收起态）
+  const totalsShown = (currentSeason==='2026-27') ? ((teamTotalsPinned===null)?false:teamTotalsPinned) : true;
+  const thHide = totalsShown ? '' : ' style="display:none"';
+  head+='<th class="sortable total-h'+(teamSort.key==='gf'?' sorted':'')+'" data-k="gf"'+thHide+'>进球数'+arr('gf')+'</th>';
+  head+='<th class="sortable total-h'+(teamSort.key==='ga'?' sorted':'')+'" data-k="ga"'+thHide+'>失球数'+arr('ga')+'</th>';
+  head+='<th class="sortable total-h'+(teamSort.key==='gd'?' sorted':'')+'" data-k="gd"'+thHide+'>净胜球'+arr('gd')+'</th>';
+  if(showWarn){
+    head+='<th class="sortable'+(teamSort.key==='warn23'?' sorted':'')+'" data-k="warn23" style="color:#e03131">快要🀄️了'+arr('warn23')+'</th>';
   }
-  head+='<th class="sortable'+(teamSort.key==='gap2'?' sorted':'')+'" data-k="gap2" title="最长连续多少轮（场）该队总进球 ≠ 2 球">不出2球'+arr('gap2')+'</th>';
-  head+='<th class="sortable'+(teamSort.key==='gap3'?' sorted':'')+'" data-k="gap3" title="最长连续多少轮（场）该队总进球 ≠ 3 球">不出3球'+arr('gap3')+'</th>';
+  head+='<th class="sortable'+(teamSort.key==='gap2'?' sorted':'')+'" data-k="gap2">不出2球'+arr('gap2')+'</th>';
+  head+='<th class="sortable'+(teamSort.key==='gap3'?' sorted':'')+'" data-k="gap3">不出3球'+arr('gap3')+'</th>';
+  if(currentSeason!=='2026-27'){ head+='<th class="sortable'+(teamSort.key==='gap23'?' sorted':'')+'" data-k="gap23">最大同时不出'+arr('gap23')+'</th>'; }
   if(hasSeq){
-    head+='<th class="sortable b2-h'+(teamSort.key==='streak2'?' sorted':'')+'" data-k="streak2" title="最长连续多少场打出 2 球">连续2球'+arr('streak2')+'</th>';
-    head+='<th class="sortable b3-h'+(teamSort.key==='streak3'?' sorted':'')+'" data-k="streak3" title="最长连续多少场打出 3 球">连续3球'+arr('streak3')+'</th>';
+    head+='<th class="sortable b2-h'+(teamSort.key==='avg2'?' sorted':'')+'" data-k="avg2">平均出2球'+arr('avg2')+'</th>';
+    head+='<th class="sortable b3-h'+(teamSort.key==='avg3'?' sorted':'')+'" data-k="avg3">平均出3球'+arr('avg3')+'</th>';
+    head+='<th class="sortable b2-h'+(teamSort.key==='streak2'?' sorted':'')+'" data-k="streak2">连续2球'+arr('streak2')+'</th>';
+    head+='<th class="sortable b3-h'+(teamSort.key==='streak3'?' sorted':'')+'" data-k="streak3">连续3球'+arr('streak3')+'</th>';
   }
   head+='</tr>';
   let rows='';
   teams.forEach(t=>{
     const isNewSeason = (currentSeason==='2026-27');
     let mark='';
-    if(!isNewSeason && prevSet && !prevSet.has(t.name)) mark+='<span class="move up" title="升班马（本季新升入）">升</span>';
+    if(!isNewSeason && prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
     // 降级判定：优先用"下赛季名单差集"，但只有当下赛季名单完整（球队数不少于本赛季）才可信。
     // 进行中的最新赛季（如 2026-27 只打了首轮）名单只有已出场球队，用它做差集会把大量球队误判为降级。
     // 名单不完整时，退化为"本赛季已完赛 → 按积分榜末 N 位"推断；本赛季也未完赛则不标 ↓。
     const nextSetFull = nextSet && (nextSet.size >= sc.teams.length);
     const curComplete = sc.expected>0 && sc.totalMatches>=sc.expected;
-    if(!isNewSeason && nextSetFull){ if(!nextSet.has(t.name)) mark+='<span class="move down" title="降班马（本季结束后降级）">降</span>'; }
+    if(!isNewSeason && nextSetFull){ if(!nextSet.has(t.name)) mark+='<span class="move down">降</span>'; }
     else if(!isNewSeason && curComplete){ const relN=(sc.teams.length===20)?3:2;   // 20 队降 3，18 队降 2（第 3 席为附加赛）
-      if(t.rank > sc.teams.length-relN) mark+='<span class="move down" title="降班马（本季结束后降级）">降</span>'; }
+      if(t.rank > sc.teams.length-relN) mark+='<span class="move down">降</span>'; }
     const rkCls = (teamSort.key==='rank')?' col-sel':'';
-    const champ = (!isNewSeason && t.rank===1)?'<span class="champ" title="当季冠军"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>':'';
+    const champ = (!isNewSeason && t.rank===1)?'<span class="champ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>':'';
     let cells='<td class="rk'+rkCls+'">'+t.rank+'</td><td class="left name">'+crestHtml(t.name,t.cn)+t.cn+'<span class="pts-inline">'+t.pts+'</span>'+champ+mark+'</td>';
     BUCKETS.forEach((b,i)=>{
       const c=t.b[b];
@@ -346,24 +364,31 @@ function renderTeams(){
       const hide = (!teamGoalsShowAll && i!==2 && i!==3);
       cells+='<td class="'+tdcls.trim()+(hide?'" style="display:none':'')+'">'+c+'</td>';
     });
-    // 进球数 / 失球数 / 净胜球数 三列：在数据驱动的循环里就地计算，不依赖预存字段
+    // 进球数 / 失球数 / 净胜球数 三列：在数据驱动的循环里就地计算，可折叠
     const g = goalsOf(t);
     const gdCls = g.gd>0 ? ' gd-pos' : (g.gd<0 ? ' gd-neg' : ' gd-zero');
     const gdDisp = (g.gd>0?'+':'') + g.gd;
-    cells+='<td class="'+(teamSort.key==='gf'?'col-sel':'')+'" style="text-align:center;font-weight:600">'+g.gf+'</td>';
-    cells+='<td class="'+(teamSort.key==='ga'?'col-sel':'')+'" style="text-align:center;font-weight:600">'+g.ga+'</td>';
-    cells+='<td class="'+(teamSort.key==='gd'?'col-sel':'')+gdCls+'" style="text-align:center;font-weight:700" title="进球 '+g.gf+' − 失球 '+g.ga+'">'+gdDisp+'</td>';
+    const tdHide = totalsShown ? '' : ';display:none';
+    cells+='<td class="'+(teamSort.key==='gf'?'col-sel':'')+'" style="text-align:center;font-weight:600'+tdHide+'">'+g.gf+'</td>';
+    cells+='<td class="'+(teamSort.key==='ga'?'col-sel':'')+'" style="text-align:center;font-weight:600'+tdHide+'">'+g.ga+'</td>';
+    cells+='<td class="'+(teamSort.key==='gd'?'col-sel':'')+gdCls+'" style="text-align:center;font-weight:700'+tdHide+'">'+gdDisp+'</td>';
+    if(showWarn){
+      // 不出预警（快要🀄️了）：目前连续多少轮（场）总进球既 ≠2 也 ≠3；≥5 标红加粗（无底色）
+      const w23 = trailingNot23(t.seq23);
+      const wHi = w23>=5 ? ';color:#c92a2a;font-weight:700' : '';
+      cells+='<td class="gap-cell'+(teamSort.key==='warn23'?' col-sel':'')+'" style="text-align:center;font-weight:600'+wHi+'">'+w23+'</td>';
+    }
+    const g2=(t.gap2==null)?'—':t.gap2, g3=(t.gap3==null)?'—':t.gap3, g23=(t.gap23==null)?'—':t.gap23;
+    cells+='<td class="gap-cell'+(teamSort.key==='gap2'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g2+'</td>';
+    cells+='<td class="gap-cell'+(teamSort.key==='gap3'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g3+'</td>';
+    if(currentSeason!=='2026-27'){ cells+='<td class="gap-cell'+(teamSort.key==='gap23'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g23+'</td>'; }
     if(hasSeq){
+      // 注意：单元格顺序必须与表头一致（不出2球 / 不出3球 / 最大同时不出 / 平均出2球 / 平均出3球 / 连续2球 / 连续3球）
       const rnd=roundsOfT(t);
       const a2=(t.count2&&rnd)?(rnd/t.count2).toFixed(1):'—';
       const a3=(t.count3&&rnd)?(rnd/t.count3).toFixed(1):'—';
       cells+='<td class="'+(teamSort.key==='avg2'?'col-sel':'')+'">'+a2+'</td>';
       cells+='<td class="'+(teamSort.key==='avg3'?'col-sel':'')+'">'+a3+'</td>';
-    }
-    const g2=(t.gap2==null)?'—':t.gap2, g3=(t.gap3==null)?'—':t.gap3;
-    cells+='<td class="gap-cell'+(teamSort.key==='gap2'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g2+'</td>';
-    cells+='<td class="gap-cell'+(teamSort.key==='gap3'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g3+'</td>';
-    if(hasSeq){
       cells+='<td class="'+(teamSort.key==='streak2'?'col-sel':'')+'" style="font-weight:600">'+(t.streak2==null?'—':t.streak2)+'</td>';
       cells+='<td class="'+(teamSort.key==='streak3'?'col-sel':'')+'" style="font-weight:600">'+(t.streak3==null?'—':t.streak3)+'</td>';
     }
@@ -372,8 +397,8 @@ function renderTeams(){
   const flag=sc.note?'<span class="note-flag">'+sc.note+'</span>':'';
   document.getElementById('teams').innerHTML=
     '<div class="section-title">'+lg.cn+' · 各球队总进球分布'+flag
-    +'<button class="gap-toggle" onclick="toggleTeamGoals()" style="margin-left:10px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (teamGoalsShowAll?'隐藏 4–7+ 球列':'显示全部进球数')+'</button></div>'
-    +'<div class="note">当前赛季请使用上方赛季 Tab 切换。每格数字 = 该队参与（主 or 客）且全场总进球落在该区间的比赛场次数。默认按当赛季积分榜排名排序（点击表头可切换并高亮整列；升班马标「升」，降班马标「降」）。<b>0/1/4/5/6/7+ 球列默认隐藏</b>，点「显示全部进球数」展开；「不出2球 / 不出3球」= 该队最长连续多少轮（场）总进球 ≠ 2 / 3 球。<b>进球数 / 失球数 / 净胜球数</b> = 该队全赛季累计进球 / 失球 / 净胜差（净胜球正绿负红）。</div>'
+    +'<button class="gap-toggle" onclick="toggleTeamGoals()" style="margin-left:10px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (teamGoalsShowAll?'隐藏 4–7+ 球列':'显示全部进球数')+'</button>'
+    + (showWarn ? '<button class="gap-toggle" onclick="toggleTeamTotals()" style="margin-left:8px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (totalsShown?'隐藏得失球':'显示得失球')+'</button>' : '') +'</div>'
     +'<table class="team-table"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>';
   document.querySelectorAll('.team-table th.sortable').forEach(th=>{
     th.onclick=()=>{ const kk=th.getAttribute('data-k');

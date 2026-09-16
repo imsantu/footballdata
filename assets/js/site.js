@@ -69,15 +69,10 @@
 
   var ROOT = window.SITE_ROOT || '';         // 根目录页为 ''；pages/ 下的页为 '../'
   var NO_SEL = !!window.SITE_NO_SEL;          // 首页：去掉顶部 3 个下拉（统计主题/联赛层级/范围）
+  // 品牌 LOGO：圆形红底 + 金色行书「中」（final_logo 素材包，assets/img/logo/png/logo-64x64.png）。
+  // 透明底，深色 / 浅色导航栏均适用；文字色由 site.css 的 --brand-grad（红→金）统一控制。
   var BRAND_SVG =
-    '<svg class="mark" viewBox="0 0 40 40" aria-hidden="true">' +
-    '<defs><linearGradient id="siteGrad" x1="0" y1="0" x2="1" y2="1">' +
-    '<stop offset="0" stop-color="#4a9eff"/><stop offset="1" stop-color="#00b894"/></linearGradient></defs>' +
-    '<rect width="40" height="40" rx="11" fill="url(#siteGrad)"/>' +
-    '<g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
-    '<circle cx="20" cy="20" r="9.4"/><path d="M20 15 L24.76 18.55 L22.94 24.05 L17.06 24.05 L15.24 18.55 Z" fill="#fff" stroke="none"/>' +
-    '<path d="M20 15 V10.6"/><path d="M24.76 18.55 L28.99 17.26"/><path d="M22.94 24.05 L25.53 27.61"/>' +
-    '<path d="M17.06 24.05 L14.47 27.61"/><path d="M15.24 18.55 L11.01 17.26"/></g></svg>';
+    '<img class="mark" src="' + ROOT + 'assets/img/logo/png/logo-64x64.png" alt="叕中啦" width="22" height="22">';
   var CARET_SVG =
     '<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';

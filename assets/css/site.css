@@ -23,7 +23,7 @@
   --bar-grad:linear-gradient(90deg,#4a9eff,#00b894);
   --tab-grad:linear-gradient(90deg,#00e6ff,#3d8bff 52%,#b96bff);
   --tab-on:#28dcff; --tab-on-bg:rgba(40,200,255,.18);
-  --brand-grad:linear-gradient(135deg,#5fb0ff 0%,#28e0ff 45%,#00d2a3 100%);
+  --brand-grad:linear-gradient(135deg,#e03131 0%,#f5b301 100%);
   --hover-bg:rgba(255,255,255,.07);
   --sel-h-bg:rgba(255,255,255,.09);
   --site-top-h:0px;
@@ -41,7 +41,7 @@
   --accent:#2f7bdc; --green:#0a9b73; --chart-bg:#ffffff;
   --bar-grad:linear-gradient(90deg,#2f7bdc,#0a9b73);
   --tab-on:#0077e6; --tab-on-bg:rgba(0,119,230,.14);
-  --brand-grad:linear-gradient(135deg,#2f7bdc 0%,#1aa3ff 45%,#0a9b73 100%);
+  --brand-grad:linear-gradient(135deg,#c92a2a 0%,#e09600 100%);
   --hover-bg:rgba(0,0,0,.05);
   --sel-h-bg:rgba(0,0,0,.06);
 }
@@ -102,7 +102,7 @@ body .stickynav.site-moved{display:none !important;}
             padding:11px 12px 10px 4px; border-radius:12px; transition:background .15s;}
 .site-brand:hover{background:var(--hover-bg);}
 .site-brand .mark{width:22px;height:22px;flex:0 0 auto;border-radius:6px;display:block;
-                  box-shadow:0 2px 8px rgba(74,158,255,.25);}
+                  box-shadow:0 2px 8px rgba(224,49,49,.30);}
 .site-brand .nm{
   font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-serif;
   font-size:15px; font-weight:800; line-height:1; padding-top:0;

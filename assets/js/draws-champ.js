@@ -55,7 +55,7 @@ function curMode(){ return themeMode; }
 /* ---------------- 联赛 + 赛季切换 ---------------- */
 let curLeague = DATA.leagues[0].code;
 let currentSeason = DATA.seasonOrder[0];
-let curView = 'overview';   // 'overview' = 跨赛季总览页；否则为某个赛季键
+let curView = '2026-27';   // 默认直接落在 2026-2027 单赛季视图（用户要求两个页默认都进该赛季）；'overview' = 跨赛季总览页
 let showBig5 = false;       // true = 一级「五大次级联赛」Tab：跨联赛横向对照（模块六）
 // 赛季窗口：5 = 近五赛季（2021-22~2025-26）；3 = 近三赛季（2023-24~2025-26）
 // 所有「跨赛季」口径（总览页 / 逐年格 / 横向对比 / 五大对照）都跟着它走，由数据层预生成两套结果
@@ -190,7 +190,9 @@ const ICO_HIDE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 function visCols(cols, flag){ const f = (flag===undefined?showBuckets:flag); return f ? cols : cols.filter(c=>c.grp!=='score'); }
 function numOf(v){ return (v===null || v===undefined) ? Infinity : v; }
 function cmpVal(a,b,key,dir){
-  const va=numOf(a[key]), vb=numOf(b[key]);
+  let va, vb;
+  if(key==='nodraw'){ va=trailingNotDraw(a.formSeq); vb=trailingNotDraw(b.formSeq); }
+  else { va=numOf(a[key]); vb=numOf(b[key]); }
   if(va===vb) return 0;
   if(typeof va==='string' || typeof vb==='string') return dir*String(va).localeCompare(String(vb));
   return dir*(va-vb);
@@ -239,17 +241,32 @@ function bkCells(t){
   return [['0-0',t.d00],['1-1',t.d11],['2-2',t.d22],['其他',t.dother]];
 }
 function totalOf(t){ return (t.draws!==undefined) ? t.draws : t.total; }
+/* 当前连续多少轮没出平局：从最近一场往前数，直到出现平局（D）为止。
+   用于 2026-2027 赛季「快要平了」列；formSeq 为按时间顺序的 W/D/L 数组，末位 = 最近一场。 */
+function trailingNotDraw(seq){
+  if(!seq || !seq.length) return 0;
+  let n = 0;
+  for(let i = seq.length - 1; i >= 0; i--){
+    const x = seq[i];
+    if(x !== 'D') n++; else break;
+  }
+  return n;
+}
 let rowTip = null;
 function tipEl(){ rowTip = rowTip || document.getElementById('rowTip'); return rowTip; }
-function showRowTip(t, e){
-  const el = tipEl(); if(!el) return;
+// 该队各比分平局场数的明细 HTML（比分具体统计悬浮框内容）
+function drawBreakdownHTML(t){
   const S = SCORE_COLORS;
   const rows = bkCells(t).map(function(x){
     return '<div class="rt-r"><i class="dot" style="background:'+S[x[0]]+'"></i>'+x[0]+'<b>'+(x[1]||0)+' 场</b></div>';
   }).join('');
   const foot = (t.every===null||t.every===undefined) ? '全季 0 平局' : '平均 '+t.every+' 轮出一次平局';
-  el.innerHTML = '<div class="rt-h">'+t.cn+'</div>'+rows+
+  return '<div class="rt-h">'+t.cn+'</div>'+rows+
     '<div class="rt-f">'+(t.seasons?('五年累计 '):'')+'平局 '+totalOf(t)+' 场 · '+foot+'</div>';
+}
+function showRowTip(t, e){
+  const el = tipEl(); if(!el) return;
+  el.innerHTML = drawBreakdownHTML(t);
   el.style.display='block'; moveRowTip(e);
 }
 function moveRowTip(e){
@@ -279,14 +296,21 @@ function bindMiniTips(nodes){
     el.addEventListener('mouseleave', ()=>{ tip.style.display='none'; });
   });
 }
-/* 给表格行挂上「悬停浮层」查看比分明细（不挂点击事件：行不再可点开） */
+/* 比分明细浮层：仅「平局」列单元格悬停时弹出（桌面）；移动端由该单元格的 data-tip 轻点触发。
+   不再整行悬停都弹 —— 用户要求「仅在平局列才出现比分的具体统计悬浮框」。 */
 function bindRowDetail(table, rows){
-  table.querySelectorAll('tbody tr.trow').forEach(tr=>{
+  const ths = table.querySelectorAll('thead th');
+  let di = -1;
+  ths.forEach(function(th, i){ if(th.getAttribute('data-k')==='draws') di = i; });
+  table.querySelectorAll('tbody tr.trow').forEach(function(tr){
     const t = rows[+tr.getAttribute('data-i')];
     if(!t) return;
-    tr.addEventListener('mouseenter', e=>{ showRowTip(t, e); });
-    tr.addEventListener('mousemove',  e=>{ moveRowTip(e); });
-    tr.addEventListener('mouseleave', hideRowTip);
+    const td = (di >= 0) ? tr.querySelectorAll('td')[di] : null;
+    if(td){
+      td.addEventListener('mouseenter', function(e){ showRowTip(t, e); });
+      td.addEventListener('mousemove',  function(e){ moveRowTip(e); });
+      td.addEventListener('mouseleave', hideRowTip);
+    }
   });
 }
 
@@ -630,12 +654,33 @@ const COLS=[
   {key:'streak', label:'最长连平'},
   {key:'gap',    label:'最长无平局间隔'},
 ];
+/* 赛季感知的队表列：仅 2026-2027 赛季在「平局」列之后插入「快要平了」列，
+   统计该队当前已连续多少轮没踢出平局（≥6 标红加粗）。历史赛季原样返回，不加该列。 */
+function teamCols(){
+  const cols = COLS.slice();
+  if(currentSeason==='2026-27'){
+    // 进行中的 2026-27 赛季，「最长无平局间隔」尚无完整意义（赛季未结束）→ 移除该列
+    const gi = cols.findIndex(c=>c.key==='gap');
+    if(gi>=0) cols.splice(gi,1);
+    cols.splice(3, 0, {
+      key:'nodraw',
+      label:'快要平了',
+      cls:'th2',
+      thStyle:'color:#e03131',   // 红色表头，与进球数页「快要平了」警示列视觉一致
+      title:'统计该队当前已连续多少轮没踢出平局（从最近一场往前数，直到出现平局为止）；≥6 标红加粗。仅 2026-2027 赛季显示。'
+    });
+  }
+  return cols;
+}
 let teamSort={key:'rank',dir:1};
 
 function renderTeams(){
   const s = sc(), teams = s.teams;
   const moveFinal = s.moveFinal !== false;      // 下赛季名单未定的进行中赛季 → 不显示升降 icon
-  const cols = visCols(COLS);
+  // 跨赛季切换：若停留在历史赛季时仍残留「快要平了」排序键，复位回默认，避免无对应列的排序键
+  if(currentSeason!=='2026-27' && teamSort.key==='nodraw'){ teamSort={key:'rank',dir:1}; }
+  if(currentSeason==='2026-27' && teamSort.key==='gap'){ teamSort={key:'rank',dir:1}; }
+  const cols = visCols(teamCols());
   const rows=teams.slice().sort((a,b)=>{
     const r = cmpVal(a,b,teamSort.key,teamSort.dir);
     return r !== 0 ? r : (a.rank - b.rank);
@@ -644,7 +689,7 @@ function renderTeams(){
     if(c.namecol) return '<th class="namecol left">'+c.label+'</th>';
     const sorted=teamSort.key===c.key?' sorted':'';
     const arr=teamSort.key===c.key?(teamSort.dir<0?'▼':'▲'):'';
-    return '<th class="'+((c.cls?c.cls+' ':'')+(c.rk?'rkcol ':'')+'sortable'+sorted).trim()+'" data-k="'+c.key+'"><span class="arr">'+arr+'</span>'+c.label+'</th>';
+    return '<th class="'+((c.cls?c.cls+' ':'')+(c.rk?'rkcol ':'')+'sortable'+sorted).trim()+'" data-k="'+c.key+'"'+(c.title?' title="'+c.title+'"':'')+(c.thStyle?' style="'+c.thStyle+'"':'')+'><span class="arr">'+arr+'</span>'+c.label+'</th>';
   }).join('')+'</tr></thead>';
 
   let body='<tbody>';
@@ -676,6 +721,15 @@ function renderTeams(){
       } else if(c.color){
         // 去掉占宽度的进度条，改用同色数字 —— 表更窄、更好读
         cells+='<td class="'+sel.trim()+'"><span class="bn" style="color:'+c.color+';font-weight:700">'+(t[c.key]||0)+'</span></td>';
+      } else if(c.key==='draws'){
+        // 「平局」列：挂比分明细 data-tip（移动端轻点弹出；桌面仍由 bindRowDetail 的悬停触发）
+        const tip = drawBreakdownHTML(t).replace(/"/g,'&quot;');
+        cells+='<td class="'+sel.trim()+'" data-tip="'+tip+'">'+totalOf(t)+'</td>';
+      } else if(c.key==='nodraw'){
+        // 「快要平了」：当前连续多少轮没出平局；≥6 标红加粗（无底色）
+        const nd = trailingNotDraw(t.formSeq);
+        const hi = nd>=6 ? ';color:#c92a2a;font-weight:700' : '';
+        cells+='<td class="'+sel.trim()+'" style="text-align:center;font-weight:600'+hi+'">'+(nd||0)+'</td>';
       } else {
         cells+='<td class="'+sel.trim()+'">'+(t[c.key]||0)+'</td>';
       }
@@ -694,7 +748,7 @@ function renderTeams(){
     };
   });
   bindRowDetail(table, rows);
-  bindSortChip('teamSortChip', COLS, teamSort, ()=>{ teamSort={key:'rank',dir:1}; renderTeams(); }, showBuckets);
+  bindSortChip('teamSortChip', teamCols(), teamSort, ()=>{ teamSort={key:'rank',dir:1}; renderTeams(); }, showBuckets);
   syncHint();
   // 进行中的赛季：下赛季名单未定，不标任何升降 icon，也不做「降班马」推断
   const colorTxt = '；<b style="color:#e74c3c">队名标红</b>＝上季从顶级联赛降入'+
