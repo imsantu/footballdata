@@ -396,7 +396,7 @@ function renderTop(){
       return '<th class="yr yrcol">'+c.label+'</th>'; }
     const arr = topSort.key===c.key?(topSort.dir<0?'▼':'▲'):'';
     const tip = '';
-    return '<th class="'+vcol(c).trim()+(c.totalcol?' totalcol':'')+'" data-k="'+c.key+'"'+tip+'><span class="arr">'+arr+'</span>'+c.label+'</th>';
+    return '<th class="'+vcol(c).trim()+(c.totalcol?' totalcol':'')+'" data-k="'+c.key+'"'+tip+'>'+c.label+'<span class="arr">'+arr+'</span>'+'</th>';
   }).join('')+'</tr></thead>';
 
   let body = '<tbody>';
@@ -568,7 +568,7 @@ function renderOverall(){
   let head = '<thead><tr>'+cols.map(c=>{
     const sorted = ovSort.key===c.key?' sorted':'';
     const arr = ovSort.key===c.key?(ovSort.dir<0?'▼':'▲'):'';
-    return '<th class="'+(c.left?'left ':'')+'sortable'+sorted+'" data-k="'+c.key+'"><span class="arr">'+arr+'</span>'+c.label+'</th>';
+    return '<th class="'+(c.left?'left ':'')+'sortable'+sorted+'" data-k="'+c.key+'">'+c.label+'<span class="arr">'+arr+'</span>'+'</th>';
   }).join('')+'</tr></thead>';
 
   const rows = cats.slice().sort((a,b)=>{
@@ -663,7 +663,6 @@ function teamCols(){
     cols.splice(3, 0, {
       key:'nodraw',
       label:'快要平了',
-      cls:'th2',
       thStyle:'color:#e03131',   // 红色表头，与进球数页「快要平了」警示列视觉一致
       title:'统计该队当前已连续多少轮没踢出平局（从最近一场往前数，直到出现平局为止）；≥6 标红加粗。仅 2026-2027 赛季显示。'
     });
@@ -687,7 +686,7 @@ function renderTeams(){
     if(c.namecol) return '<th class="namecol left">'+c.label+'</th>';
     const sorted=teamSort.key===c.key?' sorted':'';
     const arr=teamSort.key===c.key?(teamSort.dir<0?'▼':'▲'):'';
-    return '<th class="'+((c.cls?c.cls+' ':'')+(c.rk?'rkcol ':'')+'sortable'+sorted).trim()+'" data-k="'+c.key+'"'+(c.title?' title="'+c.title+'"':'')+(c.thStyle?' style="'+c.thStyle+'"':'')+'><span class="arr">'+arr+'</span>'+c.label+'</th>';
+    return '<th class="'+((c.cls?c.cls+' ':'')+(c.rk?'rkcol ':'')+'sortable'+sorted).trim()+'" data-k="'+c.key+'"'+(c.title?' title="'+c.title+'"':'')+(c.thStyle?' style="'+c.thStyle+'"':'')+'>'+c.label+'<span class="arr">'+arr+'</span>'+'</th>';
   }).join('')+'</tr></thead>';
 
   let body='<tbody>';
@@ -1000,7 +999,7 @@ function renderBig5(){
   const sTh = (k,label)=>{
     const on = big5Sort.key===k;
     const arr = on ? (big5Sort.dir<0?'▼':'▲') : '';
-    return '<th class="sortable'+(on?' sorted':'')+'" data-k="'+k+'"><span class="arr">'+arr+'</span>'+label+'</th>';
+    return '<th class="sortable'+(on?' sorted':'')+'" data-k="'+k+'">'+label+'<span class="arr">'+arr+'</span>'+'</th>';
   };
   const head = '<thead><tr><th class="left">联赛</th>'+
     sTh('totalDraws','平局场次')+sTh('drawRate','平局率')+
