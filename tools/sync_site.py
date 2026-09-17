@@ -4,7 +4,7 @@
 
 设计原则（对应最初的需求「千万不要改动数据内容」）：
   * 只搬数据，绝不碰站点的外壳：site.js / site.css / 页面 JS / 页面 CSS / 字体 一律不动。
-  * 写入前先备份旧文件到 automation/backups/<时间戳>/。
+  * （本地历史快照 tools/backups 已关闭：sync_site.py 不再写备份，线上数据即唯一真相。）
   * 唯一的例外是进数球数据的「补全」步骤（见 enrich_goals）——它不 invent 数据，
     只是把平局报告里已有的官方轮次 / 主客场回填进进数球数据，并按轮次重排色带。
   * 写入前做体检，任何一条不通过就整批中止，一个字节都不写：
@@ -19,7 +19,6 @@
 import json
 import os
 import re
-import shutil
 import sys
 import time
 import unicodedata
@@ -31,7 +30,6 @@ from standings import compute_table, compute_goals, deduct_map, TIE_RULE
 GOALS_WS = "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
 SITE = "/Users/santu/soccerdata/football-data-site"
 AUTO = os.path.join(SITE, "tools")
-BACKUP_DIR = os.path.join(AUTO, "backups")
 
 # 进数球比分视角归一化：enrich 只覆盖平局数据里查得到的队，查不到的（升降级队）
 # 会保持生成器的「球队视角」，与其余队的「主客视角」不一致，导致得失球在客场
@@ -244,9 +242,6 @@ def verify_goals_standings(goals):
                     f"赛果=({c[0]},{c[1]},总进球{goals_map.get(name)}) —— 积分榜未随赛果刷新，已中止上线")
 
 def main():
-    stamp = time.strftime("%Y%m%d-%H%M%S")
-    bdir = os.path.join(BACKUP_DIR, stamp)   # 仅在有真正写入时才 mkdir（见写入阶段）
-
     planned = []          # [(job, new_text, summary_lines)]
     print("=== 体检阶段（此时尚未写入任何文件）===")
 
@@ -344,31 +339,10 @@ def main():
         print("SUMMARY|无变化")
         return
 
-    # 仅在确有写入时才落地备份：把「被覆盖前」的线上数据文件原样拷到备份目录，
-    # 并附一份 BACKUP_META.txt 记录来源报告与时间戳，确保「备份 == 生成备份那一刻的线上文件」。
-    os.makedirs(bdir, exist_ok=True)
-    for job, _, _, _ in updatable:
-        shutil.copy2(job["dst"], os.path.join(bdir, os.path.basename(job["dst"])))
-    try:
-        lines = [f"# 备份自述（生成于 {stamp}）",
-                 "# 本目录是 sync_site.py 在写入新数据【之前】对线上数据文件的逐字节快照。",
-                 "# 备份文件与本页当时线上内容一致；下方记录其来源报告与生成时间，便于事后溯源。", ""]
-        for job in JOBS:
-            src, dst = job["src"], job["dst"]
-            src_mt = os.path.getmtime(src) if os.path.exists(src) else 0
-            dst_mt = os.path.getmtime(dst) if os.path.exists(dst) else 0
-            lines.append(f"- {os.path.basename(dst)}")
-            lines.append(f"    源报告: {src}")
-            lines.append(f"    源报告 mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(src_mt))}")
-            lines.append(f"    备份前线上文件 mtime: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(dst_mt))}")
-            lines.append(f"    备份前大小: {os.path.getsize(dst):,} 字节")
-        with open(os.path.join(bdir, "BACKUP_META.txt"), "w", encoding="utf-8") as f:
-            f.write("\n".join(lines) + "\n")
-        print(f"  [OK] 备份自述已写入 {os.path.join(bdir, 'BACKUP_META.txt')}")
-    except Exception as e:
-        print(f"  [WARN] 备份自述写入失败，跳过：{e}")
+    # 本地历史快照（tools/backups）已按用户要求彻底关闭：sync_site.py 不再写入任何
+    # 备份文件，每天生成的线上数据即唯一真相，回滚需求由 git 历史 / GitHub 承担。
 
-    print(f"\n=== 写入阶段（备份已存于 {bdir}）===")
+    print("\n=== 写入阶段 ===")
     for job, new, cur_text, _ in updatable:
         # 「本页更新」= 本次真正把数据写进站点的时刻
         if isinstance(new.get("meta"), dict):

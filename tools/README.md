@@ -8,7 +8,7 @@
 /bin/bash /Users/santu/soccerdata/football-data-site/tools/refresh.sh
 ```
 
-日志落在 `tools/logs/YYYY-MM-DD_HHMMSS.log`，每次同步前的旧数据文件备份在 `tools/backups/<时间戳>/`。
+日志落在 `tools/logs/YYYY-MM-DD_HHMMSS.log`。旧数据文件的本地快照 `tools/backups/` 已按用户要求关闭，线上数据即唯一真相（回滚走 git 历史 / GitHub）。
 
 ## 流程
 

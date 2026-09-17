@@ -46,7 +46,7 @@ if [ -e "$DESKTOP_DIR/soccerdata" ]; then
     echo "[WARN] 检测到残留目录 $DESKTOP_DIR/soccerdata，疑似旧路径遗留，请确认后删除"
 fi
 
-mkdir -p "$AUTO/logs" "$AUTO/backups"
+mkdir -p "$AUTO/logs"
 LOG="$AUTO/logs/$(date '+%Y-%m-%d_%H%M%S').log"
 exec > >(tee -a "$LOG") 2>&1
 
