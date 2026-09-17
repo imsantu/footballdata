@@ -835,8 +835,7 @@ function renderForm5(){
   filter.querySelectorAll('.form5-toggle').forEach(btn=>btn.onclick=()=>{ const k=btn.dataset.r; form5Show[k]=!form5Show[k]; renderForm5(); });
   filter.querySelectorAll('.habtn').forEach(btn=>btn.onclick=()=>{ form5HA=btn.getAttribute('data-ha'); renderForm5(); });
   const rows=form5Rows();
-  const legend='<div class="form5-legend"><span class="fw">胜</span><span class="fd">平</span><span class="fl">负</span></div>';
-  box.innerHTML=legend+rows.map(t=>{
+  box.innerHTML=rows.map(t=>{
     const seq=t.formSeq||[];
     // 先按主客场挑出要保留的场次，再据保留下来的场次重算胜 / 平 / 负 ——
     // 保证「行末统计」与「色带内容」永远一致（原来直接读 t.formCounts，筛完就对不上了）。

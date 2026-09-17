@@ -209,8 +209,13 @@ td.col-sel{background:var(--col-sel-bg);}
 .seq-cnt{font-size:10.5px;color:var(--text-dim);flex:0 0 auto;white-space:nowrap;}
 .seq-filter{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:6px 0 10px;}
 .seq-search{padding:7px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--text);font-size:13px;min-width:150px;outline:none;}
-.seq-tg{padding:6px 12px;border:1px solid var(--border);border-radius:17px;background:var(--card);color:var(--text2);font-size:12.5px;font-weight:700;opacity:.55;}
-.seq-tg.on{opacity:1;border-color:var(--accent);background:var(--card2);}
+/* 2球/3球胶囊：未选中=实心本色（与色带同色，直观分明），选中=同色+勾选标记，颜色不再强弱区分 */
+.seq-tg{padding:6px 12px;border:1.5px solid transparent;border-radius:17px;background:var(--card);color:var(--text2);font-size:12.5px;font-weight:700;opacity:1;cursor:pointer;transition:background .15s,border-color .15s,color .15s,filter .15s;}
+.seq-tg[data-b="2"]{color:#fff;background:var(--green);border-color:var(--green);}
+.seq-tg[data-b="3"]{color:#fff;background:var(--accent);border-color:var(--accent);}
+.seq-tg:hover{filter:brightness(1.08);}
+.seq-tg.on{font-weight:800;}
+.seq-tg.on::after{content:' ✓';font-weight:800;}
 .seq-count{font-size:12px;color:var(--text-muted);margin-left:auto;}
 .seq-teams{display:flex;flex-wrap:wrap;gap:5px;margin:0 0 10px;}
 .seq-chip{padding:4px 9px;border:1px solid var(--border);border-radius:14px;background:var(--card);color:var(--text-muted);font-size:12px;font-weight:600;opacity:.5;}
