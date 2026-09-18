@@ -11,11 +11,12 @@ goals 与 draws 结构不同：
    - 顶层键是 buckets/labels/leagues/crests/meta（无 seasonOrder/cross/compare）
    - 联赛用 lg.order（季序）与 lg.scopes[season]（每季数据，含 teams/buckets 重数组），
      没有 draws 的 seasons/cross/cross3
-   - 队徽键名是 crests（不是 crestByTeam），且联赛另有内联 logo（data URI，体积很小，保持内联）
-   - 联赛 logo 保持内联（<img src> 直接引用），队徽外置到 assets/img/goals-crests/
+   - 队徽键名是 crests（不是 crestByTeam），联赛 logo 也走 assets/img/leaguelogos/<code>.png
+     （与 draws 同一份外置 PNG，体积小、首屏快，避免壳里内嵌 data URI）
+   - 队徽外置到 assets/img/goals-crests/
 
 pages 只首屏加载 shell.js + 2026-27.js，其余季懒加载，
-首屏 JS 体积从 ~4.35MB 降到 ~数百 KB（队徽外置后浏览器仅按需拉取可见 PNG）。
+首屏 JS 体积从 ~4.35MB 降到 ~数十 KB（队徽 / 联赛 logo 外置后浏览器按需拉取可见 PNG）。
 """
 import os, re, json, base64, unicodedata
 
@@ -102,16 +103,24 @@ def main():
         url_map[name] = "../assets/img/goals-crests/" + os.path.basename(out)
     obj["crests"] = url_map
 
-    # ---- 2) 壳：leagues 只留标量 meta + 每季 scope stub；logo 保持内联 ----
+    # ---- 2) 壳：leagues 只留标量 meta + 每季 scope stub；logo 走外置 PNG ----
+    # 与 draws 统一：联赛 logo 用 assets/img/leaguelogos/<code>.png，
+    # PNG 不存在时才回退到内联 data URI（兼容历史数据）。
     leagues_shell = []
     for lg in obj["leagues"]:
         scopes_stub = {}
         for sk, sc in (lg.get("scopes") or {}).items():
             scopes_stub[sk] = scope_stub(sc)
+        code = lg.get("code")
+        logo_png = os.path.join(ROOT, "assets/img/leaguelogos", (code or "") + ".png")
+        if code and os.path.exists(logo_png):
+            logo_val = "../assets/img/leaguelogos/" + code + ".png"
+        else:
+            logo_val = lg.get("logo")          # 兜底：内联 data URI
         leagues_shell.append({
-            "code": lg.get("code"),
+            "code": code,
             "cn": lg.get("cn"),
-            "logo": lg.get("logo"),          # 内联 data URI（体积小），保持原样
+            "logo": logo_val,
             "order": lg.get("order"),
             "scopes": scopes_stub,
         })

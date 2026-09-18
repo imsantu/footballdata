@@ -738,7 +738,8 @@ var _chunkInflight = {};
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/goals/'; }
 function isChunkLoaded(name){
   var season = name.replace(/\.js$/, '');
-  var L = DATA.leagues[0];
+  // 校验“当前联赛”当季数据（而非写死 leagues[0]），避免“某联赛当季缺失却误判已加载”。
+  var L = leagueOf(currentLeague) || DATA.leagues[0];
   return !!(L && L.scopes && L.scopes[season] && L.scopes[season].teams);
 }
 function ensureChunks(names, done){

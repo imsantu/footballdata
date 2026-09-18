@@ -1118,9 +1118,10 @@ function renderCrumb(){
 var _chunkInflight = {};
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/draws-big5/'; }
 function isChunkLoaded(name){
-  if(name === 'cross.js'){ return !!(DATA.leagues[0] && DATA.leagues[0].cross); }
+  if(name === 'cross.js'){ var L0 = LG() || DATA.leagues[0]; return !!(L0 && L0.cross); }
   var season = name.replace(/\.js$/, '');
-  var L = DATA.leagues[0];
+  // 校验“当前联赛”当季数据（而非写死 leagues[0]），避免“某联赛当季缺失却误判已加载”。
+  var L = LG() || DATA.leagues[0];
   return !!(L && L.seasons && L.seasons[season] && L.seasons[season].teams);
 }
 function ensureChunks(names, done){

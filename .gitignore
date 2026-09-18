@@ -6,3 +6,6 @@ tools/backups/
 tools/.lastrun
 .workbuddy-ai/
 .workbuddy-ai/
+
+# 单体大数据文件（按季 chunk 的输入源，由 sync_site.py 每天本地重新生成；不入 git、不上线）
+assets/js/*-data.js

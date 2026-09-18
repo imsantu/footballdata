@@ -120,7 +120,7 @@ else
         # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
-        if ! git add 'assets/js/*-data.js' 'assets/js/meta.js' \
+        if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' \
                      'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"

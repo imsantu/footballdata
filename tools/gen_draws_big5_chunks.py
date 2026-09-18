@@ -24,6 +24,10 @@ import os, re, json, base64, unicodedata, argparse
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CREST_DIR = os.path.join(ROOT, "assets/img/crests")
 LOGO_DIR = os.path.join(ROOT, "assets/img/leaguelogos")
+# 次级联赛 logo 文件名加 "2" 后缀（en2/es2/...），与五大联赛的 en/es/... 区分。
+# 原因：两套数据集共享 code 命名空间（en=英超/英冠、es=西甲/西乙 等），
+# 若同名会互相覆盖，导致一个页面看到另一个联赛的 logo。run() 按 group 设置。
+LOGO_SUFFIX = ""
 
 # 赛季对象里的「重数组」键：壳里用 stub 替代，chunk 再填真实数据
 HEAVY_KEYS = ("overall", "perRound", "teams")
@@ -49,7 +53,7 @@ def decode_uri_to_file(uri, out_dir, slug):
     if ext == "jpeg":
         ext = "jpg"
     raw = base64.b64decode(mm.group(2))
-    path = os.path.join(out_dir, slug + "." + ext)
+    path = os.path.join(out_dir, slug + LOGO_SUFFIX + "." + ext)
     with open(path, "wb") as f:
         f.write(raw)
     return path
@@ -70,6 +74,9 @@ def season_stub(sd):
 def run(group):
     SRC = os.path.join(ROOT, "assets/js", group + "-data.js")
     DATA_DIR = os.path.join(ROOT, "assets/js/data", group)
+    # 次级联赛 logo 文件名加 "2" 后缀，避免与五大联赛的 en/es/... 撞名互相覆盖。
+    global LOGO_SUFFIX
+    LOGO_SUFFIX = "2" if group == "draws-champ" else ""
 
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(CREST_DIR, exist_ok=True)
