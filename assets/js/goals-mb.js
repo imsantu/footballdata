@@ -388,7 +388,9 @@ function renderTeams(){
   teams.forEach(function(t){
     var isNewSeason=(currentSeason==='2026-27');
     var mark='';
-    if(!isNewSeason && prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
+    // 升班马(升 icon)：用"上赛季名单差集"判定，所有赛季(含进行中的最新 2026-27)都显示。
+    // 进行中赛季当前名单不全，但这只影响"已出场球队"——升班马一旦出场即被标记，无误判。
+    if(prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
     var nextSetFull = nextSet && (nextSet.size >= sc.teams.length);
     var curComplete = sc.expected>0 && sc.totalMatches>=sc.expected;
     if(!isNewSeason && nextSetFull){ if(!nextSet.has(t.name)) mark+='<span class="move down">降</span>'; }

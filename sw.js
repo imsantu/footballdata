@@ -20,8 +20,10 @@
 //   sw.js 自身位于 /footballdata/sw.js，去掉文件名即得根。
 var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+$/, '');
 
-// 外壳缓存版本：任何外壳文件（site.js / css / 页面 HTML）改动后 +1
-var CACHE = 'fds-shell-v1';
+// 外壳缓存版本：任何外壳文件（site.js / css / 页面 HTML / 逻辑 JS）改动后 +1
+// v2：goals-pc.js / goals-mb.js 去掉 升 icon 的 !isNewSeason 限制（2026-27 升班马也标升），
+//     旧 v1 缓存里是带限制的旧版，必须换新版本号强制浏览器重新拉取。
+var CACHE = 'fds-shell-v2';
 
 // 数据文件判定（draws-big5-data.js / goals-data.js / meta.js 等）
 var DATA_RE = /-data\.js$|(^|\/)meta\.js$/;

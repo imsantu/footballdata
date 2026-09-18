@@ -345,7 +345,9 @@ function renderTeams(){
   teams.forEach(t=>{
     const isNewSeason = (currentSeason==='2026-27');
     let mark='';
-    if(!isNewSeason && prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
+    // 升班马(升 icon)：用"上赛季名单差集"判定，所有赛季(含进行中的最新 2026-27)都显示。
+    // 进行中赛季当前名单不全，但这只影响"已出场球队"——升班马一旦出场即被标记，无误判。
+    if(prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
     // 降级判定：优先用"下赛季名单差集"，但只有当下赛季名单完整（球队数不少于本赛季）才可信。
     // 进行中的最新赛季（如 2026-27 只打了首轮）名单只有已出场球队，用它做差集会把大量球队误判为降级。
     // 名单不完整时，退化为"本赛季已完赛 → 按积分榜末 N 位"推断；本赛季也未完赛则不标 ↓。
