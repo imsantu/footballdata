@@ -19,7 +19,6 @@
     ├── css/
     │   ├── site.css               站点外壳：统一冻结顶栏 + 首页 + 占位页
     │   ├── goals-pc.css           进球数页 · 桌面版样式
-    │   ├── goals-mb.css           进球数页 · 移动版样式
     │   ├── draws-big5.css         平局页（五大联赛）样式
     │   └── draws-champ.css        平局页（次级联赛）样式
     ├── font/
@@ -27,13 +26,12 @@
     │   └── OFL.txt                SIL Open Font License 1.1
     └── js/
         ├── site.js                统一冻结顶栏（搬迁联赛/年份条）+ 全站唯一主题（★ 加页面改这里）
-        ├── goals-data.js          进球数数据
-        ├── goals-app.js           进球数页调度（桌面/移动二选一）
+        ├── data/goals/             进球数 shell + 联赛/赛季 chunk
+        ├── view-url.js             单页联赛/赛季 URL 同步（pushState）
         ├── goals-pc.js            进球数页 · 桌面版逻辑
-        ├── goals-mb.js            进球数页 · 移动版逻辑
-        ├── draws-big5-data.js     平局数据（五大联赛）
+        ├── data/draws-big5/       平局 shell + 联赛/赛季 chunk（五大）
         ├── draws-big5.js          平局逻辑（五大联赛）
-        ├── draws-champ-data.js    平局数据（次级联赛）
+        └── data/draws-champ/      平局 shell + 联赛/赛季 chunk（次级）
         └── draws-champ.js         平局逻辑（次级联赛）
 ```
 

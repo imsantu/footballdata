@@ -15,9 +15,7 @@
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="apple-touch-icon" href="../assets/img/logo/on-white/apple-touch-icon-180x180.png">
 <link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="C1lvxDb4mEvnaRmaQitwU4">
-<!-- 提前把版本 CSS 拉下来，等 goals-app.js 注入 <link> 时直接命中缓存，缩短无样式时间 -->
 <link rel="preload" href="../assets/css/goals-pc.css" as="style" media="(min-width:820px)">
-<link rel="preload" href="../assets/css/goals-mb.css" as="style" media="(max-width:819.98px)">
 <!-- 首屏骨架（critical CSS，内联，不等任何外链/脚本）：顶住 4MB 数据脚本加载期的空窗，消除闪黑 -->
 <style id="bootCss">
 /* 遮罩首帧就是不透明的页面底色（与页面背景同色，所以看不出「多了一层」）；
@@ -59,10 +57,8 @@
 <script>window.SITE_ROOT='../';window.GOALS_ASSET='../assets/';</script>
 <script src="../assets/js/site.js"></script>
 
-<div id="mount" data-page-node-id="PNJv3JDBUPIwvKWyUsSK2e"></div>
 
-<!-- 桌面版 / 移动版两套骨架，由 goals-app.js 依据屏幕宽度二选一注入 #mount -->
-<script type="text/plain" id="pcBody"><button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
+<button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
 <div class="trend-tip" id="avgTip"></div>
 <div class="scroll-nav">
   <button class="scroll-btn" id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到页头"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
@@ -95,38 +91,15 @@
   <div id="seq23"></div>
 
   <div class="footer">逐场赛果：<a href="https://www.football-data.co.uk/data.php" target="_blank">Football-Data.co.uk</a>　｜　<span title="原始赛果文件最近一次抓取落盘的时间">数据源更新 <b id="ftSrc">–</b></span>　｜　<span title="本页最近一次重新生成的时间">本页更新 <b id="ftGen">–</b></span></div>
-</div></script>
 
-<script type="text/plain" id="mbBody">
-<!-- 移动端骨架：AppBar / 筛选条 / 底部 3 tab 由 h5-shell.js 统一提供。
-     注意：下面 .stickynav 里的 #leagueTabs / #seasonTabs / #winSwitch 必须保留——
-     goals-mb.js 的 buildLeagueTabs()/buildSeasonTabs()/buildWinSwitch() 会把胶囊渲染进去，
-     删掉这些容器会导致 render() 中途抛错、正文全空。
-     它们在视觉上由 goals-mb.css 隐藏（新外壳的顶栏胶囊已取代其功能）。 -->
-<div class="stickynav" id="stickynav">
-  <div class="pillrow" id="leagueTabs"></div>
-  <div class="pillrow seasonrow" id="seasonTabs"></div>
-  <div class="win-switch" id="winSwitch" role="group" aria-label="赛季范围"></div>
-</div>
 
-<main>
-  <div id="overview"></div>
-  <div id="teams"></div>
-  <div id="trend"></div>
-  <div id="seq23"></div>
-  <div class="footer">数据源：<a href="https://www.football-data.co.uk/data.php" target="_blank">Football-Data.co.uk</a>（逐场赛果）<br><span title="本页最近一次重新生成的时间">本页更新 <b id="ftGen">–</b></span></div>
-</main>
-
-<div class="tap-tip" id="tip"></div></script>
-
-<!-- defer：4MB 数据脚本不再阻塞 HTML 解析与首屏渲染（defer 保证按序执行） -->
-<script defer src="../assets/js/landscape.js"></script>
-<script defer src="../assets/js/h5-shell.js"></script>
 <!-- 站点统一时间账本（本页更新），所有页面页脚都读它，保证几页时间一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<!-- Phase 2：按季拆 chunk + 队徽外置。首屏只下 shell.js + 2026-27.js，其余季懒加载 -->
+<link rel="stylesheet" href="../assets/css/goals-pc.css">
+<!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals-pc.js 同步到 URL -->
+<script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/goals/shell.js"></script>
-<script defer src="../assets/js/data/goals/2026-27.js"></script>
-<script defer src="../assets/js/goals-app.js"></script>
+<script defer src="../assets/js/data/goals/en/2026-27.js"></script>
+<script defer src="../assets/js/goals-pc.js"></script>
 </body>
 </html>

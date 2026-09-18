@@ -51,13 +51,20 @@ function curMode(){ return themeMode; }
 })();
 
 /* ---------------- 联赛 + 赛季切换 ---------------- */
-let curLeague = DATA.leagues[0].code;
-let currentSeason = DATA.seasonOrder[0];   // seasonOrder 新→旧，[0] 即进行中的 2026-2027
-let curView = '2026-27';   // 默认直接落在 2026-2027 单赛季视图（用户要求两个页默认都进该赛季）；'overview' = 跨赛季总览页
-let showBig5 = false;       // true = 一级「五大联赛」Tab：跨联赛横向对照（模块六）
-// 赛季窗口：5 = 近五赛季（2021-22~2025-26）；3 = 近三赛季（2023-24~2025-26）
-// 所有「跨赛季」口径（总览页 / 逐年格 / 横向对比 / 五大对照）都跟着它走，由数据层预生成两套结果
-let SEASON_WIN = 5;
+var _url0 = window.FD_URL ? window.FD_URL.read() : {};
+function _validDrawLeague(code){ return DATA.leagues.some(function(l){ return l.code === code; }); }
+let curLeague = _validDrawLeague(_url0.league) ? _url0.league : DATA.leagues[0].code;
+let currentSeason = DATA.seasonOrder.indexOf(_url0.season) >= 0 ? _url0.season : DATA.seasonOrder[0];   // seasonOrder 新→旧
+let curView = (_url0.view === 'overview' || _url0.view === 'big5' || DATA.seasonOrder.indexOf(_url0.view) >= 0) ? _url0.view : currentSeason;
+let showBig5 = curView === 'big5';
+if(curView === 'overview') showBig5 = false;
+if(curView !== 'overview' && curView !== 'big5' && DATA.seasonOrder.indexOf(curView) >= 0) currentSeason = curView;
+// 赛季窗口：5 = 近五赛季；3 = 近三赛季。URL 可直接恢复当前筛选状态。
+let SEASON_WIN = (_url0.win === '3' ? 3 : 5);
+function syncDrawUrl(replace){
+  var view = showBig5 ? 'big5' : (curView === 'overview' ? 'overview' : currentSeason);
+  if(window.FD_URL) window.FD_URL.write({league:curLeague, season:currentSeason, view:view, win:SEASON_WIN}, !!replace);
+}
 function LG(){ return DATA.leagues.find(l=>l.code===curLeague); }
 function sc(){ return LG().seasons[currentSeason]; }
 function winKey(){ return SEASON_WIN === 3 ? 'cross3' : 'cross'; }
@@ -74,6 +81,7 @@ function setWin(n){
   // 当前赛季若已被窗口裁掉（如从近五季切到近三季时还停在 2022-23），自动落到窗口内最新一季
   if(curView !== 'overview' && winSeq().indexOf(currentSeason) < 0) currentSeason = winSeq()[0];
   applyWinLabels();   // 同步所有「近X季/三/五」硬编码文案
+  syncDrawUrl(false);
   renderAfterEnsure();
 }
 function applyWinLabels(){
@@ -118,6 +126,7 @@ function buildLeagueTabs(){
       const k = b.getAttribute('data-k');
       if(k==='__big5__'){ showBig5=true; }
       else { showBig5=false;       curLeague = k; }
+      syncDrawUrl(false);
       renderAfterEnsure();
     };
   });
@@ -145,6 +154,7 @@ function buildSeasonTabs(){
       showBig5 = false;   // 切赛季/总览即离开「五大联赛」Tab
       if(k==='__overview__'){ curView='overview'; }
       else { curView=k; currentSeason=k; }
+      syncDrawUrl(false);
       renderAfterEnsure();
     };
   });
@@ -924,7 +934,7 @@ function renderCompare(){
   t.innerHTML = head+body;
   document.getElementById('cmpTitle').innerHTML = WLAB()+'横向对比<span class="note-flag">'+WN()+'个赛季的平局总量、平局率与比分结构对照；右侧三列为「球队 + 场次数」，🏆 表示该队为该季冠军；点击表格中的赛季名或折线上的圆点可直接跳转查看该赛季。</span>';
   t.querySelectorAll('.sn').forEach(el=>{
-    el.onclick = ()=>{ currentSeason = el.getAttribute('data-k'); renderAfterEnsure(); window.scrollTo({top:0,behavior:'smooth'}); };
+    el.onclick = ()=>{ currentSeason = el.getAttribute('data-k'); curView=currentSeason; showBig5=false; syncDrawUrl(false); renderAfterEnsure(); window.scrollTo({top:0,behavior:'smooth'}); };
   });
   syncHint();
 
@@ -957,7 +967,7 @@ function renderCompare(){
     g+'<text x="'+ml+'" y="14" font-size="11" fill="var(--text-dim)">'+WLAB()+'平局率走势（点圆点可切换赛季）</text></svg>';
   const tip=document.getElementById('avgTip');
   document.querySelectorAll('#cmpChart circle.pt').forEach(c=>{
-    c.addEventListener('click',()=>{ currentSeason=c.getAttribute('data-k'); renderAfterEnsure(); });
+    c.addEventListener('click',()=>{ currentSeason=c.getAttribute('data-k'); curView=currentSeason; showBig5=false; syncDrawUrl(false); renderAfterEnsure(); });
     c.addEventListener('mousemove',e=>{
       tip.style.display='block';
       tip.innerHTML='<b>'+fmtSeason(c.getAttribute('data-k'))+'</b>　平局率 <b>'+c.getAttribute('data-v')+'%</b>';
@@ -1116,62 +1126,68 @@ function renderCrumb(){
 // ---------- 按季 / 跨季 chunk 懒加载（Phase 1 PoC）----------
 // 首屏只加载 shell.js + 2026-27.js；其余赛季、cross.js 按需/空闲时再取。
 var _chunkInflight = {};
+var _chunkRenderToken = 0;
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/draws-big5/'; }
 function isChunkLoaded(name){
   if(name === 'cross.js'){ var L0 = LG() || DATA.leagues[0]; return !!(L0 && L0.cross); }
-  var season = name.replace(/\.js$/, '');
-  // 校验“当前联赛”当季数据（而非写死 leagues[0]），避免“某联赛当季缺失却误判已加载”。
-  var L = LG() || DATA.leagues[0];
+  var m = /^([^/]+)\/(.+)\.js$/.exec(name);
+  var code = m ? m[1] : curLeague;
+  var season = m ? m[2] : name.replace(/\.js$/, '');
+  // 按“联赛 + 赛季”校验，弱网下只需请求当前联赛的小 chunk。
+  var L = DATA.leagues.find(function(x){ return x.code === code; }) || DATA.leagues[0];
   return !!(L && L.seasons && L.seasons[season] && L.seasons[season].teams);
 }
+function _chunkStatus(message, retry){
+  var el=document.getElementById('chunkStatus');
+  if(!el){el=document.createElement('div');el.id='chunkStatus';el.style.cssText='position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;max-width:calc(100% - 32px);padding:8px 12px;border-radius:8px;background:#fff8e1;color:#7a4e00;box-shadow:0 2px 10px rgba(0,0,0,.12);font:13px/1.4 system-ui,sans-serif;text-align:center;';document.body.appendChild(el);}
+  el.textContent=message||'';
+  if(retry){var b=document.createElement('button');b.type='button';b.textContent='重试';b.style.cssText='margin-left:8px;padding:2px 8px;cursor:pointer;';b.onclick=retry;el.appendChild(b);}
+  el.style.display=message?'':'none';
+}
+function _loadChunk(name, done){
+  if(isChunkLoaded(name)){done(true);return;}
+  if(_chunkInflight[name]){_chunkInflight[name].push(done);return;}
+  _chunkInflight[name]=[done]; var sc=document.createElement('script'),ended=false;
+  function finish(ok){if(ended)return;ended=true;clearTimeout(timer);var list=_chunkInflight[name]||[];delete _chunkInflight[name];list.forEach(function(cb){cb(!!ok&&isChunkLoaded(name));});}
+  var timer=setTimeout(function(){finish(false);},15000);
+  sc.src=_dataDir()+name;sc.onload=function(){finish(true);};sc.onerror=function(){finish(false);};document.head.appendChild(sc);
+}
 function ensureChunks(names, done){
-  var pending = (names || []).filter(function(n){ return !isChunkLoaded(n); });
-  if(!pending.length){ done(); return; }
-  var remaining = pending.slice();
-  var called = false, iv = null;
-  function finish(){ if(called) return; called = true; if(iv) clearInterval(iv); done(); }
-  function maybeFinish(){ if(remaining.every(function(n){ return isChunkLoaded(n); })) finish(); }
-  pending.forEach(function(name){
-    if(_chunkInflight[name]) return;
-    _chunkInflight[name] = true;
-    var sc = document.createElement('script');
-    sc.src = _dataDir() + name;
-    sc.onload = function(){ delete _chunkInflight[name]; maybeFinish(); };
-    sc.onerror = function(){ delete _chunkInflight[name]; maybeFinish(); };
-    document.head.appendChild(sc);
-  });
-  iv = setInterval(maybeFinish, 40);
-  setTimeout(finish, 10000); // 兜底：10s 内无论如何先渲染，避免卡死
+  var pending=[],seen={};(names||[]).forEach(function(n){if(!seen[n]&&!isChunkLoaded(n)){seen[n]=1;pending.push(n);}});
+  if(!pending.length){done(true);return;}var left=pending.length,ok=true;
+  pending.forEach(function(name){_loadChunk(name,function(got){ok=ok&&got;if(--left===0)done(ok);});});
 }
 function neededChunks(){
   var need = [];
   if(curView === 'overview' || showBig5) need.push('cross.js');
   if(curView === 'overview'){
-    DATA.seasonOrder.forEach(function(k){ if(k !== '2026-27') need.push(k + '.js'); });
-  } else if(curView !== '2026-27'){
-    need.push(currentSeason + '.js');
+    DATA.seasonOrder.forEach(function(k){ need.push(curLeague + '/' + k + '.js'); });
   } else {
-    need.push('2026-27.js');
+    need.push(curLeague + '/' + currentSeason + '.js');
   }
   var seen = {};
   return need.filter(function(n){ if(seen[n]) return false; seen[n] = 1; return true; });
 }
 function renderAfterEnsure(){
-  var need = neededChunks();
-  if(need.every(function(n){ return isChunkLoaded(n); })){ render(); return; }
-  ensureChunks(need, render);
+  var token=++_chunkRenderToken, need=neededChunks();
+  if(need.every(function(n){return isChunkLoaded(n);})){_chunkStatus('');render();return;}
+  _chunkStatus('正在加载所选数据，当前内容保持不变…');
+  ensureChunks(need,function(ok){
+    if(token!==_chunkRenderToken)return;
+    if(ok&&need.every(function(n){return isChunkLoaded(n);})){_chunkStatus('');render();}
+    else{_chunkStatus('网络较慢，数据未切换。请重试。',renderAfterEnsure);}
+  });
 }
-// 首屏渲染后，空闲时后台补齐其余 chunk，保证移动端 / 任意视图零回归
+// 弱网下不并发预取全部历史数据：首屏后只低频预取一个 chunk，避免抢占用户点击。
 function _preloadRest(){
-  var rest = [];
-  if(!isChunkLoaded('cross.js')) rest.push('cross.js');
-  DATA.seasonOrder.forEach(function(k){ if(k !== '2026-27' && !isChunkLoaded(k + '.js')) rest.push(k + '.js'); });
-  if(!rest.length) return;
-  if(window.requestIdleCallback){
-    window.requestIdleCallback(function(){ ensureChunks(rest, function(){}); }, { timeout: 4000 });
-  } else {
-    setTimeout(function(){ ensureChunks(rest, function(){}); }, 1200);
-  }
+  var rest=[];
+  if(!isChunkLoaded('cross.js'))rest.push('cross.js');
+  DATA.seasonOrder.forEach(function(k){
+    var name = curLeague + '/' + k + '.js';
+    if(k !== '2026-27' && !isChunkLoaded(name)) rest.push(name);
+  });
+  if(!rest.length)return;
+  setTimeout(function(){ensureChunks([rest[0]],function(){});},8000);
 }
 
 function render(){
@@ -1194,6 +1210,19 @@ function render(){
   }
 }
 
+function applyDrawUrl(){
+  var u = window.FD_URL ? window.FD_URL.read() : {};
+  if(_validDrawLeague(u.league)) curLeague = u.league;
+  if(u.win === '3' || u.win === '5') SEASON_WIN = +u.win;
+  if(u.view === 'big5'){ showBig5=true; curView=currentSeason; }
+  else if(u.view === 'overview'){ showBig5=false; curView='overview'; }
+  else if(DATA.seasonOrder.indexOf(u.view) >= 0){ showBig5=false; curView=u.view; currentSeason=u.view; }
+  else if(DATA.seasonOrder.indexOf(u.season) >= 0){ showBig5=false; curView=u.season; currentSeason=u.season; }
+  syncDrawUrl(true);
+  renderAfterEnsure();
+}
+window.addEventListener('popstate', applyDrawUrl);
+syncDrawUrl(true);
 renderAfterEnsure(); _preloadRest(); bindBkToggle(); bindScrollHint(); bindScrollBtns();
 
 // 页脚：填上「本页最近更新」（统一读站点 meta.js 的 SITE_META，
@@ -1208,27 +1237,3 @@ window.addEventListener('scroll', ()=>{ hideRowTip(); }, {passive:true});
 
 // 真实内容已渲染完毕，通知外壳把首屏骨架淡出
 try{ if(window.QZL_BOOT_DONE) window.QZL_BOOT_DONE(); }catch(e){}
-
-/* ---------------- 移动端适配桥（供 assets/js/draws-mb.js 调用） ----------------
-   本文件顶层就是全局作用域，把状态与 setter 显式挂到 window，避免移动层
-   依赖「隐式全局变量」这种脆弱写法。 */
-window.setLeague = function(code){
-  if(!code || code === curLeague) return;
-  if(!DATA.leagues.some(l=>l.code===code)) return;
-  curLeague = code; showBig5 = false;
-  hideRowTip();
-  renderAfterEnsure();
-};
-window.setView = function(k){
-  if(!k) return;
-  if(k === '__overview__'){ curView = '__overview__'; showBig5 = false; }
-  else {
-    // 校验赛季存在
-    if(!DATA.seasonOrder.some(s=>s===k)) return;
-    curView = k; currentSeason = k; showBig5 = false;
-  }
-  hideRowTip();
-  renderAfterEnsure();
-};
-window.getDrawsState = function(){ return { curLeague:curLeague, curView:curView, season:currentSeason, win:SEASON_WIN, big5:showBig5 }; };
-window.winSeq = winSeq;

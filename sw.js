@@ -21,6 +21,8 @@
 var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+$/, '');
 
 // 外壳缓存版本：任何外壳文件（site.js / css / 页面 HTML / 逻辑 JS）改动后 +1
+// v5：数据 chunk 进一步拆为 assets/js/data/<group>/<league>/<season>.js，弱网下单次只取一个联赛；
+//     Cache Storage 持久保留已成功加载的 chunk，切换时优先复用本地缓存；同时弱网失败不再强行渲染。
 // v4：次级联赛 logo 改独立文件名（en2/es2/...，与五大联赛的 en/es/... 区分）+ 推上线清除单体大文件，
 //     旧 v3 缓存里 PNG 文件名错了 + 站点可能仍带已删除的单体，+1 强制浏览器重新拉取。
 // v3：DATA_RE 纳入按季拆出的 chunk 目录 assets/js/data/（shell.js / <season>.js / cross.js），
@@ -28,11 +30,10 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //     +1 强制浏览器重新拉取新版 SW 逻辑。
 // v2：goals-pc.js / goals-mb.js 去掉 升 icon 的 !isNewSeason 限制（2026-27 升班马也标升），
 //     旧 v1 缓存里是带限制的旧版，必须换新版本号强制浏览器重新拉取。
-var CACHE = 'fds-shell-v4';
+var CACHE = 'fds-shell-v5';
 
-// 数据文件判定（draws-big5-data.js / goals-data.js / meta.js 等；
-// 也包括按季拆出的 chunk：assets/js/data/ 下的 shell.js、<season>.js、cross.js —— 这些每天随数据源更新，
-// 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧 chunk，页面“数据不变”。）
+// 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
+// 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。）
 var DATA_RE = /-data\.js$|(^|\/)meta\.js$|(^|\/)assets\/js\/data\//;
 // 静态资源判定（外壳 / 资源）
 var SHELL_RE = /\.(?:html|css|js|mjs|woff2?|ttf|eot|png|jpe?g|gif|webp|svg|ico|json)$/;

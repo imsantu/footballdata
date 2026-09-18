@@ -136,34 +136,42 @@ def main():
         f.write(shell_js)
     print("[goals] shell.js:", len(shell_js.encode("utf-8")), "bytes")
 
-    # ---- 3) 每季一个 chunk（合并进 window.DATA.leagues[i].scopes[season]）----
-    for season in season_order:
-        M = {}
-        for lg in obj["leagues"]:
+    # ---- 3) 每个联赛 / 每季一个 chunk（弱网下单次只取几十 KB）
+    # 文件形如 data/goals/en/2025-26.js；shell 只保留各赛季标量 stub。
+    for lg in obj["leagues"]:
+        code = lg["code"]
+        out_dir = os.path.join(DATA_DIR, code)
+        os.makedirs(out_dir, exist_ok=True)
+        for season in season_order:
             sc = lg.get("scopes", {}).get(season)
-            if sc is not None:
-                M[lg["code"]] = sc
-        chunk = (
-            "(function(){var D=window.DATA;if(!D||!D.leagues)return;"
-            "var M=" + json.dumps(M, ensure_ascii=False, separators=(",", ":")) + ";"
-            "for(var i=0;i<D.leagues.length;i++){var L=D.leagues[i];"
-            "if(!L.scopes)L.scopes={};var s=M[L.code];"
-            "if(s)L.scopes[\"" + season + "\"]=Object.assign(L.scopes[\"" + season + "\"]||{},s);}})();\n"
-        )
-        with open(os.path.join(DATA_DIR, season + ".js"), "w", encoding="utf-8") as f:
-            f.write(chunk)
-        print("  [goals] %s.js:" % season, len(chunk.encode("utf-8")), "bytes")
+            if sc is None:
+                continue
+            chunk = (
+                "(function(){var D=window.DATA;if(!D||!D.leagues)return;"
+                "var s=" + json.dumps(sc, ensure_ascii=False, separators=(",", ":")) + ";"
+                "for(var i=0;i<D.leagues.length;i++){var L=D.leagues[i];"
+                "if(L.code===\"" + code + "\"){if(!L.scopes)L.scopes={};"
+                "L.scopes[\"" + season + "\"]=Object.assign(L.scopes[\"" + season + "\"]||{},s);break;}}})();\n"
+            )
+            with open(os.path.join(out_dir, season + ".js"), "w", encoding="utf-8") as f:
+                f.write(chunk)
+            print("  [goals] %s/%s.js:" % (code, season), len(chunk.encode("utf-8")), "bytes")
 
     # ---- 4) 体积统计 ----
     total = len(shell_js.encode("utf-8"))
-    for season in season_order:
-        p = os.path.join(DATA_DIR, season + ".js")
-        total += os.path.getsize(p)
+    for lg in obj["leagues"]:
+        for season in season_order:
+            p = os.path.join(DATA_DIR, lg["code"], season + ".js")
+            if os.path.exists(p):
+                total += os.path.getsize(p)
     n_crest = len([f for f in os.listdir(CREST_DIR) if not f.startswith(".")])
     print("\n[goals] 首屏需下载(壳+当前季, 无压缩文本；GitHub Pages 会 gzip):")
-    print("  shell.js + %s.js =" % CURRENT_SEASON,
-          len(shell_js.encode("utf-8")) + os.path.getsize(os.path.join(DATA_DIR, CURRENT_SEASON + ".js")),
-          "bytes")
+    first = len(shell_js.encode("utf-8"))
+    for lg in obj["leagues"]:
+        p = os.path.join(DATA_DIR, lg["code"], CURRENT_SEASON + ".js")
+        if os.path.exists(p):
+            first += os.path.getsize(p)
+    print("  shell.js + 各联赛 %s.js =" % CURRENT_SEASON, first, "bytes")
     print("  其余季在首屏后空闲时懒加载，零散按需")
     print("  队徽 PNG 总数:", n_crest)
     print("[goals] 原单体 goals-data.js:", os.path.getsize(SRC), "bytes")

@@ -1,3 +1,5 @@
+window.LABELS = window.LABELS || ['0 球','1 球','2 球','3 球','4 球','5 球','6 球','7+ 球'];
+window.BUCKETS = window.BUCKETS || window.DATA.buckets;
 // 默认选中"数据完整的最新赛季"。新赛季刚开踢时只有几场（如 2026-27 仅首轮），
 // 直接落在它上面看到的分布毫无意义，所以自动退到上一个已完赛的赛季（通常是 2025-26）。
 // 若某联赛所有赛季都不完整（极端情况），则退回最新一个。
@@ -8,9 +10,14 @@ function defaultSeason(lg){
   }
   return lg.order[0];
 }
-let currentLeague = DATA.leagues[0].code;
-// 默认落在进行中的最新赛季 2026-2027（用户要求两个页默认都进该赛季；切换联赛 tab 时赛季保持不变）
-let currentSeason = (DATA.leagues[0].order || []).includes('2026-27') ? '2026-27' : defaultSeason(DATA.leagues[0]);
+var _url0 = window.FD_URL ? window.FD_URL.read() : {};
+function _validGoalLeague(code){ return code === '__all__' || DATA.leagues.some(function(l){ return l.code === code; }); }
+let currentLeague = _validGoalLeague(_url0.league) ? _url0.league : DATA.leagues[0].code;
+// 默认落在进行中的最新赛季 2026-2027；若 URL 带赛季，则优先恢复可用的深链状态。
+let currentSeason = (function(){
+  var lg = currentLeague === '__all__' ? DATA.leagues[0] : leagueOf(currentLeague);
+  return _url0.season && lg && (lg.order || []).includes(_url0.season) ? _url0.season : ((lg.order || []).includes('2026-27') ? '2026-27' : defaultSeason(lg));
+})();
 let teamSort = {key:'rank', dir:1};
 let teamGoalsShowAll = false;
 function toggleTeamGoals(){ teamGoalsShowAll = !teamGoalsShowAll; renderTeams(); }
@@ -24,7 +31,10 @@ function trailingNot23(seq){ if(!seq||!seq.length) return 0; let n=0; for(let i=
 let seqQuery = '', seqShow2 = true, seqShow3 = true, seqHidden = {};
 
 // 跨赛季统计口径：近五季 / 近三季（与平局页一致，由外壳顶部「范围」下拉菜单驱动）
-let SEASON_WIN = 5;
+let SEASON_WIN = (_url0.win === '3' ? 3 : 5);
+function syncGoalUrl(replace){
+  if(window.FD_URL) window.FD_URL.write({league:currentLeague, season:currentSeason, win:SEASON_WIN}, !!replace);
+}
 // lg.order 为「新 → 旧」，取最近 N 季；进行中的最新季天然落在最前，始终在窗口内
 function winSeasons(lg){ return (lg && lg.order ? lg.order : []).slice(0, SEASON_WIN); }
 
@@ -107,13 +117,13 @@ function buildLeagueTabs(){
     const badge=sc?sc.avgGoals.toFixed(2):'–';
     const logo=l.logo?('<img src="'+l.logo+'" alt="'+l.cn+'">'):lgCrestHtml(l.code,l.cn);
     b.innerHTML=logo+'<span>'+l.cn+'</span><span class="rt">'+badge+'</span>';
-    b.onclick=()=>{ currentLeague=l.code; renderAfterEnsure(); };   // 切换联赛：保留当前赛季不变
+    b.onclick=()=>{ currentLeague=l.code; syncGoalUrl(false); renderAfterEnsure(); };   // 切换联赛：保留当前赛季不变
     el.appendChild(b);
   });
   const all=document.createElement('div');
   all.className='league-tab big5'+('__all__'===currentLeague?' active':'');
   all.innerHTML='<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="UEFA"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">UEFA</text></svg><span>五大联赛</span><span class="rt">对照</span>';
-  all.onclick=()=>{ currentLeague='__all__'; renderAfterEnsure(); };
+  all.onclick=()=>{ currentLeague='__all__'; syncGoalUrl(false); renderAfterEnsure(); };
   el.appendChild(all);
 }
 function buildSeasonTabs(){
@@ -129,7 +139,7 @@ function buildSeasonTabs(){
     const b=document.createElement('div');
     b.className='season-tab'+(k===currentSeason?' active':'');
     b.textContent=dispSeason(k);
-    b.onclick=()=>{ currentSeason=k; renderAfterEnsure(); };
+    b.onclick=()=>{ currentSeason=k; syncGoalUrl(false); renderAfterEnsure(); };
     el.appendChild(b);
   });
 }
@@ -153,6 +163,7 @@ function setWin(n){
     const ws=winSeasons(leagueOf(currentLeague));
     if(ws.indexOf(currentSeason)<0) currentSeason=ws[0];
   }
+  syncGoalUrl(false);
   renderAfterEnsure();
 }
 
@@ -647,67 +658,103 @@ function renderSeq23(){
 }
 
 
-// ---------- goals 按季 chunk 懒加载（Phase 2）----------
+// ---------- goals 按季 chunk 懒加载（弱网/离线优先）----------
 var _chunkInflight = {};
+var _chunkRenderToken = 0;
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/goals/'; }
 function isChunkLoaded(name){
-  var season = name.replace(/\.js$/, '');
-  // 校验“当前联赛”当季数据（而非写死 leagues[0]）：写死首联赛会在
-  // “某联赛当季 chunk 缺失/合并失败”时误判已加载，导致切换后数据不刷新。
-  var L = leagueOf(currentLeague) || DATA.leagues[0];
+  var m = /^([^/]+)\/(.+)\.js$/.exec(name);
+  var code = m ? m[1] : currentLeague;
+  var season = m ? m[2] : name.replace(/\.js$/, '');
+  // 按“联赛 + 赛季”校验，弱网下只需请求当前联赛的小 chunk。
+  var L = leagueOf(code) || DATA.leagues[0];
   return !!(L && L.scopes && L.scopes[season] && L.scopes[season].teams);
 }
+function _chunkStatus(message, retry){
+  var el = document.getElementById('chunkStatus');
+  if(!el){
+    el = document.createElement('div');
+    el.id = 'chunkStatus';
+    el.style.cssText = 'position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:9999;max-width:calc(100% - 32px);padding:8px 12px;border-radius:8px;background:#fff8e1;color:#7a4e00;box-shadow:0 2px 10px rgba(0,0,0,.12);font:13px/1.4 system-ui,sans-serif;text-align:center;';
+    document.body.appendChild(el);
+  }
+  el.textContent = message || '';
+  if(retry){
+    var b = document.createElement('button');
+    b.type = 'button'; b.textContent = '重试'; b.style.cssText = 'margin-left:8px;padding:2px 8px;cursor:pointer;';
+    b.onclick = retry; el.appendChild(b);
+  }
+  el.style.display = message ? '' : 'none';
+}
+function _loadChunk(name, done){
+  if(isChunkLoaded(name)){ done(true); return; }
+  if(_chunkInflight[name]){ _chunkInflight[name].push(done); return; }
+  _chunkInflight[name] = [done];
+  var sc = document.createElement('script'), ended = false;
+  function finish(ok){
+    if(ended) return; ended = true; clearTimeout(timer);
+    var list = _chunkInflight[name] || []; delete _chunkInflight[name];
+    list.forEach(function(cb){ cb(!!ok && isChunkLoaded(name)); });
+  }
+  var timer = setTimeout(function(){ finish(false); }, 15000);
+  sc.src = _dataDir() + name;
+  sc.onload = function(){ finish(true); };
+  sc.onerror = function(){ finish(false); };
+  document.head.appendChild(sc);
+}
 function ensureChunks(names, done){
-  var pending = (names || []).filter(function(n){ return !isChunkLoaded(n); });
-  if(!pending.length){ done(); return; }
-  var remaining = pending.slice();
-  var called = false, iv = null;
-  function finish(){ if(called) return; called = true; if(iv) clearInterval(iv); done(); }
-  function maybeFinish(){ if(remaining.every(function(n){ return isChunkLoaded(n); })) finish(); }
-  pending.forEach(function(name){
-    if(_chunkInflight[name]) return;
-    _chunkInflight[name] = true;
-    var sc = document.createElement('script');
-    sc.src = _dataDir() + name;
-    sc.onload = function(){ delete _chunkInflight[name]; maybeFinish(); };
-    sc.onerror = function(){ delete _chunkInflight[name]; maybeFinish(); };
-    document.head.appendChild(sc);
-  });
-  iv = setInterval(maybeFinish, 40);
-  setTimeout(finish, 10000); // 兜底：10s 内无论如何先渲染，避免卡死
+  var pending = [], seen = {};
+  (names || []).forEach(function(n){ if(!seen[n] && !isChunkLoaded(n)){ seen[n]=1; pending.push(n); } });
+  if(!pending.length){ done(true); return; }
+  var left = pending.length, ok = true;
+  pending.forEach(function(name){ _loadChunk(name, function(got){ ok = ok && got; if(--left === 0) done(ok); }); });
 }
 function neededChunks(){
   var need = [];
   if(currentLeague === '__all__'){
-    DATA.leagues[0].order.forEach(function(k){ need.push(k + '.js'); });
+    DATA.leagues.forEach(function(L){ (L.order || []).forEach(function(k){ need.push(L.code + '/' + k + '.js'); }); });
   } else {
     var lg = (typeof leagueOf === 'function' ? leagueOf(currentLeague) : null) || DATA.leagues[0];
     var order = lg.order || [];
     var idx = order.indexOf(currentSeason);
     if(idx >= 0){
-      if(idx-1 >= 0) need.push(order[idx-1] + '.js');
-      if(idx+1 < order.length) need.push(order[idx+1] + '.js');
+      if(idx-1 >= 0) need.push(currentLeague + '/' + order[idx-1] + '.js');
+      if(idx+1 < order.length) need.push(currentLeague + '/' + order[idx+1] + '.js');
     }
-    need.push(currentSeason + '.js');
+    need.push(currentLeague + '/' + currentSeason + '.js');
   }
   var seen = {};
   return need.filter(function(n){ if(seen[n]) return false; seen[n] = 1; return true; });
 }
 function renderAfterEnsure(){
+  var token = ++_chunkRenderToken;
   var need = neededChunks();
-  if(need.every(function(n){ return isChunkLoaded(n); })){ render(); return; }
-  ensureChunks(need, render);
+  if(need.every(function(n){ return isChunkLoaded(n); })){ _chunkStatus(''); render(); return; }
+  _chunkStatus('正在加载所选数据，当前内容保持不变…');
+  ensureChunks(need, function(ok){
+    if(token !== _chunkRenderToken) return;
+    if(ok && need.every(function(n){ return isChunkLoaded(n); })){ _chunkStatus(''); render(); }
+    else { _chunkStatus('网络较慢，数据未切换。请重试。', renderAfterEnsure); }
+  });
 }
-// 首屏渲染后，空闲时后台补齐其余 chunk（保证切赛季 / 切联赛零回归）
+// 弱网下不并发预取全部历史数据：首屏后只低频预取一个相邻 chunk，避免抢占用户点击。
 function _preloadRest(){
   var rest = [];
   var lists = [];
   if(currentLeague === '__all__'){ DATA.leagues.forEach(function(L){ lists.push(L.order || []); }); }
   else { var lg = (typeof leagueOf === 'function' ? leagueOf(currentLeague) : null) || DATA.leagues[0]; lists.push(lg.order || []); }
-  lists.forEach(function(order){ (order||[]).forEach(function(k){ if(!isChunkLoaded(k + '.js')) rest.push(k + '.js'); }); });
+  if(currentLeague === '__all__'){
+    DATA.leagues.forEach(function(L){ (L.order || []).forEach(function(k){ var name=L.code+'/'+k+'.js'; if(!isChunkLoaded(name)) rest.push(name); }); });
+  } else {
+    lists.forEach(function(order){
+      (order||[]).forEach(function(k){
+        var name = currentLeague + '/' + k + '.js';
+        if(!isChunkLoaded(name)) rest.push(name);
+      });
+    });
+  }
   if(!rest.length) return;
-  if(window.requestIdleCallback){ window.requestIdleCallback(function(){ ensureChunks(rest, function(){}); }, {timeout:4000}); }
-  else { setTimeout(function(){ ensureChunks(rest, function(){}); }, 1200); }
+  setTimeout(function(){ ensureChunks([rest[0]], function(){}); }, 8000);
 }
 
 function render(){
@@ -725,6 +772,17 @@ function render(){
     renderSeq23();
   }
 }
+function applyGoalUrl(){
+  var u = window.FD_URL ? window.FD_URL.read() : {};
+  if(_validGoalLeague(u.league)) currentLeague = u.league;
+  var lg = currentLeague === '__all__' ? DATA.leagues[0] : leagueOf(currentLeague);
+  if(u.season && lg && (lg.order || []).indexOf(u.season) >= 0) currentSeason = u.season;
+  if(u.win === '3' || u.win === '5') SEASON_WIN = +u.win;
+  syncGoalUrl(true);
+  renderAfterEnsure();
+}
+window.addEventListener('popstate', applyGoalUrl);
+syncGoalUrl(true);
 renderAfterEnsure(); _preloadRest();
 (function(){
   const el=document.getElementById('trend');

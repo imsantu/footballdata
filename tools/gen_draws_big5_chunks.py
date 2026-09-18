@@ -42,8 +42,8 @@ def slugify(name):
     return s or "team"
 
 
-def decode_uri_to_file(uri, out_dir, slug):
-    """data:image/...;base64,xxxx -> 写出文件，返回相对 URL（相对页面 pages/）"""
+def decode_uri_to_file(uri, out_dir, slug, suffix=""):
+    """data:image/...;base64,xxxx -> 写出文件，返回相对 URL（相对页面 pages/）。"""
     if not uri.startswith("data:"):
         return uri  # 已经是 URL，原样返回
     mm = re.match(r"^data:image/(\w+);base64,(.+)$", uri, re.S)
@@ -53,7 +53,20 @@ def decode_uri_to_file(uri, out_dir, slug):
     if ext == "jpeg":
         ext = "jpg"
     raw = base64.b64decode(mm.group(2))
-    path = os.path.join(out_dir, slug + LOGO_SUFFIX + "." + ext)
+    base = slug + suffix
+    path = os.path.join(out_dir, base + "." + ext)
+    # draws-big5 / draws-champ 共用 assets/img/crests；同一队徽再次生成时直接复用，
+    # 避免因每次运行的 used 集合不同而产生大量 slug2、slug3 重复文件。
+    if os.path.exists(path):
+        try:
+            if open(path, "rb").read() == raw:
+                return path
+        except OSError:
+            pass
+    n = 2
+    while os.path.exists(path):
+        path = os.path.join(out_dir, base + str(n) + "." + ext)
+        n += 1
     with open(path, "wb") as f:
         f.write(raw)
     return path
@@ -119,7 +132,13 @@ def run(group):
         if not uri.startswith("data:"):
             logo_map[code] = uri
             continue
-        out = decode_uri_to_file(uri, LOGO_DIR, code)
+        # 五大联赛顶级 logo 已由站点统一维护（330px），不要被旧单体数据里的
+        # 低清/过期 data URI 覆盖；次级联赛使用独立的 en2/es2/... 文件。
+        existing = os.path.join(LOGO_DIR, code + LOGO_SUFFIX + ".png")
+        if LOGO_SUFFIX == "" and os.path.exists(existing):
+            logo_map[code] = "../assets/img/leaguelogos/" + os.path.basename(existing)
+            continue
+        out = decode_uri_to_file(uri, LOGO_DIR, code, LOGO_SUFFIX)
         logo_map[code] = "../assets/img/leaguelogos/" + os.path.basename(out)
     obj["logoByCode"] = logo_map
 
@@ -165,35 +184,43 @@ def run(group):
         f.write(cross_js)
     print("[%s] cross.js:" % group, len(cross_js.encode("utf-8")), "bytes")
 
-    # ---- 4) 每季一个 chunk（合并进 window.DATA.leagues[i].seasons[season]）----
-    for season in season_order:
-        M = {}
-        for lg in obj["leagues"]:
+    # ---- 4) 每个联赛 / 每季一个 chunk（弱网下单次只取一个联赛）
+    # 文件形如 data/draws-big5/en/2025-26.js；cross.js 仍为跨赛季汇总数据。
+    for lg in obj["leagues"]:
+        code = lg["code"]
+        out_dir = os.path.join(DATA_DIR, code)
+        os.makedirs(out_dir, exist_ok=True)
+        for season in season_order:
             sd = lg.get("seasons", {}).get(season)
-            if sd is not None:
-                M[lg["code"]] = sd
-        chunk = (
-            "(function(){var D=window.DATA;if(!D||!D.leagues)return;"
-            "var M=" + json.dumps(M, ensure_ascii=False, separators=(",", ":")) + ";"
-            "for(var i=0;i<D.leagues.length;i++){var L=D.leagues[i];"
-            "if(!L.seasons)L.seasons={};var s=M[L.code];"
-            "if(s)L.seasons[\"" + season + "\"]=Object.assign(L.seasons[\"" + season + "\"]||{},s);}})();\n"
-        )
-        with open(os.path.join(DATA_DIR, season + ".js"), "w", encoding="utf-8") as f:
-            f.write(chunk)
-        print("  [%s] %s.js:" % (group, season), len(chunk.encode("utf-8")), "bytes")
+            if sd is None:
+                continue
+            chunk = (
+                "(function(){var D=window.DATA;if(!D||!D.leagues)return;"
+                "var s=" + json.dumps(sd, ensure_ascii=False, separators=(",", ":")) + ";"
+                "for(var i=0;i<D.leagues.length;i++){var L=D.leagues[i];"
+                "if(L.code===\"" + code + "\"){if(!L.seasons)L.seasons={};"
+                "L.seasons[\"" + season + "\"]=Object.assign(L.seasons[\"" + season + "\"]||{},s);break;}}})();\n"
+            )
+            with open(os.path.join(out_dir, season + ".js"), "w", encoding="utf-8") as f:
+                f.write(chunk)
+            print("  [%s] %s/%s.js:" % (group, code, season), len(chunk.encode("utf-8")), "bytes")
 
     # ---- 5) 体积统计 ----
     total = len(shell_js.encode("utf-8"))
-    for season in season_order:
-        p = os.path.join(DATA_DIR, season + ".js")
-        total += os.path.getsize(p)
+    for lg in obj["leagues"]:
+        for season in season_order:
+            p = os.path.join(DATA_DIR, lg["code"], season + ".js")
+            if os.path.exists(p):
+                total += os.path.getsize(p)
     n_crest = len([f for f in os.listdir(CREST_DIR) if not f.startswith(".")])
     n_logo = len([f for f in os.listdir(LOGO_DIR) if not f.startswith(".")])
     print("\n[%s] 首屏需下载(壳+当前季, 无压缩文本；GitHub Pages 会 gzip):" % group)
-    print("  shell.js + %s.js =" % CURRENT_SEASON,
-          len(shell_js.encode("utf-8")) + os.path.getsize(os.path.join(DATA_DIR, CURRENT_SEASON + ".js")),
-          "bytes")
+    first = len(shell_js.encode("utf-8"))
+    for lg in obj["leagues"]:
+        p = os.path.join(DATA_DIR, lg["code"], CURRENT_SEASON + ".js")
+        if os.path.exists(p):
+            first += os.path.getsize(p)
+    print("  shell.js + 各联赛 %s.js =" % CURRENT_SEASON, first, "bytes")
     print("  其余季 + cross.js 在首屏后空闲时懒加载，零散按需")
     print("  队徽 PNG 总数:", n_crest, " 联赛 logo:", n_logo)
     print("[%s] 原单体 %s:" % (group, os.path.basename(SRC)), os.path.getsize(SRC), "bytes")

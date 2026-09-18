@@ -174,25 +174,10 @@
 <div class="trend-tip" id="formTip" style="max-width:300px" data-page-node-id="76lROm7KHqdFDVDH7VfUCH"></div>
 <!-- 站点统一时间账本（本页更新），页脚读它，与进球数页、更多页保持一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<!-- Phase 1 PoC：按季拆 chunk + 队徽外置。首屏只下 shell.js + 2026-27.js，其余季/cross 懒加载 -->
+<!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws-big5.js 同步到 URL -->
+<script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/draws-big5/shell.js"></script>
-<script defer src="../assets/js/data/draws-big5/2026-27.js"></script>
+<script defer src="../assets/js/data/draws-big5/en/2026-27.js"></script>
 <script defer src="../assets/js/draws-big5.js"></script>
-<!-- 移动端外壳与适配层：仅在 <820px 生效，桌面端加载后立即返回，零副作用 -->
-<link rel="stylesheet" href="../assets/css/draws-mb.css" media="(max-width:819.98px)">
-<script>
-window.DRAWS_MB_CFG = {
-  title: '平局 · 五大',
-  leagueGroups: [
-    { label: '五大联赛', options: [
-      { code: 'en', cn: '英超' }, { code: 'es', cn: '西甲' }, { code: 'de', cn: '德甲' },
-      { code: 'it', cn: '意甲' }, { code: 'fr', cn: '法甲' }
-    ] }
-  ]
-};
-</script>
-<script defer src="../assets/js/landscape.js"></script>
-<script defer src="../assets/js/h5-shell.js"></script>
-<script defer src="../assets/js/draws-mb.js"></script>
 </body>
 </html>
