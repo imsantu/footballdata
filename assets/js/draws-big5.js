@@ -74,7 +74,7 @@ function setWin(n){
   // 当前赛季若已被窗口裁掉（如从近五季切到近三季时还停在 2022-23），自动落到窗口内最新一季
   if(curView !== 'overview' && winSeq().indexOf(currentSeason) < 0) currentSeason = winSeq()[0];
   applyWinLabels();   // 同步所有「近X季/三/五」硬编码文案
-  render();
+  renderAfterEnsure();
 }
 function applyWinLabels(){
   // 把分散在 HTML 模板里的「近五赛季」「五季全勤」等硬编码文案统一跟随机型窗口
@@ -117,8 +117,8 @@ function buildLeagueTabs(){
     b.onclick = ()=>{
       const k = b.getAttribute('data-k');
       if(k==='__big5__'){ showBig5=true; }
-      else { showBig5=false; curLeague = k; }
-      render();
+      else { showBig5=false;       curLeague = k; }
+      renderAfterEnsure();
     };
   });
 }
@@ -145,7 +145,7 @@ function buildSeasonTabs(){
       showBig5 = false;   // 切赛季/总览即离开「五大联赛」Tab
       if(k==='__overview__'){ curView='overview'; }
       else { curView=k; currentSeason=k; }
-      render();
+      renderAfterEnsure();
     };
   });
 }
@@ -697,12 +697,11 @@ function renderTeams(){
       if(c.rk){
         cells+='<td class="rkcol rk'+sel+'">'+t.rank+'</td>';
       } else if(c.namecol){
-        // 只在「下赛季名单已裁定」的赛季显示升降 icon：进行中的赛季不做任何升降级判定
+        // 升班马（升 icon）：季初即确定，所有赛季（含进行中的最新赛季）都显示；
+        // 降 icon：仅赛季已结束、降级名单确定时才显示（进行中的赛季不判定）。
         let mark='';
-        if(moveFinal){
-          if(t.promo) mark+='<span class="move up">升</span>';
-          if(t.releg) mark+='<span class="move down">降</span>';
-        }
+        if(t.promo) mark+='<span class="move up">升</span>';
+        if(moveFinal && t.releg) mark+='<span class="move down">降</span>';
         cells+='<td class="namecol left"><div class="tcell">'+crestImg(t.name)+
           '<span class="tmeta"><span class="nm">'+t.cn+'</span>'+
           '<span class="tagroup"><span class="pts-inline">'+t.pts+'<span class="u">分</span></span>'+
@@ -743,11 +742,10 @@ function renderTeams(){
   bindRowDetail(table, rows);
   bindSortChip('teamSortChip', teamCols(), teamSort, ()=>{ teamSort={key:'rank',dir:1}; renderTeams(); }, showBuckets);
   syncHint();
-  // 进行中的赛季：下赛季名单未定，不标任何升降 icon，也不做「降班马」推断
+  // 升班马（升 icon）所有赛季都显示；降 icon 仅赛季结束时显示
   const moveTxt = moveFinal
-    ? '；<span class="move up">升</span> 本季新升入本联赛'+
-      '；<span class="move down">降</span> 本季结束后降出本联赛'
-    : '；本季尚在进行、下季名单未定，暂不标注升 / 降 icon';
+    ? '；<span class="move up">升</span> 本季升班马（季初升入本联赛）'+'；<span class="move down">降</span> 本季结束后降出本联赛'
+    : '；<span class="move up">升</span> 本季升班马（季初升入本联赛）；本季未结束，暂不标注降级';
   document.getElementById('teamNote').innerHTML=
     (moveFinal?'🏆 当季冠军':'🏆 当前榜首')+moveTxt+'。';
 }
@@ -926,7 +924,7 @@ function renderCompare(){
   t.innerHTML = head+body;
   document.getElementById('cmpTitle').innerHTML = WLAB()+'横向对比<span class="note-flag">'+WN()+'个赛季的平局总量、平局率与比分结构对照；右侧三列为「球队 + 场次数」，🏆 表示该队为该季冠军；点击表格中的赛季名或折线上的圆点可直接跳转查看该赛季。</span>';
   t.querySelectorAll('.sn').forEach(el=>{
-    el.onclick = ()=>{ currentSeason = el.getAttribute('data-k'); render(); window.scrollTo({top:0,behavior:'smooth'}); };
+    el.onclick = ()=>{ currentSeason = el.getAttribute('data-k'); renderAfterEnsure(); window.scrollTo({top:0,behavior:'smooth'}); };
   });
   syncHint();
 
@@ -959,7 +957,7 @@ function renderCompare(){
     g+'<text x="'+ml+'" y="14" font-size="11" fill="var(--text-dim)">'+WLAB()+'平局率走势（点圆点可切换赛季）</text></svg>';
   const tip=document.getElementById('avgTip');
   document.querySelectorAll('#cmpChart circle.pt').forEach(c=>{
-    c.addEventListener('click',()=>{ currentSeason=c.getAttribute('data-k'); render(); });
+    c.addEventListener('click',()=>{ currentSeason=c.getAttribute('data-k'); renderAfterEnsure(); });
     c.addEventListener('mousemove',e=>{
       tip.style.display='block';
       tip.innerHTML='<b>'+fmtSeason(c.getAttribute('data-k'))+'</b>　平局率 <b>'+c.getAttribute('data-v')+'%</b>';
@@ -1023,7 +1021,7 @@ function renderBig5(){
       const k = th.getAttribute('data-k');
       if(big5Sort.key===k){ big5Sort.dir *= -1; }
       else { big5Sort.key = k; big5Sort.dir = (k==='order') ? 1 : -1; }   // 数值列首点默认降序
-      renderBig5();
+      renderAfterEnsure();
     };
   });
 
@@ -1059,7 +1057,7 @@ function renderBig5(){
   const noteEl=document.getElementById('big5Note');
   noteEl.innerHTML='五大联赛'+WLAB()+'累计平局率对照；'+legend+'。点击底部色块说明可显示 / 隐藏对应联赛的曲线；点击表头可按平局场次 / 平局率 / 各比分排序（再次点击反向）；点击「五大联赛」Tab 左邻的赛季 Tab 可回到单季或总览。';
   noteEl.querySelectorAll('.lg-leg').forEach(el=>{
-    const toggle=()=>{ const c=el.getAttribute('data-code'); big5Hide[c]=!big5Hide[c]; renderBig5(); };
+    const toggle=()=>{ const c=el.getAttribute('data-code'); big5Hide[c]=!big5Hide[c]; renderAfterEnsure(); };
     el.onclick=toggle;
     el.onkeydown=(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } };
   });
@@ -1115,6 +1113,66 @@ function renderCrumb(){
   el.innerHTML = '<span>数据中心</span>' + parts.map(p=>'<span class="sepi">›</span><b>'+p+'</b>').join('');
 }
 
+// ---------- 按季 / 跨季 chunk 懒加载（Phase 1 PoC）----------
+// 首屏只加载 shell.js + 2026-27.js；其余赛季、cross.js 按需/空闲时再取。
+var _chunkInflight = {};
+function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/draws-big5/'; }
+function isChunkLoaded(name){
+  if(name === 'cross.js'){ return !!(DATA.leagues[0] && DATA.leagues[0].cross); }
+  var season = name.replace(/\.js$/, '');
+  var L = DATA.leagues[0];
+  return !!(L && L.seasons && L.seasons[season] && L.seasons[season].teams);
+}
+function ensureChunks(names, done){
+  var pending = (names || []).filter(function(n){ return !isChunkLoaded(n); });
+  if(!pending.length){ done(); return; }
+  var remaining = pending.slice();
+  var called = false, iv = null;
+  function finish(){ if(called) return; called = true; if(iv) clearInterval(iv); done(); }
+  function maybeFinish(){ if(remaining.every(function(n){ return isChunkLoaded(n); })) finish(); }
+  pending.forEach(function(name){
+    if(_chunkInflight[name]) return;
+    _chunkInflight[name] = true;
+    var sc = document.createElement('script');
+    sc.src = _dataDir() + name;
+    sc.onload = function(){ delete _chunkInflight[name]; maybeFinish(); };
+    sc.onerror = function(){ delete _chunkInflight[name]; maybeFinish(); };
+    document.head.appendChild(sc);
+  });
+  iv = setInterval(maybeFinish, 40);
+  setTimeout(finish, 10000); // 兜底：10s 内无论如何先渲染，避免卡死
+}
+function neededChunks(){
+  var need = [];
+  if(curView === 'overview' || showBig5) need.push('cross.js');
+  if(curView === 'overview'){
+    DATA.seasonOrder.forEach(function(k){ if(k !== '2026-27') need.push(k + '.js'); });
+  } else if(curView !== '2026-27'){
+    need.push(currentSeason + '.js');
+  } else {
+    need.push('2026-27.js');
+  }
+  var seen = {};
+  return need.filter(function(n){ if(seen[n]) return false; seen[n] = 1; return true; });
+}
+function renderAfterEnsure(){
+  var need = neededChunks();
+  if(need.every(function(n){ return isChunkLoaded(n); })){ render(); return; }
+  ensureChunks(need, render);
+}
+// 首屏渲染后，空闲时后台补齐其余 chunk，保证移动端 / 任意视图零回归
+function _preloadRest(){
+  var rest = [];
+  if(!isChunkLoaded('cross.js')) rest.push('cross.js');
+  DATA.seasonOrder.forEach(function(k){ if(k !== '2026-27' && !isChunkLoaded(k + '.js')) rest.push(k + '.js'); });
+  if(!rest.length) return;
+  if(window.requestIdleCallback){
+    window.requestIdleCallback(function(){ ensureChunks(rest, function(){}); }, { timeout: 4000 });
+  } else {
+    setTimeout(function(){ ensureChunks(rest, function(){}); }, 1200);
+  }
+}
+
 function render(){
   syncBkBtns();
   buildLeagueTabs(); buildSeasonTabs(); renderCrumb();
@@ -1135,7 +1193,7 @@ function render(){
   }
 }
 
-render(); bindBkToggle(); bindScrollHint(); bindScrollBtns();
+renderAfterEnsure(); _preloadRest(); bindBkToggle(); bindScrollHint(); bindScrollBtns();
 
 // 页脚：填上「本页最近更新」（统一读站点 meta.js 的 SITE_META，
 // 与进球数页、更多页同一份账本，保证几页时间永远一致；generated 由每次提交刷新）
@@ -1158,7 +1216,7 @@ window.setLeague = function(code){
   if(!DATA.leagues.some(l=>l.code===code)) return;
   curLeague = code; showBig5 = false;
   hideRowTip();
-  render();
+  renderAfterEnsure();
 };
 window.setView = function(k){
   if(!k) return;
@@ -1169,7 +1227,7 @@ window.setView = function(k){
     curView = k; currentSeason = k; showBig5 = false;
   }
   hideRowTip();
-  render();
+  renderAfterEnsure();
 };
 window.getDrawsState = function(){ return { curLeague:curLeague, curView:curView, season:currentSeason, win:SEASON_WIN, big5:showBig5 }; };
 window.winSeq = winSeq;

@@ -96,6 +96,13 @@ step "更新：进球数统计 2026-27" "$PY" "$WS/update_seq23_2627.py"
 # 5) 同步数据块到站点
 step "同步数据到站点" "$PY" "$AUTO/sync_site.py"
 
+# 5b) 把 monolithic data.js 拆成按季 chunk + 队徽外置 PNG（首屏懒加载提速）。
+#     必须在 sync_site.py 之后调用，保证 chunk 始终由校验过的数据派生。
+#     Phase 2：big5 / champ / goals 三套数据集全部拆分完毕，统一在此处生成。
+step "拆分 draws-big5 按季 chunk + 队徽外置"  "$PY" "$AUTO/gen_draws_big5_chunks.py" draws-big5
+step "拆分 draws-champ 按季 chunk + 队徽外置" "$PY" "$AUTO/gen_draws_big5_chunks.py" draws-champ
+step "拆分 goals 按季 chunk + 队徽外置"        "$PY" "$AUTO/gen_goals_chunks.py"
+
 # 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
 SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"
 echo
@@ -113,7 +120,9 @@ else
         # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
-        if ! git add 'assets/js/*-data.js' 'assets/js/meta.js'; then
+        if ! git add 'assets/js/*-data.js' 'assets/js/meta.js' \
+                     'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' \
+                     'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue
         fi

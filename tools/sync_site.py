@@ -12,8 +12,8 @@
       2. 联赛数量、赛季（scope）键集合必须一致
       3. 历史赛季（非 2026-27）的场次必须一字不变 —— 防止误伤已完成赛季
       4. 2026-27 的场次只能增加不能减少 —— 进行中的赛季只会越赛越多
-  * 序列化风格沿用目标文件现有的写法（draws 用带空格的默认风格，goals 用紧凑风格），
-    避免每次运行产生无意义的整文件 diff。
+  * 序列化统一用紧凑风格（separators=(",", ":")），缩小首屏下载体积；
+    draws 文件首次重写会整文件变化（一次性大 diff），之后增量 diff 很小。
 """
 
 import json
@@ -85,10 +85,12 @@ def extract(path, marker):
 
 
 def detect_separators(text, marker):
-    """沿用目标文件现有的序列化风格：返回 json.dumps 的 separators 参数。"""
-    i = text.find(marker)
-    sample = text[i + len(marker): i + len(marker) + 4000]
-    return None if '": ' in sample else (",", ":")
+    """统一用紧凑风格（separators=(",", ":")）序列化，缩小首屏下载体积。
+
+    历史上 draws 用带空格的风格、goals 用紧凑风格，现统一紧凑：draws 文件会在
+    首次重写时整文件变化（一次性的大 diff），之后增量 diff 很小，且体积显著下降。
+    """
+    return (",", ":")
 
 
 def season_rows(obj, kind):

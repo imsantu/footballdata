@@ -107,13 +107,13 @@ function buildLeagueTabs(){
     const badge=sc?sc.avgGoals.toFixed(2):'–';
     const logo=l.logo?('<img src="'+l.logo+'" alt="'+l.cn+'">'):lgCrestHtml(l.code,l.cn);
     b.innerHTML=logo+'<span>'+l.cn+'</span><span class="rt">'+badge+'</span>';
-    b.onclick=()=>{ currentLeague=l.code; render(); };   // 切换联赛：保留当前赛季不变
+    b.onclick=()=>{ currentLeague=l.code; renderAfterEnsure(); };   // 切换联赛：保留当前赛季不变
     el.appendChild(b);
   });
   const all=document.createElement('div');
   all.className='league-tab big5'+('__all__'===currentLeague?' active':'');
   all.innerHTML='<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="UEFA"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">UEFA</text></svg><span>五大联赛</span><span class="rt">对照</span>';
-  all.onclick=()=>{ currentLeague='__all__'; render(); };
+  all.onclick=()=>{ currentLeague='__all__'; renderAfterEnsure(); };
   el.appendChild(all);
 }
 function buildSeasonTabs(){
@@ -129,7 +129,7 @@ function buildSeasonTabs(){
     const b=document.createElement('div');
     b.className='season-tab'+(k===currentSeason?' active':'');
     b.textContent=dispSeason(k);
-    b.onclick=()=>{ currentSeason=k; render(); };
+    b.onclick=()=>{ currentSeason=k; renderAfterEnsure(); };
     el.appendChild(b);
   });
 }
@@ -153,7 +153,7 @@ function setWin(n){
     const ws=winSeasons(leagueOf(currentLeague));
     if(ws.indexOf(currentSeason)<0) currentSeason=ws[0];
   }
-  render();
+  renderAfterEnsure();
 }
 
 function maxBucket(sc){ return Math.max(...BUCKETS.map(b=>sc.buckets[b])); }
@@ -644,6 +644,68 @@ function renderSeq23(){
   updateSeqStrips(sc);
 }
 
+
+// ---------- goals 按季 chunk 懒加载（Phase 2）----------
+var _chunkInflight = {};
+function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/goals/'; }
+function isChunkLoaded(name){
+  var season = name.replace(/\.js$/, '');
+  var L = DATA.leagues[0];
+  return !!(L && L.scopes && L.scopes[season] && L.scopes[season].teams);
+}
+function ensureChunks(names, done){
+  var pending = (names || []).filter(function(n){ return !isChunkLoaded(n); });
+  if(!pending.length){ done(); return; }
+  var remaining = pending.slice();
+  var called = false, iv = null;
+  function finish(){ if(called) return; called = true; if(iv) clearInterval(iv); done(); }
+  function maybeFinish(){ if(remaining.every(function(n){ return isChunkLoaded(n); })) finish(); }
+  pending.forEach(function(name){
+    if(_chunkInflight[name]) return;
+    _chunkInflight[name] = true;
+    var sc = document.createElement('script');
+    sc.src = _dataDir() + name;
+    sc.onload = function(){ delete _chunkInflight[name]; maybeFinish(); };
+    sc.onerror = function(){ delete _chunkInflight[name]; maybeFinish(); };
+    document.head.appendChild(sc);
+  });
+  iv = setInterval(maybeFinish, 40);
+  setTimeout(finish, 10000); // 兜底：10s 内无论如何先渲染，避免卡死
+}
+function neededChunks(){
+  var need = [];
+  if(currentLeague === '__all__'){
+    DATA.leagues[0].order.forEach(function(k){ need.push(k + '.js'); });
+  } else {
+    var lg = (typeof leagueOf === 'function' ? leagueOf(currentLeague) : null) || DATA.leagues[0];
+    var order = lg.order || [];
+    var idx = order.indexOf(currentSeason);
+    if(idx >= 0){
+      if(idx-1 >= 0) need.push(order[idx-1] + '.js');
+      if(idx+1 < order.length) need.push(order[idx+1] + '.js');
+    }
+    need.push(currentSeason + '.js');
+  }
+  var seen = {};
+  return need.filter(function(n){ if(seen[n]) return false; seen[n] = 1; return true; });
+}
+function renderAfterEnsure(){
+  var need = neededChunks();
+  if(need.every(function(n){ return isChunkLoaded(n); })){ render(); return; }
+  ensureChunks(need, render);
+}
+// 首屏渲染后，空闲时后台补齐其余 chunk（保证切赛季 / 切联赛零回归）
+function _preloadRest(){
+  var rest = [];
+  var lists = [];
+  if(currentLeague === '__all__'){ DATA.leagues.forEach(function(L){ lists.push(L.order || []); }); }
+  else { var lg = (typeof leagueOf === 'function' ? leagueOf(currentLeague) : null) || DATA.leagues[0]; lists.push(lg.order || []); }
+  lists.forEach(function(order){ (order||[]).forEach(function(k){ if(!isChunkLoaded(k + '.js')) rest.push(k + '.js'); }); });
+  if(!rest.length) return;
+  if(window.requestIdleCallback){ window.requestIdleCallback(function(){ ensureChunks(rest, function(){}); }, {timeout:4000}); }
+  else { setTimeout(function(){ ensureChunks(rest, function(){}); }, 1200); }
+}
+
 function render(){
   buildLeagueTabs(); buildSeasonTabs(); buildWinSwitch();
   if(currentLeague==='__all__'){
@@ -659,7 +721,7 @@ function render(){
     renderSeq23();
   }
 }
-render();
+renderAfterEnsure(); _preloadRest();
 (function(){
   const el=document.getElementById('trend');
   if(!el) return;

@@ -28,16 +28,6 @@
 
   var SITE_NAV = [
     {
-      id: 'goals',
-      label: '进球数统计',
-      items: [
-        { id: 'goals-big5',  label: '五大联赛', file: 'goals-big5.html',  ready: true,
-          desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 单场总进球数分布、球队进球榜、赛季走势' },
-        { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: false,
-          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 数据接入中' }
-      ]
-    },
-    {
       id: 'draws',
       label: '平局统计',
       items: [
@@ -45,6 +35,16 @@
           desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 平局率、比分分布、各轮走势与各队平局' },
         { id: 'draws-champ', label: '次级联赛', file: 'draws-champ.html', ready: true,
           desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 平局率、比分分布、各轮走势与各队平局' }
+      ]
+    },
+    {
+      id: 'goals',
+      label: '进球数统计',
+      items: [
+        { id: 'goals-big5',  label: '五大联赛', file: 'goals-big5.html',  ready: true,
+          desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 单场总进球数分布、球队进球榜、赛季走势' },
+        { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: false,
+          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 数据接入中' }
       ]
     }
   ];
@@ -447,4 +447,41 @@
 
   // 首屏先落一次主题，避免页面脚本加载前闪白 / 闪黑
   shellApply(readMode());
+})();
+
+// ======================================================================
+// Service Worker 注册（桌面 / 移动共用；站点根 scope，覆盖所有页面）
+// 见根目录 sw.js：数据文件 stale-while-revalidate（换网秒开 + 每日新数据最终生效），
+// 外壳 cache-first。改了任何外壳文件（site.js / css / 页面 HTML）后，
+// 记得把 sw.js 里的 CACHE 版本号 +1，否则浏览器不会拉取新版 SW 逻辑。
+// ⚠️ SW 仅在安全上下文（https 或 localhost）生效；GitHub Pages 为 https，部署后自动启用。
+// ======================================================================
+(function () {
+  'use strict';
+  try {
+    if (!('serviceWorker' in navigator)) return;
+    var proto = location.protocol;
+    if (proto !== 'https:' && proto !== 'http:') return;
+    if (proto === 'http:' && location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') return;
+
+    // 计算站点根（处理 GitHub Pages 子路径 /footballdata/）：
+    //   /footballdata/pages/goals-big5.html -> /footballdata
+    //   /footballdata/                      -> /footballdata
+    function siteRoot() {
+      var p = location.pathname;
+      p = p.replace(/\/pages\/[^/]*$/, '');
+      p = p.replace(/\/index\.html$/, '');
+      p = p.replace(/\/+$/, '');
+      return p || '';
+    }
+    var root = siteRoot();
+    var swUrl = root + '/sw.js';
+
+    // load 后再注册，不阻塞首屏；注册失败也不影响正常浏览。
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register(swUrl, { scope: root + '/' }).catch(function (err) {
+        if (window.console) console.warn('[SW] 注册失败（不影响浏览）：', err);
+      });
+    });
+  } catch (e) {}
 })();

@@ -124,7 +124,9 @@
 <script defer src="../assets/js/h5-shell.js"></script>
 <!-- 站点统一时间账本（本页更新），所有页面页脚都读它，保证几页时间一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<script defer src="../assets/js/goals-data.js"></script>
+<!-- Phase 2：按季拆 chunk + 队徽外置。首屏只下 shell.js + 2026-27.js，其余季懒加载 -->
+<script defer src="../assets/js/data/goals/shell.js"></script>
+<script defer src="../assets/js/data/goals/2026-27.js"></script>
 <script defer src="../assets/js/goals-app.js"></script>
 </body>
 </html>
