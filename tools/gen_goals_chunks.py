@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""goals 数据集拆分器（流水线步骤，由 refresh.sh 调用）。
+"""goals 数据集拆分器（流水线步骤，由 sync_site.py 调用）。
 
-把 sync_site.py 产出的单体 goals-data.js 拆成：
+把 sync_site.py 抽取并 enrich 后的内存数据对象拆成：
    assets/js/data/goals/shell.js          —— 壳（各季 scope 仅留标量 stub，teams/buckets 已移出）
    assets/js/data/goals/<season>.js       —— 每季一个 chunk（自合并进 window.DATA.leagues[i].scopes[season]）
    并把 base64 队徽解码成真实 PNG 文件，crests 的值改为相对 URL。
@@ -64,19 +64,15 @@ def scope_stub(sc):
     return stub
 
 
-def main():
+def generate(obj, only_current=True):
+    """把内存里的 goals 数据对象拆成按联赛+赛季的 chunk。
+
+    only_current=True 时只写 CURRENT_SEASON（2026-27）的 chunk，历史赛季的 chunk
+    保持不动（已在 git 中冻结，日常同步只动当前进行中的赛季）；False 用于新赛季
+    开局 / 结构性调整时的一次性全量重建。日常由 sync_site.py 直传内存对象调用。
+    """
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(CREST_DIR, exist_ok=True)
-
-    text = open(SRC, encoding="utf-8").read()
-    i = text.find("window.DATA = ")
-    prefix_len = len("window.DATA = ")
-    if i < 0:
-        i = text.find("const DATA = ")
-        prefix_len = len("const DATA = ")
-    if i < 0:
-        raise SystemExit("[FAIL] goals-data.js 未找到 DATA 赋值语句")
-    obj = json.loads(text[i + prefix_len:].rstrip().rstrip(";"))
 
     season_order = []
     for lg in obj["leagues"]:
@@ -101,7 +97,8 @@ def main():
         used.add(slug)
         out = decode_uri_to_file(uri, CREST_DIR, slug)
         url_map[name] = "../assets/img/goals-crests/" + os.path.basename(out)
-    obj["crests"] = url_map
+    # 不回写 obj：调用方（sync_site.py）的 new 需要保持抽取时的原始形态（data URI），
+    # 否则审计哈希在写入前后不一致，导致「无变化」判定永久误报。仅把 URL 映射用于写出。
 
     # ---- 2) 壳：leagues 只留标量 meta + 每季 scope stub；logo 走外置 PNG ----
     # 与 draws 统一：联赛 logo 用 assets/img/leaguelogos/<code>.png，
@@ -128,7 +125,7 @@ def main():
         "buckets": obj["buckets"],
         "labels": obj["labels"],
         "meta": obj.get("meta"),
-        "crests": obj["crests"],
+        "crests": url_map,
         "leagues": leagues_shell,
     }
     shell_js = "window.DATA = " + json.dumps(shell, ensure_ascii=False, separators=(",", ":")) + ";\n"
@@ -143,6 +140,8 @@ def main():
         out_dir = os.path.join(DATA_DIR, code)
         os.makedirs(out_dir, exist_ok=True)
         for season in season_order:
+            if only_current and season != CURRENT_SEASON:
+                continue
             sc = lg.get("scopes", {}).get(season)
             if sc is None:
                 continue
@@ -174,8 +173,36 @@ def main():
     print("  shell.js + 各联赛 %s.js =" % CURRENT_SEASON, first, "bytes")
     print("  其余季在首屏后空闲时懒加载，零散按需")
     print("  队徽 PNG 总数:", n_crest)
-    print("[goals] 原单体 goals-data.js:", os.path.getsize(SRC), "bytes")
+    if os.path.exists(SRC):
+        print("[goals] 旧单体 goals-data.js:", os.path.getsize(SRC), "bytes")
+    else:
+        print("[goals] 单体文件已废弃（数据由 sync_site.py 直传，不再落盘）")
     print("[goals] 全部 chunk 文本合计:", total, "bytes（含已外置的队徽，不再内联）")
+
+
+def main():
+    """CLI：从单体/源文件全量拆分（仅手动一次性全量重建时用；日常由 sync_site.py 直传）。
+
+    日常同步请走 sync_site.py（它会把抽取并 enrich 后的内存对象直接传给 generate）。
+    这里保留 CLI 以便需要手动回放某个数据文件时全量重建所有赛季 chunk。
+    """
+    import argparse
+    ap = argparse.ArgumentParser(description="goals 数据集按季拆 chunk + 队徽外置")
+    ap.add_argument("--src", help="数据文件（默认读取旧单体 goals-data.js）")
+    args = ap.parse_args()
+    src = args.src or SRC
+    if not os.path.exists(src):
+        raise SystemExit("[FAIL] 源数据不存在：%s（日常运行请走 sync_site.py）" % src)
+    text = open(src, encoding="utf-8").read()
+    i = text.find("window.DATA = ")
+    prefix_len = len("window.DATA = ")
+    if i < 0:
+        i = text.find("const DATA = ")
+        prefix_len = len("const DATA = ")
+    if i < 0:
+        raise SystemExit("[FAIL] 未找到 DATA 赋值语句")
+    obj = json.loads(text[i + prefix_len:].rstrip().rstrip(";"))
+    generate(obj, only_current=False)
 
 
 if __name__ == "__main__":

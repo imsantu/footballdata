@@ -114,7 +114,8 @@ python3 -m http.server 8000
 
 以「次级联赛进球数」为例（页面骨架已备好，只差数据）：
 
-1. 数据落成 `assets/js/goals-champ-data.js`（`window.DATA = {…}`），
+1. 数据由 `tools/sync_site.py` + 对应拆分器落成 `assets/js/data/<group>/` 下的
+   按联赛+赛季 chunk（同一套流水线，与现有 big5/champ/goals 一致）；
    页面逻辑落成 `assets/js/goals-champ.js`，样式落成 `assets/css/goals-champ.css`。
 2. 把页面放到 `pages/goals-champ.html`（照抄同主题的现有页面，换掉 css / js 引用即可）。
 3. 打开 `assets/js/site.js`，改顶部 `SITE_NAV`：
@@ -129,8 +130,10 @@ python3 -m http.server 8000
 
 ## 关于数据
 
-- 三份报告的**原始统计数据未做任何改动**，仅从单文件 HTML 中原样搬运到
-  `assets/js/*-data.js`，落地后做过逐字节 sha256 校验。
+- 三份报告的**原始统计数据未做任何改动**，从单文件 HTML 中原样抽取后，
+  由 `tools/sync_site.py` 校验并直传内存对象给拆分器，写成
+  `assets/js/data/<group>/<league>/<season>.js`（按联赛+赛季拆分，弱网单次只取一个联赛）。
+  历史赛季 chunk 一旦入库即冻结，日常只更新进行中的 `2026-27`。
 - 数据源：
   [openfootball/football.json](https://github.com/openfootball/football.json)、
   [Football-Data.co.uk](https://www.football-data.co.uk/data.php)；队徽来自 Wikipedia。

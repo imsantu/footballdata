@@ -93,15 +93,9 @@ step "出报告：平局·次级联赛" "$PY" "$WS/build_champ.py"
 # 4) 进球数统计（该页是增量打补丁式更新 2026-27 的进球分布）
 step "更新：进球数统计 2026-27" "$PY" "$WS/update_seq23_2627.py"
 
-# 5) 同步数据块到站点
+# 5) 同步数据块到站点（含抽取+体检+enrich，随后由 sync_site.py 直传内存对象给
+#    拆分器写出按季 chunk + 队徽外置 PNG；历史赛季 chunk 已冻结于 git，日常只动 2026-27）
 step "同步数据到站点" "$PY" "$AUTO/sync_site.py"
-
-# 5b) 把 monolithic data.js 拆成按季 chunk + 队徽外置 PNG（首屏懒加载提速）。
-#     必须在 sync_site.py 之后调用，保证 chunk 始终由校验过的数据派生。
-#     Phase 2：big5 / champ / goals 三套数据集全部拆分完毕，统一在此处生成。
-step "拆分 draws-big5 按季 chunk + 队徽外置"  "$PY" "$AUTO/gen_draws_big5_chunks.py" draws-big5
-step "拆分 draws-champ 按季 chunk + 队徽外置" "$PY" "$AUTO/gen_draws_big5_chunks.py" draws-champ
-step "拆分 goals 按季 chunk + 队徽外置"        "$PY" "$AUTO/gen_goals_chunks.py"
 
 # 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
 SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"

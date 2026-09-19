@@ -19,7 +19,7 @@
 | 3 | 五大联赛平局分析 → `report_all.json` → `football_big5_draws.html` | `analyze_all.py` / `build_big5.py` |
 | 4 | 次级联赛平局分析 → `report_champ.json` → `football_champ_draws.html` | `analyze_champ.py` / `build_champ.py` |
 | 5 | 进球数页 2026-27 进球分布增量打补丁 | `update_seq23_2627.py` |
-| 6 | 抽出三份 HTML 的数据块 → 站点 `assets/js/*-data.js` | `sync_site.py` |
+| 6 | 抽出三份 HTML 的数据块 → 校验 → 直传拆分器写成 `assets/js/data/<group>/<league>/<season>.js`（无单体中间文件） | `sync_site.py` |
 | 7 | `git commit` + `git push origin HEAD` | `refresh.sh` |
 
 数据源脚本位于 `~/WorkBuddy AI/2026-09-02-02-18-19/`，本目录只放编排与同步脚本。

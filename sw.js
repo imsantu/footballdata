@@ -4,7 +4,7 @@
    作用：让「换网络 / 二次打开」也能秒开，并在离线时仍可浏览已看过的页面。
 
    缓存策略：
-     1) 数据文件（*-data.js / meta.js）：stale-while-revalidate
+     1) 数据文件（按联赛+赛季拆出的 chunk / meta.js）：stale-while-revalidate
         —— 先秒回本地缓存（换网/二次打开立即出数），后台静默拉取最新写入缓存，
            下次访问即是最新。数据每天由自动化推送一次，单日内最多“晚到一次”，
            页脚已显示数据日期，可放心。
@@ -33,8 +33,9 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 var CACHE = 'fds-shell-v5';
 
 // 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
-// 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。）
-var DATA_RE = /-data\.js$|(^|\/)meta\.js$|(^|\/)assets\/js\/data\//;
+// 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。
+// 注：单体 *-data.js 已废弃不再产出，不再纳入此正则。）
+var DATA_RE = /(^|\/)meta\.js$|(^|\/)assets\/js\/data\//;
 // 静态资源判定（外壳 / 资源）
 var SHELL_RE = /\.(?:html|css|js|mjs|woff2?|ttf|eot|png|jpe?g|gif|webp|svg|ico|json)$/;
 

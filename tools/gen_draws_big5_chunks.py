@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""draws 数据集拆分器（流水线步骤，由 refresh.sh 调用）。
+"""draws 数据集拆分器（流水线步骤，由 sync_site.py 调用）。
 
-把 sync_site.py 产出的单体 draws-*-data.js 拆成：
+把 sync_site.py 抽取后的内存数据对象拆成：
    assets/js/data/<group>/shell.js          —— 壳（赛季仅留 stub，cross/cross3 已移出）
    assets/js/data/<group>/<season>.js       —— 每季一个 chunk（自合并进 window.DATA）
    assets/js/data/<group>/cross.js          —— 跨赛季聚合（cross/cross3），按需懒加载
@@ -17,7 +17,7 @@ crestByTeam + logoByCode）：
    draws-big5   —— 五大联赛平局
    draws-champ  —— 次级联赛平局
 
-仅在 sync_site.py 成功产出 monolithic 文件后调用，保证 chunk 始终由校验过的数据派生。
+由 sync_site.py 在抽取+健康校验通过后直传内存对象调用，保证 chunk 始终由校验过的数据派生。
 """
 import os, re, json, base64, unicodedata, argparse
 
@@ -84,26 +84,32 @@ def season_stub(sd):
     return stub
 
 
-def run(group):
-    SRC = os.path.join(ROOT, "assets/js", group + "-data.js")
-    DATA_DIR = os.path.join(ROOT, "assets/js/data", group)
+def run(group, obj=None, only_current=True):
+    """把 draws 数据拆成按联赛+赛季的 chunk。
+
+    obj 为 None 时回退到读取旧单体 <group>-data.js（手动一次性全量重建用）；
+    日常由 sync_site.py 直传内存对象调用。only_current=True 只写 2026-27，
+    历史赛季 chunk 保持冻结（已在 git 中），False 用于全量重建。
+    """
     # 次级联赛 logo 文件名加 "2" 后缀，避免与五大联赛的 en/es/... 撞名互相覆盖。
     global LOGO_SUFFIX
     LOGO_SUFFIX = "2" if group == "draws-champ" else ""
 
+    DATA_DIR = os.path.join(ROOT, "assets/js/data", group)
+    SRC = os.path.join(ROOT, "assets/js", group + "-data.js")  # 仅手动回放旧单体时用
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(CREST_DIR, exist_ok=True)
     os.makedirs(LOGO_DIR, exist_ok=True)
 
-    if not os.path.exists(SRC):
-        print("[SKIP] 源文件不存在，跳过 %s: %s" % (group, SRC))
-        return
-
-    text = open(SRC, encoding="utf-8").read()
-    i = text.find("const DATA = ")
-    if i < 0:
-        raise SystemExit("[FAIL] %s 未找到 'const DATA = '，数据结构可能已变" % group)
-    obj = json.loads(text[i + len("const DATA = "):].rstrip().rstrip(";"))
+    if obj is None:
+        if not os.path.exists(SRC):
+            print("[SKIP] 源文件不存在，跳过 %s: %s" % (group, SRC))
+            return
+        text = open(SRC, encoding="utf-8").read()
+        i = text.find("const DATA = ")
+        if i < 0:
+            raise SystemExit("[FAIL] %s 未找到 'const DATA = '，数据结构可能已变" % group)
+        obj = json.loads(text[i + len("const DATA = "):].rstrip().rstrip(";"))
 
     season_order = obj["seasonOrder"]
 
@@ -124,7 +130,8 @@ def run(group):
         used.add(slug)
         out = decode_uri_to_file(uri, CREST_DIR, slug)
         url_map[name] = "../assets/img/crests/" + os.path.basename(out)
-    obj["crestByTeam"] = url_map
+    # 不回写 obj：调用方（sync_site.py）的 new 需保持原始形态（data URI），否则审计哈希
+    # 在写入前后不一致，导致「无变化」判定永久误报。仅把 URL 映射用于写出。
 
     logo = obj.get("logoByCode", {})
     logo_map = {}
@@ -140,7 +147,7 @@ def run(group):
             continue
         out = decode_uri_to_file(uri, LOGO_DIR, code, LOGO_SUFFIX)
         logo_map[code] = "../assets/img/leaguelogos/" + os.path.basename(out)
-    obj["logoByCode"] = logo_map
+    # 不回写 obj（理由同上：保留调用方 new 的原始形态）。
 
     # ---- 2) 壳：leagues 只留 meta + 每季 stub；cross/cross3 移出到 cross.js ----
     leagues_shell = []
@@ -160,8 +167,8 @@ def run(group):
         "meta": obj.get("meta"),
         "compare": obj.get("compare"),
         "compare3": obj.get("compare3"),
-        "crestByTeam": obj["crestByTeam"],
-        "logoByCode": obj["logoByCode"],
+        "crestByTeam": url_map,
+        "logoByCode": logo_map,
         "leagues": leagues_shell,
     }
     shell_js = "window.DATA = " + json.dumps(shell, ensure_ascii=False, separators=(",", ":")) + ";\n"
@@ -191,6 +198,8 @@ def run(group):
         out_dir = os.path.join(DATA_DIR, code)
         os.makedirs(out_dir, exist_ok=True)
         for season in season_order:
+            if only_current and season != CURRENT_SEASON:
+                continue
             sd = lg.get("seasons", {}).get(season)
             if sd is None:
                 continue
@@ -223,7 +232,10 @@ def run(group):
     print("  shell.js + 各联赛 %s.js =" % CURRENT_SEASON, first, "bytes")
     print("  其余季 + cross.js 在首屏后空闲时懒加载，零散按需")
     print("  队徽 PNG 总数:", n_crest, " 联赛 logo:", n_logo)
-    print("[%s] 原单体 %s:" % (group, os.path.basename(SRC)), os.path.getsize(SRC), "bytes")
+    if os.path.exists(SRC):
+        print("[%s] 原单体 %s:" % (group, os.path.basename(SRC)), os.path.getsize(SRC), "bytes")
+    else:
+        print("[%s] 单体文件已废弃（数据由 sync_site.py 直传，不再落盘）" % group)
     print("[%s] 全部 chunk 文本合计:" % group, total, "bytes（含已外置的队徽，不再内联）")
 
 
@@ -233,4 +245,4 @@ if __name__ == "__main__":
                     choices=["draws-big5", "draws-champ"],
                     help="数据集组名（默认 draws-big5）")
     args = ap.parse_args()
-    run(args.group)
+    run(args.group, only_current=False)

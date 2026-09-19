@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-fix_goals_perspective.py — 统一 goals-data.js 里 seq23Matches[*].score 的「视角」。
+fix_goals_perspective.py — 统一 goals 数据里 seq23Matches[*].score 的「视角」。
+
+单体 goals-data.js 已废弃（不再落盘），本模块的 normalize / check_conservation
+被 sync_site.py 直接作用于「抽取后的内存对象」；下方 main() 作为手动修复入口，
+默认读取进球数源报告（与 sync_site 同一份数据源）。
 
 背景
 ----
-goals-data.js 里每支球队的 seq23Matches[*].score 存在两种视角：
+goals 数据里每支球队的 seq23Matches[*].score 存在两种视角：
   * 主客视角（绝大多数队）：score = "主队进球-客队进球"
   * 球队视角（德甲的 VfL Bochum / SpVgg Greuther Fürth 等孤例）：score = "自己进球-对手进球"
 
@@ -35,8 +39,8 @@ import os
 import re
 import sys
 
-SITE_JS = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                       '..', 'assets', 'js', 'goals-data.js')
+# 手动修复入口默认读取进球数源报告（与 sync_site.py 同一份数据源；单体 goals-data.js 已废弃）
+GOALS_SRC = "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48/football_big5_goals.html"
 
 
 def flip_score(s):
@@ -122,15 +126,18 @@ def check_conservation(data):
 
 
 def main():
-    path = os.path.abspath(SITE_JS)
-    with open(path, encoding='utf-8') as f:
-        raw = f.read()
-
-    m = re.match(r'^\s*window\.DATA\s*=\s*(.*?);?\s*$', raw, re.S)
-    if not m:
-        print('无法解析 window.DATA', file=sys.stderr)
+    path = os.path.abspath(GOALS_SRC)
+    if not os.path.exists(path):
+        print('源文件不存在: %s' % path, file=sys.stderr)
         return 1
-    data = json.loads(m.group(1))
+    raw = open(path, encoding='utf-8').read()
+
+    marker = 'window.DATA = '
+    i = raw.find(marker)
+    if i < 0:
+        print('未在 %s 中找到 %r' % (path, marker), file=sys.stderr)
+        return 1
+    data, _ = json.JSONDecoder().raw_decode(raw[i + len(marker):])
 
     before = check_conservation(data)
     print('修复前 不守恒赛季: %d' % len(before))

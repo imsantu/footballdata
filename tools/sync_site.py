@@ -14,8 +14,19 @@
       4. 2026-27 的场次只能增加不能减少 —— 进行中的赛季只会越赛越多
   * 序列化统一用紧凑风格（separators=(",", ":")），缩小首屏下载体积；
     draws 文件首次重写会整文件变化（一次性大 diff），之后增量 diff 很小。
+
+数据落盘方式（2026-09-19 重构）：
+  * 不再产出单体 *-data.js（既占 ~13MB、又冗余于已拆分的 chunk）。抽取并 enrich
+    后的数据对象只在内存里传给两个拆分器（gen_goals_chunks / gen_draws_big5_chunks），
+    由它们直接写出 assets/js/data/<group>/<league>/<season>.js。
+  * 健康校验的「旧基线」改存为 git 忽略的 tools/.cache/<group>-audit.json
+    （仅记录结构摘要：顶层键 / 联赛数 / 各联赛赛季键 / 各赛季场次 / 数据哈希 / meta），
+    体积仅 KB 级，不是那 4MB 单体。
+  * 日常只重写当前进行中的赛季（2026-27）的 chunk；历史赛季 chunk 已在 git 冻结，
+    不再触碰。新赛季开局或结构性调整时设环境变量 FD_FULL_REGEN=1 走全量重建。
 """
 
+import hashlib
 import json
 import os
 import re
@@ -40,6 +51,9 @@ from fix_goals_perspective import (  # noqa: E402
     normalize as normalize_goals_perspective,
     check_conservation as check_goals_conservation,
 )
+# 拆分器：sync_site 抽取+校验后直传内存对象给它们写出 chunk（不再经单体落盘）
+import gen_goals_chunks   # noqa: E402
+import gen_draws_big5_chunks  # noqa: E402
 
 CUR_SEASON = "2026-27"
 
@@ -48,7 +62,7 @@ JOBS = [
         "name": "平局统计 · 五大联赛",
         "src": f"{WS}/football_big5_draws.html",
         "marker": "const DATA = ",
-        "dst": f"{SITE}/assets/js/draws-big5-data.js",
+        "group": "draws-big5",
         "kind": "draws",
         "role": "draws-big5",          # 进数球回填官方轮次 / 主客场的基准源
     },
@@ -56,14 +70,14 @@ JOBS = [
         "name": "平局统计 · 次级联赛",
         "src": f"{WS}/football_champ_draws.html",
         "marker": "const DATA = ",
-        "dst": f"{SITE}/assets/js/draws-champ-data.js",
+        "group": "draws-champ",
         "kind": "draws",
     },
     {
         "name": "进球数统计",
         "src": f"{GOALS_WS}/football_big5_goals.html",
         "marker": "window.DATA = ",
-        "dst": f"{SITE}/assets/js/goals-data.js",
+        "group": "goals",
         "kind": "goals",
     },
 ]
@@ -99,10 +113,10 @@ def season_rows(obj, kind):
     for lg in obj["leagues"]:
         tag = lg.get("cn") or lg.get("code")
         if kind == "draws":
-            for season, sd in lg["seasons"].items():
+            for season, sd in (lg.get("seasons") or {}).items():
                 rows.append((f"{tag} {season}", season, sd.get("totalMatches")))
         else:
-            for season, sc in lg["scopes"].items():
+            for season, sc in (lg.get("scopes") or {}).items():
                 rows.append((f"{tag} {season}", season, sc.get("totalMatches")))
     return rows
 
@@ -211,7 +225,6 @@ def enrich_goals(goals, draws):
                     t["count%d" % n] = sum(1 for v in seq if v == n)
     return n_hit, n_team, n_cell
 
-
 def _standings_from_results(ms, code):
     """由赛果算 (积分榜, 总进球)。与 standings.compute_table 同款逻辑。"""
     ded = deduct_map(code, CUR_SEASON, "top")
@@ -243,27 +256,115 @@ def verify_goals_standings(goals):
                     f"内嵌=({t.get('rank')},{t.get('pts')},总进球{t.get('total')}) "
                     f"赛果=({c[0]},{c[1]},总进球{goals_map.get(name)}) —— 积分榜未随赛果刷新，已中止上线")
 
+
+# ── 审计基线（替代原单体作为健康校验的「旧」参照；git 忽略，仅本地） ──
+CACHE = os.path.join(AUTO, ".cache")
+
+
+def audit_path(job):
+    return os.path.join(CACHE, job["group"] + "-audit.json")
+
+
+def load_audit(path):
+    if not os.path.exists(path):
+        return None
+    try:
+        return json.load(open(path, encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def content_hash(obj):
+    """整份数据的稳定哈希（忽略易变的 meta），用于「内容是否变化」的快速判定。"""
+    o = dict(obj)
+    o.pop("meta", None)
+    return hashlib.sha256(
+        json.dumps(o, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()
+
+
+def save_audit(path, obj, kind):
+    """把结构摘要写入审计基线（替代原单体作为健康校验的「旧」参照）。"""
+    season_keys = {}
+    for lg in obj.get("leagues", []):
+        key = "seasons" if kind == "draws" else "scopes"
+        season_keys[lg.get("code")] = sorted((lg.get(key) or {}).keys())
+    rows = {}
+    key = "seasons" if kind == "draws" else "scopes"
+    for lg in obj.get("leagues", []):
+        code = lg.get("code")
+        for season, sd in (lg.get(key) or {}).items():
+            rows["%s|%s" % (code, season)] = sd.get("totalMatches")
+    audit = {
+        "top_keys": sorted(obj.keys()),
+        "n_leagues": len(obj.get("leagues", [])),
+        "season_keys": season_keys,
+        "rows": rows,
+        "meta": obj.get("meta") if isinstance(obj.get("meta"), dict) else {},
+        "hash": content_hash(obj),
+    }
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(audit, f, ensure_ascii=False, separators=(",", ":"))
+
+
+def health_check(new, old, job):
+    """new 相对审计基线 old 的结构一致性校验（替代原单体对比）。"""
+    kind = job["kind"]
+    # 1) 顶层键一致（meta 单独处理，不参与比较）
+    if set(new) - {"meta"} != set(old["top_keys"]) - {"meta"}:
+        die(f"{job['name']}: 顶层键变化 {sorted((set(old['top_keys']) ^ set(new)) - {'meta'})}")
+    # 2) 联赛数量一致
+    if len(new.get("leagues", [])) != old["n_leagues"]:
+        die(f"{job['name']}: 联赛数量变化 {old['n_leagues']} -> {len(new['leagues'])}")
+    # 2b) 赛季键一致（按 code 匹配，避免位置错位）
+    key = "seasons" if kind == "draws" else "scopes"
+    new_by_code = {lg.get("code"): lg for lg in new["leagues"]}
+    for code, old_keys in old["season_keys"].items():
+        a = new_by_code.get(code)
+        if a is None:
+            die(f"{job['name']} / {code}: 联赛缺失")
+        if set((a.get(key) or {}).keys()) != set(old_keys):
+            die(f"{job['name']} / {code}: 赛季键变化 "
+                f"{sorted(set(old_keys) ^ set((a.get(key) or {}).keys()))}")
+    # 3) 历史赛季必须一字不变  4) 2026-27 场次只能增不能减
+    key = "seasons" if kind == "draws" else "scopes"
+    new_rows = {}
+    for lg in new.get("leagues", []):
+        code = lg.get("code")
+        for season, sd in (lg.get(key) or {}).items():
+            new_rows["%s|%s" % (code, season)] = sd.get("totalMatches")
+    for rkey, o in old["rows"].items():
+        code, season = rkey.split("|")
+        n = new_rows.get(rkey)
+        if n is None:
+            die(f"{job['name']} / {code} {season}: 数据缺失")
+        if season == CUR_SEASON:
+            if n < o:
+                die(f"{job['name']} / {code} {season}: 场次倒退 {o} -> {n}")
+        else:
+            if n != o:
+                die(f"{job['name']} / {code} {season}: 历史赛季被改动 {o} -> {n}（禁止）")
+
+
 def main():
-    planned = []          # [(job, new_text, summary_lines)]
+    os.makedirs(CACHE, exist_ok=True)
+    planned = []          # (job, new, changed)
     print("=== 体检阶段（此时尚未写入任何文件）===")
 
     # 进数球数据需要平局报告（五大联赛）来回填官方轮次 / 主客场
     draws_obj = None
     for job in JOBS:
-        if job.get("role") == "draws-big5" and os.path.exists(job["src"]):
+        if job.get("group") == "draws-big5" and os.path.exists(job["src"]):
             draws_obj = extract(job["src"], job["marker"])
             break
     if draws_obj is None:
         print("  [WARN] 读不到平局报告，进数球数据本次跳过 ha/round 回填")
 
     for job in JOBS:
-        src, dst, marker = job["src"], job["dst"], job["marker"]
+        src, marker = job["src"], job["marker"]
         name = job["name"]
         if not os.path.exists(src):
             die(f"{name}: 源报告不存在 {src}")
-        if not os.path.exists(dst):
-            die(f"{name}: 站点数据文件不存在 {dst}")
-
         new = extract(src, marker)
         if job["kind"] == "goals":
             verify_goals_standings(new)   # 部署前最后一道闸：2026-27 积分榜必须与赛果一致
@@ -282,61 +383,26 @@ def main():
                     detail = "; ".join(f"{lg} {s} 进球{gf}≠失球{ga} 差{d}"
                                        for lg, s, gf, ga, d in bad)
                     die(f"{name}: 总进球不守恒（比分视角仍不一致）：{detail}")
-        cur_text = open(dst, encoding="utf-8").read()
-        old = extract(dst, marker)
 
-        # 0) meta 是站点侧的账本（数据源时间 / 本页更新时间），不是报告里的数据。
-        #    进数球报告本身不带 meta，这里把站点上已有的 meta 接过来，避免把它
-        #    误判成「顶层键变化」而整批中止（曾导致自动同步静默停摆）。
-        if isinstance(old.get("meta"), dict):
+        old = load_audit(audit_path(job))
+        if old is None:
+            print(f"  {name}: [首跑] 无历史基线，建立审计基线（本次不比较）")
+            planned.append((job, new, True))
+            continue
+        health_check(new, old, job)
+        # meta 合并：把站点侧 meta 接过来，避免被误判为「顶层键变化」
+        if isinstance(new.get("meta"), dict) and isinstance(old.get("meta"), dict):
             m = dict(old["meta"])
             m.update(new.get("meta") or {})
             new["meta"] = m
+        is_changed = content_hash(new) != old.get("hash")
+        planned.append((job, new, is_changed))
+        if is_changed:
+            print(f"  {name}: 有更新")
+        else:
+            print(f"  {name}: 无变化")
 
-        # 1) 顶层键一致（meta 单独处理，不参与比较）
-        if set(new) - {"meta"} != set(old) - {"meta"}:
-            die(f"{name}: 顶层键变化 {sorted((set(old) ^ set(new)) - {'meta'})}")
-
-        # 2) 联赛数量一致
-        if len(new.get("leagues", [])) != len(old.get("leagues", [])):
-            die(f"{name}: 联赛数量变化 {len(old['leagues'])} -> {len(new['leagues'])}")
-
-        # 2b) 赛季键一致
-        key = "seasons" if job["kind"] == "draws" else "scopes"
-        for a, b in zip(new["leagues"], old["leagues"]):
-            if set(a[key]) != set(b[key]):
-                die(f"{name} / {a.get('cn')}: 赛季键变化 {sorted(set(b[key]) ^ set(a[key]))}")
-
-        # 3) 历史赛季必须一字不变  4) 2026-27 场次只能增不能减
-        old_rows = dict((t, n) for t, s, n in season_rows(old, job["kind"]))
-        changed = []
-        for tag, season, n in season_rows(new, job["kind"]):
-            o = old_rows.get(tag)
-            if season == CUR_SEASON:
-                if n is None or o is None:
-                    continue
-                if n < o:
-                    die(f"{name} / {tag}: 场次倒退 {o} -> {n}")
-                if n != o:
-                    changed.append(f"    · {tag}: {o} -> {n} 场")
-            else:
-                if n != o:
-                    die(f"{name} / {tag}: 历史赛季被改动 {o} -> {n}（禁止）")
-
-        seps = detect_separators(cur_text, marker)
-        body = marker + json.dumps(new, ensure_ascii=False, separators=seps) + ";"
-        new_text = body + "\n" if cur_text.endswith("\n") else body
-
-        same = new_text == cur_text
-        print(f"  {name}: {'无变化' if same else '有更新'} "
-              f"({os.path.getsize(dst):,} -> {len(new_text.encode('utf-8')):,} 字节)")
-        for line in changed:
-            print(line)
-
-        planned.append((job, new, cur_text, same))
-
-    updatable = [p for p in planned if not p[3]]
-    if not updatable:
+    if not any(c for _, _, c in planned):
         print("\n=== 三份数据均无变化，跳过写入 ===")
         print("SUMMARY|无变化")
         return
@@ -344,59 +410,45 @@ def main():
     # 本地历史快照（tools/backups）已按用户要求彻底关闭：sync_site.py 不再写入任何
     # 备份文件，每天生成的线上数据即唯一真相，回滚需求由 git 历史 / GitHub 承担。
 
-    print("\n=== 写入阶段 ===")
-    for job, new, cur_text, _ in updatable:
-        # 「本页更新」= 本次真正把数据写进站点的时刻
-        if isinstance(new.get("meta"), dict):
-            new["meta"]["generated"] = time.strftime("%Y-%m-%d %H:%M")
-        seps = detect_separators(cur_text, job["marker"])
-        body = job["marker"] + json.dumps(new, ensure_ascii=False, separators=seps) + ";"
-        new_text = body + "\n" if cur_text.endswith("\n") else body
-        with open(job["dst"], "w", encoding="utf-8") as f:
-            f.write(new_text)
-        print(f"  [OK] 已写入 {job['dst']}")
+    print("\n=== 写入阶段：生成按季 chunk（仅 2026-27）+ 队徽外置 ===")
+    only_current = not os.environ.get("FD_FULL_REGEN")
+    print("  模式:", "全量(含历史)" if not only_current else "仅 2026-27")
+    for job, new, is_changed in planned:
+        if not is_changed:
+            continue
+        if job["group"] == "goals":
+            gen_goals_chunks.generate(new, only_current=only_current)
+        else:
+            gen_draws_big5_chunks.run(job["group"], obj=new, only_current=only_current)
 
-    # 回读校验：确保写进去的东西还能被解析
-    print("\n=== 回读校验 ===")
-    for job, _, _, _ in updatable:
-        obj = extract(job["dst"], job["marker"])
-        n = len(obj.get("leagues", []))
-        print(f"  [OK] {job['name']}: 解析成功，{n} 个联赛")
+    # 更新审计基线（所有数据集；未变化的 hash 不变，重写无副作用）
+    for job, new, _ in planned:
+        save_audit(audit_path(job), new, job["kind"])
 
-    cur_total = []
-    for job in JOBS:
-        obj = extract(job["dst"], job["marker"])
-        for tag, season, n in season_rows(obj, job["kind"]):
-            if season == CUR_SEASON:
-                cur_total.append(f"{tag} {n}")
-
-    # 额外产出 assets/js/meta.js：给「更多」页显示两个时间戳用。
-    # 单独一个小文件（几百字节）即可，避免为了两个时间戳去加载 4MB 数据脚本。
+    # 额外产出 assets/js/meta.js：给「更多」页显示「本页更新」时间戳用。
+    # 单独一个小文件（几百字节）即可，避免为了一个时间戳去加载 4MB 数据脚本。
     write_meta_js()
 
+    cur_total = []
+    for job, new, _ in planned:
+        for tag, season, n in season_rows(new, job["kind"]):
+            if season == CUR_SEASON:
+                cur_total.append(f"{tag} {n}")
     print("SUMMARY|2026-27 已赛场次：" + "，".join(cur_total))
 
 
 def write_meta_js():
-    """从三份数据文件里抽出 meta，写成极小的 assets/js/meta.js。
+    """写 assets/js/meta.js：仅含「本页更新」时间戳。
 
-    任何一份读不到就整体跳过（保持上一版），绝不写半截文件。
+    「本页更新」= 本次真正把数据同步进站点的时刻（= now），不要取各数据文件里
+    内嵌 generated 的 max —— 当某份数据「无变化」未被重写时，其内嵌 generated 会
+    停留在旧值，max 会把整站时间拉回过去，造成「进球数页比平局页旧」这类不一致。
+    统一以 sync_site.py 的运行时刻为准；纯代码提交的 generated 则由 pre-commit
+    钩子（bump_meta.py）刷新，二者都是「最近一次部署时间」，方向永远向前。
+    注：站点已不再展示「数据源更新时间」，meta.js 只保留 generated 一个键。
     """
     try:
-        metas = {}
-        for job in JOBS:
-            obj = extract(job["dst"], job["marker"])
-            m = obj.get("meta") if isinstance(obj.get("meta"), dict) else {}
-            metas[job["dst"].split("/")[-1]] = m
-        # 「本页更新」= 本次真正把数据同步进站点的时刻（= now），不要取各数据文件里
-        # 内嵌 generated 的 max —— 当某份数据「无变化」未被重写时，其内嵌 generated 会
-        # 停留在旧值，max 会把整站时间拉回过去，造成「进球数页比平局页旧」这类不一致。
-        # 统一以 sync_site.py 的运行时刻为准；纯代码提交的 generated 则由 pre-commit
-        # 钩子（bump_meta.py）刷新，二者都是「最近一次部署时间」，方向永远向前。
-        # 注：站点已不再展示「数据源更新时间」，meta.js 只保留 generated 一个键。
-        payload = {
-            "generated": time.strftime("%Y-%m-%d %H:%M"),
-        }
+        payload = {"generated": time.strftime("%Y-%m-%d %H:%M")}
         out = os.path.join(SITE, "assets/js/meta.js")
         text = "window.SITE_META = " + json.dumps(payload, ensure_ascii=False) + ";\n"
         with open(out, "w", encoding="utf-8") as f:

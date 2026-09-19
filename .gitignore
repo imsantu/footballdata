@@ -7,5 +7,7 @@ tools/.lastrun
 .workbuddy-ai/
 .workbuddy-ai/
 
-# 单体大数据文件（按季 chunk 的输入源，由 sync_site.py 每天本地重新生成；不入 git、不上线）
+# 单体大数据文件（已废弃：不再产出；曾作为按季 chunk 的输入源）
 assets/js/*-data.js
+# 审计基线（替代原单体作为健康校验旧参照，仅本地、KB 级、不入 git）
+tools/.cache/
