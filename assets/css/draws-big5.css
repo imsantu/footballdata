@@ -41,7 +41,7 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 
 /* 联赛 + 赛季切换（吸顶导航条） */
 .stickynav { position:sticky; top:0; z-index:45; background:var(--bg); padding:0 0 6px; margin-bottom:6px; box-shadow:0 1px 0 var(--border); }
-.league-tabs { display:flex; flex-wrap:nowrap; gap:2px; justify-content:center; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+.league-tabs { display:flex; flex-wrap:nowrap; gap:2px; justify-content:flex-start; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
 .league-tabs::-webkit-scrollbar { display:none; }
 /* 字号/图标整体放大，未选中也用 text2（比 text-dim 更亮），选中态走高饱和亮色 */
 .league-tab { position:relative; display:inline-flex; align-items:center; gap:7px; padding:11px 15px 10px; background:transparent; border:0; border-radius:11px; color:var(--text2); cursor:pointer; font-size:15px; font-weight:800; letter-spacing:.3px; transition:color .15s,background .15s; user-select:none; white-space:nowrap; min-width:0; flex:0 0 auto; }

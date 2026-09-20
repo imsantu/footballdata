@@ -39,7 +39,7 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .scroll-btn.hide { opacity:0; pointer-events:none; transform:translateY(10px); }
 /* 吸顶导航条：一级联赛 Tab + 二级赛季 Tab（与五大联赛平局报告一致） */
 .stickynav { position:sticky; top:0; z-index:45; background:var(--bg); padding:0 0 6px; margin-bottom:6px; box-shadow:0 1px 0 var(--border); }
-.league-tabs { display:flex; flex-wrap:nowrap; gap:2px; justify-content:center; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
+.league-tabs { display:flex; flex-wrap:nowrap; gap:2px; justify-content:flex-start; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
 .league-tabs::-webkit-scrollbar { display:none; }
 .navrow { display:flex; align-items:flex-start; gap:10px; }
 .league-tab { position:relative; display:inline-flex; align-items:center; gap:7px; padding:11px 15px 10px; background:transparent; border:0; border-radius:11px; color:var(--text2); cursor:pointer; font-size:15px; font-weight:800; letter-spacing:.3px; transition:color .15s,background .15s; user-select:none; white-space:nowrap; min-width:0; flex:0 0 auto; }
