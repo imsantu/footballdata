@@ -3,7 +3,7 @@
 # 目的：机器在每天 06:00 关机时漏掉定时同步，开机登录后自动补齐一次。
 set -u
 
-SITE="/Users/santu/soccerdata/football-data-site"
+SITE="/Users/santu/footballdata/football-data-site"
 AUTO="$SITE/tools"
 mkdir -p "$AUTO/logs"
 LOG="$AUTO/logs/boot_catchup.log"
@@ -13,7 +13,7 @@ log() { echo "[$(ts)] $*" | tee -a "$LOG"; }
 
 log "boot-catchup 启动 (pid $$)"
 
-# 0) 路径护栏：站点必须位于 ~/soccerdata，绝不允许落在桌面。
+# 0) 路径护栏：站点必须位于 ~/footballdata，绝不允许落在桌面。
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
 case "$SITE" in
     "$DESKTOP_DIR"/*|"$DESKTOP_DIR")

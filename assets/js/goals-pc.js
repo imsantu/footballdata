@@ -606,6 +606,42 @@ function updateSeqStrips(sc){
       updateSeqStrips(sc);
     };
   });
+  bindSeqScoreTips(box);
+}
+/* 各队 2 球 / 3 球走势色块悬停：展示该场比分信息，格式对齐平局统计页的悬浮框。
+   色块已自带 data-home / data-away / data-score / data-date / data-round / data-ha。
+   score 口径为「主客视角」(主队-客队)，故客场时与平局页一致翻转为主队在前。 */
+function bindSeqScoreTips(box){
+  var tip=document.getElementById('combTip');
+  if(!tip){
+    // 进球数分布对比图未渲染时 #combTip 尚不存在，这里按需补一个，保证悬浮框始终有容器
+    tip=document.createElement('div');
+    tip.id='combTip';
+    tip.className='trend-tip';
+    document.body.appendChild(tip);
+  }
+  box.querySelectorAll('.seq-score-cell').forEach(function(el){
+    el.addEventListener('mousemove', function(e){
+      var home=el.getAttribute('data-home')||'', away=el.getAttribute('data-away')||'';
+      var sc=el.getAttribute('data-score')||'', dt=el.getAttribute('data-date')||'';
+      var rn=el.getAttribute('data-round')||'', ha=el.getAttribute('data-ha')||'H';
+      var season=el.getAttribute('data-season')||currentSeason;
+      tip.style.display='block';
+      var line=home+' <b>'+sc+'</b> '+away;
+      var sp=String(sc).split('-');
+      if(ha==='A' && sp.length===2) line=away+' <b>'+sp[1]+'-'+sp[0]+'</b> '+home;
+      var body='<b>第 '+rn+' 轮</b> · '+dt+' · '+(ha==='H'?'主场':'客场');
+      if(sc) body+='<br>'+line;
+      tip.innerHTML=body;
+      var x=e.clientX+14, y=e.clientY+14;
+      tip.style.left=x+'px'; tip.style.top=y+'px';
+      var r=tip.getBoundingClientRect(), pad=8;
+      if(x+r.width>window.innerWidth-pad)  x=Math.max(pad, window.innerWidth-r.width-pad);
+      if(y+r.height>window.innerHeight-pad) y=Math.max(pad, window.innerHeight-r.height-pad);
+      tip.style.left=x+'px'; tip.style.top=y+'px';
+    });
+    el.addEventListener('mouseleave', function(){ tip.style.display='none'; });
+  });
 }
 function seqVisibleTeams(sc){
   return sc.teams.slice().sort(function(a,b){return a.rank-b.rank;});
@@ -643,6 +679,7 @@ function updateSeqStrips(sc){
       updateSeqStrips(sc);
     };
   });
+  bindSeqScoreTips(box);
 }
 function renderSeq23(){
   var el=document.getElementById('seq23'); if(!el)return;

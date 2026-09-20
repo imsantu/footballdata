@@ -554,7 +554,7 @@ function renderStats(){
     {v:s.totalMatches, k:'总场次', cls:'', t:'该赛季全部已赛场次'},
     {v:s.totalDraws, k:'平局场次', cls:'green', t:'打平的比赛场数'},
     {v:s.drawRate+'%'+delta, k:'平局率', cls:'green', t:'平局场次 ÷ 总场次'},
-    {v:(s.totalDraws*2/teams.length).toFixed(1), k:'场均平局/队', cls:'accent', t:'每支球队平均每季打出多少场平局'},
+    {v:(s.totalDraws*2/teams.length).toFixed(1), k:'每队赛季平均平局数', cls:'accent', t:'平均每支球队一个赛季打出多少场平局'},
     {v:maxDraw, k:'最多平局', team:topDraw, cls:'accent', t:'单季平局最多的球队'},
     {v:maxStreak+' / '+maxGap, k:'最长连平 / 最长无平局间隔', cls:'rk', t:'全联盟单季最长连平轮数 / 最长无平局轮数'},
   ];

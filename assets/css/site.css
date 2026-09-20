@@ -220,16 +220,12 @@ body .stickynav.site-moved{display:none !important;}
   .sel-btn{padding:0 10px;font-size:12.5px;}
   .sel[data-kind="w"] .sel-btn::before{display:none;}
 }
+/* 已统一改为「手机上强制电脑版」：禁用原 860px 折叠规则，避免顶栏换行、
+   中段联赛 tab 被折成整行而失去横向滚动（表现为显示不全、无法左滑）。
+   桌面单排布局在窄屏下由 .site-center / .site-top-sub 自身的 overflow-x:auto 兜底横向滚动。 */
 @media (max-width:860px){
   :root{--site-pad:12px;}
-  .site-top-row{height:auto; padding:10px 0; flex-wrap:wrap; gap:8px 10px;}
-  .site-brand{order:1;}
   .site-brand .nm{font-size:22px;padding-top:4px;}
-  .site-right{order:2; margin-left:auto;}
-  .site-center{order:3; flex:1 1 100%; justify-content:flex-start;}
-  .site-top-sub{flex-wrap:wrap; padding:4px 0 2px;}
-  .site-top-sub .season-tabs,
-  .site-top-sub .pillrow{justify-content:flex-start;}
 }
 @media (max-width:560px){
   .sel-btn{padding:0 9px;font-size:12px;height:34px;}

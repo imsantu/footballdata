@@ -5,7 +5,7 @@
 ## 手动跑一次
 
 ```bash
-/bin/bash /Users/santu/soccerdata/football-data-site/tools/refresh.sh
+/bin/bash /Users/santu/footballdata/football-data-site/tools/refresh.sh
 ```
 
 日志落在 `tools/logs/YYYY-MM-DD_HHMMSS.log`。旧数据文件的本地快照 `tools/backups/` 已按用户要求关闭，线上数据即唯一真相（回滚走 git 历史 / GitHub）。

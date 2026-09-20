@@ -4,7 +4,7 @@
 #       若该窗口已过去、且上次成功更新早于该窗口，则补跑 refresh.sh；否则零成本跳过。
 set -u
 
-SITE="/Users/santu/soccerdata/football-data-site"
+SITE="/Users/santu/footballdata/football-data-site"
 AUTO="$SITE/tools"
 LR="$AUTO/.lastrun"
 REFRESH="$AUTO/refresh.sh"

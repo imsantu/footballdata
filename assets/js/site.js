@@ -56,6 +56,8 @@
   window.SITE_NAV = SITE_NAV;
   window.SITE_PAGE_URL = function (f) { return (window.SITE_ROOT || '') + 'pages/' + f; };
 
+  // 已统一改为「手机上也强制电脑版」：不再因窄屏提前 return，桌面外壳在任何宽度都会构建。
+  // 原来的 H5 移动外壳（h5-shell.js）已移除，窄屏若提前 return 会让页面整体空白。
   try {
     if (window.matchMedia && !window.matchMedia('(min-width:820px)').matches) {
       var r = document.documentElement;
@@ -63,7 +65,7 @@
       r.style.colorScheme = 'light';
       var mt = document.querySelector('meta[name="theme-color"]');
       if (mt) mt.setAttribute('content', '#f4f6fa');
-      return;
+      // 仅设浅色兜底，不再 return —— 继续走下方桌面外壳构建流程。
     }
   } catch (e) {}
 

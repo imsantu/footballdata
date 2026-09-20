@@ -11,7 +11,7 @@ set -uo pipefail
 
 WS="/Users/santu/WorkBuddy AI/2026-09-02-02-18-19"
 GOALS_WS="/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
-SITE="/Users/santu/soccerdata/football-data-site"
+SITE="/Users/santu/footballdata/football-data-site"
 AUTO="$SITE/tools"
 PY="/usr/bin/python3"
 
@@ -33,7 +33,7 @@ trap 'rm -f "$REFRESH_LOCK"' EXIT
 echo "════════ 随机错峰等待（0~3599s）════════"
 sleep $(( RANDOM % 3600 ))
 
-# 0) 路径护栏：站点必须位于 ~/soccerdata，绝不允许落在桌面。
+# 0) 路径护栏：站点必须位于 ~/footballdata，绝不允许落在桌面。
 #    历史事故：站点曾放在 ~/Desktop/soccerdata，迁移后 launchd 仍指向旧路径，
 #    导致桌面上被反复重建出 soccerdata 目录。这里主动兜底。
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
