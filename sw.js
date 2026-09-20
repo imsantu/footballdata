@@ -30,7 +30,7 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //     +1 强制浏览器重新拉取新版 SW 逻辑。
 // v2：goals-pc.js / goals-mb.js 去掉 升 icon 的 !isNewSeason 限制（2026-27 升班马也标升），
 //     旧 v1 缓存里是带限制的旧版，必须换新版本号强制浏览器重新拉取。
-var CACHE = 'fds-shell-v8';
+var CACHE = 'fds-shell-v9';
 
 // 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
 // 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。
