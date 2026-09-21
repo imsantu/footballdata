@@ -1,0 +1,26 @@
+name: 仓库保活
+
+# GitHub 会在「仓库连续 60 天无活动」后自动禁用定时工作流。
+# 每月 1 日推送一个空提交，保持仓库活跃，确保「每日数据更新」不会被静默禁用。
+on:
+  schedule:
+    - cron: "17 3 1 * *"    # 每月 1 日 03:17 UTC
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: 空提交保活
+        run: |
+          git config user.email "bot@footballdata.local"
+          git config user.name "Football Data Bot"
+          git commit --allow-empty -m "chore: keepalive [skip ci]" || echo "already active"
+          git push origin HEAD

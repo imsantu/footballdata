@@ -9,11 +9,13 @@
 
 set -uo pipefail
 
-WS="/Users/santu/WorkBuddy AI/2026-09-02-02-18-19"
-GOALS_WS="/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
-SITE="/Users/santu/footballdata/football-data-site"
+# 路径改为「环境变量优先、本地路径兜底」：云端（GitHub Actions）通过 FD_* 注入仓库内
+# 的 generator/ 目录；本机仍走 WorkBuddy 会话目录默认路径，行为与改造前完全一致。
+SITE="${FD_SITE_DIR:-/Users/santu/footballdata/football-data-site}"
+WS="${FD_GENERATOR_DIR:-/Users/santu/WorkBuddy AI/2026-09-02-02-18-19}"
+GOALS_WS="${FD_GOALS_WS:-$WS}"
 AUTO="$SITE/tools"
-PY="/usr/bin/python3"
+PY="${FD_PY:-/usr/bin/python3}"
 
 # ── 防重入 + 随机错峰 ──
 # 运行锁：避免 catchup.sh 在下方随机等待期间误判「窗口错过」而重复拉起本任务
@@ -50,8 +52,10 @@ mkdir -p "$AUTO/logs"
 LOG="$AUTO/logs/$(date '+%Y-%m-%d_%H%M%S').log"
 exec > >(tee -a "$LOG") 2>&1
 
-notify() {  # notify "标题" "正文"
-    osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1 || true
+notify() {  # notify "标题" "正文" ["error|notice"]（云端无 osascript，降级为 GHA 注解 + 日志）
+    local lvl="${3:-notice}"
+    echo "::${lvl} title=$1::$2" >&2 || true
+    command -v osascript >/dev/null 2>&1 && osascript -e "display notification \"$2\" with title \"$1\"" >/dev/null 2>&1 || true
 }
 
 step() {
@@ -64,7 +68,7 @@ step() {
         echo "[FAIL] $name（退出码 $rc）"
         echo "=== 本次更新中止，站点未做任何改动 ==="
         echo "日志：$LOG"
-        notify "足球数据更新失败" "$name 失败，详见日志"
+        notify "足球数据更新失败" "$name 失败，详见日志" "error"
         exit 1
     fi
     echo "[OK] $name"
@@ -114,6 +118,12 @@ else
         # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
+        # 仅当生成器位于仓库内（云端/同仓模式：WS 以 SITE 开头）才回写随运行演化的
+        # 种子 HTML（football_big5_goals.html / football_mobile.html）；本机模式生成器
+        # 在仓库外（WorkBuddy 会话目录），跳过以免 git add 报错。
+        case "$WS" in
+            "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html 2>/dev/null || true ;;
+        esac
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' \
                      'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
@@ -124,7 +134,7 @@ else
             echo "[SKIP] 没有需要提交的改动"
             pushed=1; break
         fi
-        MSG="chore(data): 同步 2026-27 赛果 $(date '+%F')"
+        MSG="chore(data): 同步 2026-27 赛果 $(date '+%F') [skip ci]"
         [ -n "$SUMMARY" ] && MSG="$(printf '%s\n\n%s' "$MSG" "$SUMMARY")"
         if git commit -q -F - <<< "$MSG"; then
             echo "[OK] 已提交：$(git log -1 --format='%h %s')"
@@ -149,7 +159,7 @@ else
     if [ "$pushed" -ne 1 ]; then
         echo "[FAIL] git 提交/推送在重试后仍然失败，站点数据已本地更新但未上线"
         echo "日志：$LOG"
-        notify "足球数据推送失败" "本地数据已更新但推送失败，需检查 SSH/仓库/锁冲突"
+        notify "足球数据推送失败" "本地数据已更新但推送失败，需检查 SSH/仓库/锁冲突" "error"
         exit 1
     fi
 fi

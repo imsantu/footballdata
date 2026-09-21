@@ -1,0 +1,656 @@
+{
+ "name": "英超 2627",
+ "roundSource": "titan007",
+ "matches": [
+  {
+   "date": "2026-08-22",
+   "team1": "Arsenal FC",
+   "team2": "Coventry City FC",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-22",
+   "team1": "Hull City AFC",
+   "team2": "Manchester United FC",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-22",
+   "team1": "Everton FC",
+   "team2": "Crystal Palace FC",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-22",
+   "team1": "Ipswich Town FC",
+   "team2": "Sunderland AFC",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-22",
+   "team1": "Nottingham Forest FC",
+   "team2": "Leeds United FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Brentford FC",
+   "team2": "Tottenham Hotspur FC",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Brighton & Hove Albion FC",
+   "team2": "Aston Villa FC",
+   "score": {
+    "ft": [
+     4,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Manchester City FC",
+   "team2": "AFC Bournemouth",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Newcastle United FC",
+   "team2": "Liverpool FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-25",
+   "team1": "Fulham FC",
+   "team2": "Chelsea FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "Crystal Palace FC",
+   "team2": "Manchester City FC",
+   "score": {
+    "ft": [
+     1,
+     4
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "Liverpool FC",
+   "team2": "Nottingham Forest FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "Coventry City FC",
+   "team2": "Hull City AFC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "AFC Bournemouth",
+   "team2": "Everton FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Tottenham Hotspur FC",
+   "team2": "Newcastle United FC",
+   "score": {
+    "ft": [
+     0,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Chelsea FC",
+   "team2": "Brighton & Hove Albion FC",
+   "score": {
+    "ft": [
+     4,
+     3
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Leeds United FC",
+   "team2": "Brentford FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Sunderland AFC",
+   "team2": "Fulham FC",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Manchester United FC",
+   "team2": "Ipswich Town FC",
+   "score": {
+    "ft": [
+     5,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-01",
+   "team1": "Aston Villa FC",
+   "team2": "Arsenal FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Ipswich Town FC",
+   "team2": "Liverpool FC",
+   "score": {
+    "ft": [
+     0,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Newcastle United FC",
+   "team2": "AFC Bournemouth",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Nottingham Forest FC",
+   "team2": "Tottenham Hotspur FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Brentford FC",
+   "team2": "Sunderland AFC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Brighton & Hove Albion FC",
+   "team2": "Leeds United FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Fulham FC",
+   "team2": "Crystal Palace FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Manchester City FC",
+   "team2": "Coventry City FC",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Hull City AFC",
+   "team2": "Aston Villa FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Everton FC",
+   "team2": "Manchester United FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Arsenal FC",
+   "team2": "Chelsea FC",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "AFC Bournemouth",
+   "team2": "Brentford FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Aston Villa FC",
+   "team2": "Nottingham Forest FC",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Chelsea FC",
+   "team2": "Hull City AFC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Crystal Palace FC",
+   "team2": "Ipswich Town FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Liverpool FC",
+   "team2": "Fulham FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Tottenham Hotspur FC",
+   "team2": "Everton FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Sunderland AFC",
+   "team2": "Arsenal FC",
+   "score": {
+    "ft": [
+     0,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Coventry City FC",
+   "team2": "Brighton & Hove Albion FC",
+   "score": {
+    "ft": [
+     0,
+     5
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Manchester United FC",
+   "team2": "Manchester City FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-15",
+   "team1": "Leeds United FC",
+   "team2": "Newcastle United FC",
+   "score": {
+    "ft": [
+     4,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Brentford FC",
+   "team2": "Chelsea FC",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Tottenham Hotspur FC",
+   "team2": "Aston Villa FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Newcastle United FC",
+   "team2": "Hull City AFC",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Brighton & Hove Albion FC",
+   "team2": "Arsenal FC",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Everton FC",
+   "team2": "Ipswich Town FC",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Nottingham Forest FC",
+   "team2": "Coventry City FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "AFC Bournemouth",
+   "team2": "Liverpool FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Leeds United FC",
+   "team2": "Crystal Palace FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Manchester City FC",
+   "team2": "Sunderland AFC",
+   "score": {
+    "ft": [
+     5,
+     3
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Fulham FC",
+   "team2": "Manchester United FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  }
+ ]
+}

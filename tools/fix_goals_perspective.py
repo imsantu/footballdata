@@ -40,7 +40,7 @@ import re
 import sys
 
 # 手动修复入口默认读取进球数源报告（与 sync_site.py 同一份数据源；单体 goals-data.js 已废弃）
-GOALS_SRC = "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48/football_big5_goals.html"
+GOALS_SRC = os.environ.get("FD_GOALS_HTML", os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "generator", "football_big5_goals.html"))
 
 
 def flip_score(s):

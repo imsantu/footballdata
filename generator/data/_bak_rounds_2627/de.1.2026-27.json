@@ -1,0 +1,113 @@
+{
+ "name": "德甲 2627",
+ "matches": [
+  {
+   "date": "2026-08-28",
+   "team1": "FC Bayern München",
+   "team2": "VfB Stuttgart",
+   "score": {
+    "ft": [
+     5,
+     1
+    ]
+   },
+   "round": "1. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "SV 07 Elversberg",
+   "team2": "Bayer 04 Leverkusen",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FC Köln",
+   "team2": "TSG 1899 Hoffenheim",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FSV Mainz 05",
+   "team2": "SC Paderborn 07",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "RB Leipzig",
+   "team2": "Borussia Mönchengladbach",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FC Union Berlin",
+   "team2": "Eintracht Frankfurt",
+   "score": {
+    "ft": [
+     3,
+     3
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "Borussia Dortmund",
+   "team2": "Hamburger SV",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "2. Round"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "SC Freiburg",
+   "team2": "SV Werder Bremen",
+   "score": {
+    "ft": [
+     4,
+     1
+    ]
+   },
+   "round": "3. Round"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "FC Augsburg",
+   "team2": "FC Schalke 04",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "3. Round"
+  }
+ ]
+}

@@ -1,0 +1,71 @@
+{
+  "_note": "联赛扣分（points deduction）台账。openfootball 原始数据只有赛果、不含任何纪律/财务罚分，因此这里手工维护；积分榜 = 赛果积分 - deduct，名次按罚后积分重排。匹配用 club_core() 归一化后的核心名，队名写法差异不影响。",
+  "top": {
+    "it": {
+      "2022-23": [
+        { "cn": "尤文图斯", "en": "Juventus FC", "deduct": 10, "reason": "财务造假案（先判 -15，2023-05-22 改判 -10）" }
+      ]
+    },
+    "en": {
+      "2023-24": [
+        { "cn": "埃弗顿", "en": "Everton FC", "deduct": 8, "reason": "违反英超盈利与可持续性规则（先 -10 改判 -6，再 -2）" },
+        { "cn": "诺丁汉森林", "en": "Nottingham Forest FC", "deduct": 4, "reason": "违反联赛财务规定" }
+      ]
+    },
+    "fr": {
+      "2021-22": [
+        { "cn": "尼斯", "en": "OGC Nice", "deduct": 1, "reason": "尼斯 vs 马赛骚乱致比赛中断（判 -2，其中 1 分缓期）" },
+        { "cn": "里昂", "en": "Olympique Lyonnais", "deduct": 1, "reason": "OL-OM 骚乱、拒绝继续比赛" }
+      ],
+      "2023-24": [
+        { "cn": "蒙彼利埃", "en": "Montpellier HSC", "deduct": 1, "reason": "比赛因骚乱中断" }
+      ]
+    }
+  },
+  "champ": {
+    "en": {
+      "2021-22": [
+        { "cn": "德比郡", "en": "Derby County FC", "deduct": 21, "reason": "进入托管 -12 + 违反 EFL 盈利与可持续性规则 -9" },
+        { "cn": "雷丁", "en": "Reading FC", "deduct": 6, "reason": "违反 EFL 盈利与可持续性规则" }
+      ],
+      "2022-23": [
+        { "cn": "维冈竞技", "en": "Wigan Athletic FC", "deduct": 3, "reason": "进入托管、未按期支付球员工资与税款" },
+        { "cn": "雷丁", "en": "Reading FC", "deduct": 6, "reason": "违反 EFL 财务监管" }
+      ],
+      "2024-25": [
+        { "cn": "谢菲尔德联", "en": "Sheffield United FC", "deduct": 2, "reason": "拖欠转会分期付款" }
+      ],
+      "2025-26": [
+        { "cn": "谢菲尔德星期三", "en": "Sheffield Wednesday FC", "deduct": 18, "reason": "破产申请 + 违反付款义务" },
+        { "cn": "莱斯特城", "en": "Leicester City FC", "deduct": 6, "reason": "违反 PSR（2026-02-05 裁定，计入本季）" },
+        { "cn": "西布罗姆维奇", "en": "West Bromwich Albion FC", "deduct": 2, "reason": "EFL 财务审查小组裁定" }
+      ]
+    },
+    "it": {
+      "2021-22": [
+        { "cn": "雷吉纳", "en": "Reggina 1914", "deduct": 2, "reason": "行政 / 财务违规" }
+      ],
+      "2022-23": [
+        { "cn": "热那亚", "en": "Genoa CFC", "deduct": 1, "reason": "行政 / 欠税扣分" },
+        { "cn": "帕尔马", "en": "Parma Calcio 1913", "deduct": 1, "reason": "行政 / 欠税扣分" },
+        { "cn": "雷吉纳", "en": "Reggina 1914", "deduct": 5, "reason": "违反财务 / 薪资规定" }
+      ],
+      "2023-24": [
+        { "cn": "桑普多利亚", "en": "Sampdoria", "deduct": 2, "reason": "未缴税款" }
+      ],
+      "2024-25": [
+        { "cn": "布雷西亚", "en": "Brescia Calcio", "deduct": 4, "reason": "财务 / 薪资违规" },
+        { "cn": "科森扎", "en": "Cosenza Calcio", "deduct": 4, "reason": "财务 / 薪资违规" }
+      ]
+    },
+    "fr": {
+      "2022-23": [
+        { "cn": "圣埃蒂安", "en": "AS Saint-Étienne", "deduct": 3, "reason": "上季附加赛球迷闯入（本季执行）" }
+      ],
+      "2023-24": [
+        { "cn": "波尔多", "en": "Girondins Bordeaux", "deduct": 1, "reason": "球迷袭扰致比赛中断" },
+        { "cn": "巴斯蒂亚", "en": "SC Bastia", "deduct": 1, "reason": "财务 / 行政违规" }
+      ]
+    }
+  }
+}

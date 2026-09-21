@@ -11,3 +11,14 @@ tools/.lastrun
 assets/js/*-data.js
 # 审计基线（替代原单体作为健康校验旧参照，仅本地、KB 级、不入 git）
 tools/.cache/
+
+# 生成器运行时缓存（不入库；generator/data/ 基线需入库作为云端冷启动快照）
+generator/__pycache__/
+generator/**/__pycache__/
+generator/*.before-seq23-2627
+generator/.lastrun
+# 生成器每次运行重新产出的中间报告（不入库；同步进站点的是抽取后的 assets/js/data/*）
+generator/football_big5_draws.html
+generator/football_champ_draws.html
+generator/data/report_all.json
+generator/data/report_champ.json

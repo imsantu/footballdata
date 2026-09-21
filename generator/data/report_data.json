@@ -1,0 +1,3189 @@
+{
+ "seasonOrder": [
+  "2025-26",
+  "2024-25",
+  "2023-24",
+  "2022-23",
+  "2021-22"
+ ],
+ "seasons": {
+  "2025-26": {
+   "season": "2025-26",
+   "totalMatches": 380,
+   "totalDraws": 104,
+   "drawRate": 27.37,
+   "overall": [
+    {
+     "score": "0-0",
+     "n": 27,
+     "pct": 25.96,
+     "pctMatch": 7.11
+    },
+    {
+     "score": "1-1",
+     "n": 47,
+     "pct": 45.19,
+     "pctMatch": 12.37
+    },
+    {
+     "score": "2-2",
+     "n": 26,
+     "pct": 25.0,
+     "pctMatch": 6.84
+    },
+    {
+     "score": "其他",
+     "n": 4,
+     "pct": 3.85,
+     "pctMatch": 1.05
+    }
+   ],
+   "perRound": [
+    {
+     "round": "Matchday 1",
+     "n": 3
+    },
+    {
+     "round": "Matchday 2",
+     "n": 2
+    },
+    {
+     "round": "Matchday 3",
+     "n": 1
+    },
+    {
+     "round": "Matchday 4",
+     "n": 3
+    },
+    {
+     "round": "Matchday 5",
+     "n": 5
+    },
+    {
+     "round": "Matchday 6",
+     "n": 3
+    },
+    {
+     "round": "Matchday 7",
+     "n": 1
+    },
+    {
+     "round": "Matchday 8",
+     "n": 1
+    },
+    {
+     "round": "Matchday 9",
+     "n": 0
+    },
+    {
+     "round": "Matchday 10",
+     "n": 2
+    },
+    {
+     "round": "Matchday 11",
+     "n": 3
+    },
+    {
+     "round": "Matchday 12",
+     "n": 1
+    },
+    {
+     "round": "Matchday 13",
+     "n": 1
+    },
+    {
+     "round": "Matchday 14",
+     "n": 3
+    },
+    {
+     "round": "Matchday 15",
+     "n": 3
+    },
+    {
+     "round": "Matchday 16",
+     "n": 2
+    },
+    {
+     "round": "Matchday 17",
+     "n": 3
+    },
+    {
+     "round": "Matchday 18",
+     "n": 2
+    },
+    {
+     "round": "Matchday 19",
+     "n": 7
+    },
+    {
+     "round": "Matchday 20",
+     "n": 4
+    },
+    {
+     "round": "Matchday 21",
+     "n": 5
+    },
+    {
+     "round": "Matchday 22",
+     "n": 4
+    },
+    {
+     "round": "Matchday 23",
+     "n": 2
+    },
+    {
+     "round": "Matchday 24",
+     "n": 3
+    },
+    {
+     "round": "Matchday 25",
+     "n": 1
+    },
+    {
+     "round": "Matchday 26",
+     "n": 4
+    },
+    {
+     "round": "Matchday 27",
+     "n": 3
+    },
+    {
+     "round": "Matchday 28",
+     "n": 1
+    },
+    {
+     "round": "Matchday 29",
+     "n": 2
+    },
+    {
+     "round": "Matchday 30",
+     "n": 6
+    },
+    {
+     "round": "Matchday 31",
+     "n": 3
+    },
+    {
+     "round": "Matchday 32",
+     "n": 2
+    },
+    {
+     "round": "Matchday 33",
+     "n": 3
+    },
+    {
+     "round": "Matchday 34",
+     "n": 1
+    },
+    {
+     "round": "Matchday 35",
+     "n": 2
+    },
+    {
+     "round": "Matchday 36",
+     "n": 6
+    },
+    {
+     "round": "Matchday 37",
+     "n": 3
+    },
+    {
+     "round": "Matchday 38",
+     "n": 3
+    }
+   ],
+   "teams": [
+    {
+     "name": "Arsenal FC",
+     "cn": "阿森纳",
+     "rank": 1,
+     "pts": 86,
+     "draws": 7,
+     "d00": 2,
+     "d11": 3,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester City FC",
+     "cn": "曼城",
+     "rank": 2,
+     "pts": 80,
+     "draws": 9,
+     "d00": 1,
+     "d11": 5,
+     "d22": 2,
+     "dother": 1,
+     "streak": 3,
+     "gap": 13,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester United FC",
+     "cn": "曼联",
+     "rank": 3,
+     "pts": 71,
+     "draws": 11,
+     "d00": 1,
+     "d11": 5,
+     "d22": 4,
+     "dother": 1,
+     "streak": 3,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Aston Villa FC",
+     "cn": "阿斯顿维拉",
+     "rank": 4,
+     "pts": 65,
+     "draws": 8,
+     "d00": 3,
+     "d11": 4,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 15,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Liverpool FC",
+     "cn": "利物浦",
+     "rank": 5,
+     "pts": 62,
+     "draws": 9,
+     "d00": 2,
+     "d11": 5,
+     "d22": 1,
+     "dother": 1,
+     "streak": 4,
+     "gap": 13,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "AFC Bournemouth",
+     "cn": "伯恩茅斯",
+     "rank": 6,
+     "pts": 58,
+     "draws": 18,
+     "d00": 5,
+     "d11": 6,
+     "d22": 5,
+     "dother": 2,
+     "streak": 5,
+     "gap": 4,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brentford FC",
+     "cn": "布伦特福德",
+     "rank": 7,
+     "pts": 54,
+     "draws": 11,
+     "d00": 4,
+     "d11": 3,
+     "d22": 4,
+     "dother": 0,
+     "streak": 5,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Fulham FC",
+     "cn": "富勒姆",
+     "rank": 8,
+     "pts": 54,
+     "draws": 7,
+     "d00": 2,
+     "d11": 4,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 16,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brighton & Hove Albion FC",
+     "cn": "布莱顿",
+     "rank": 9,
+     "pts": 53,
+     "draws": 11,
+     "d00": 2,
+     "d11": 6,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Sunderland AFC",
+     "cn": "桑德兰",
+     "rank": 10,
+     "pts": 53,
+     "draws": 12,
+     "d00": 4,
+     "d11": 7,
+     "d22": 1,
+     "dother": 0,
+     "streak": 4,
+     "gap": 7,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Chelsea FC",
+     "cn": "切尔西",
+     "rank": 11,
+     "pts": 52,
+     "draws": 10,
+     "d00": 2,
+     "d11": 4,
+     "d22": 4,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Everton FC",
+     "cn": "埃弗顿",
+     "rank": 12,
+     "pts": 51,
+     "draws": 10,
+     "d00": 2,
+     "d11": 5,
+     "d22": 2,
+     "dother": 1,
+     "streak": 2,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Newcastle United FC",
+     "cn": "纽卡斯尔联",
+     "rank": 13,
+     "pts": 50,
+     "draws": 7,
+     "d00": 4,
+     "d11": 1,
+     "d22": 2,
+     "dother": 0,
+     "streak": 1,
+     "gap": 13,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Leeds United FC",
+     "cn": "利兹联",
+     "rank": 14,
+     "pts": 49,
+     "draws": 14,
+     "d00": 4,
+     "d11": 6,
+     "d22": 3,
+     "dother": 1,
+     "streak": 3,
+     "gap": 8,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Crystal Palace FC",
+     "cn": "水晶宫",
+     "rank": 15,
+     "pts": 46,
+     "draws": 12,
+     "d00": 6,
+     "d11": 3,
+     "d22": 2,
+     "dother": 1,
+     "streak": 2,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Nottingham Forest FC",
+     "cn": "诺丁汉森林",
+     "rank": 16,
+     "pts": 44,
+     "draws": 11,
+     "d00": 3,
+     "d11": 6,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Tottenham Hotspur FC",
+     "cn": "热刺",
+     "rank": 17,
+     "pts": 43,
+     "draws": 11,
+     "d00": 1,
+     "d11": 4,
+     "d22": 6,
+     "dother": 0,
+     "streak": 2,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "West Ham United FC",
+     "cn": "西汉姆联",
+     "rank": 18,
+     "pts": 38,
+     "draws": 9,
+     "d00": 2,
+     "d11": 5,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 6,
+     "promo": false,
+     "releg": true
+    },
+    {
+     "name": "Burnley FC",
+     "cn": "伯恩利",
+     "rank": 19,
+     "pts": 21,
+     "draws": 10,
+     "d00": 2,
+     "d11": 5,
+     "d22": 3,
+     "dother": 0,
+     "streak": 3,
+     "gap": 11,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Wolverhampton Wanderers FC",
+     "cn": "狼队",
+     "rank": 20,
+     "pts": 18,
+     "draws": 11,
+     "d00": 2,
+     "d11": 7,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": true
+    }
+   ],
+   "note": "降级按积分榜末 3 位推断（下赛季名单未发布）"
+  },
+  "2024-25": {
+   "season": "2024-25",
+   "totalMatches": 380,
+   "totalDraws": 93,
+   "drawRate": 24.47,
+   "overall": [
+    {
+     "score": "0-0",
+     "n": 16,
+     "pct": 17.2,
+     "pctMatch": 4.21
+    },
+    {
+     "score": "1-1",
+     "n": 45,
+     "pct": 48.39,
+     "pctMatch": 11.84
+    },
+    {
+     "score": "2-2",
+     "n": 31,
+     "pct": 33.33,
+     "pctMatch": 8.16
+    },
+    {
+     "score": "其他",
+     "n": 1,
+     "pct": 1.08,
+     "pctMatch": 0.26
+    }
+   ],
+   "perRound": [
+    {
+     "round": "Matchday 1",
+     "n": 2
+    },
+    {
+     "round": "Matchday 2",
+     "n": 1
+    },
+    {
+     "round": "Matchday 3",
+     "n": 4
+    },
+    {
+     "round": "Matchday 4",
+     "n": 3
+    },
+    {
+     "round": "Matchday 5",
+     "n": 5
+    },
+    {
+     "round": "Matchday 6",
+     "n": 3
+    },
+    {
+     "round": "Matchday 7",
+     "n": 3
+    },
+    {
+     "round": "Matchday 8",
+     "n": 0
+    },
+    {
+     "round": "Matchday 9",
+     "n": 4
+    },
+    {
+     "round": "Matchday 10",
+     "n": 3
+    },
+    {
+     "round": "Matchday 11",
+     "n": 2
+    },
+    {
+     "round": "Matchday 12",
+     "n": 3
+    },
+    {
+     "round": "Matchday 13",
+     "n": 3
+    },
+    {
+     "round": "Matchday 14",
+     "n": 1
+    },
+    {
+     "round": "Matchday 15",
+     "n": 4
+    },
+    {
+     "round": "Matchday 16",
+     "n": 3
+    },
+    {
+     "round": "Matchday 17",
+     "n": 3
+    },
+    {
+     "round": "Matchday 18",
+     "n": 3
+    },
+    {
+     "round": "Matchday 19",
+     "n": 3
+    },
+    {
+     "round": "Matchday 20",
+     "n": 4
+    },
+    {
+     "round": "Matchday 21",
+     "n": 3
+    },
+    {
+     "round": "Matchday 22",
+     "n": 1
+    },
+    {
+     "round": "Matchday 23",
+     "n": 1
+    },
+    {
+     "round": "Matchday 24",
+     "n": 0
+    },
+    {
+     "round": "Matchday 25",
+     "n": 1
+    },
+    {
+     "round": "Matchday 26",
+     "n": 1
+    },
+    {
+     "round": "Matchday 27",
+     "n": 2
+    },
+    {
+     "round": "Matchday 28",
+     "n": 3
+    },
+    {
+     "round": "Matchday 29",
+     "n": 3
+    },
+    {
+     "round": "Matchday 30",
+     "n": 1
+    },
+    {
+     "round": "Matchday 31",
+     "n": 4
+    },
+    {
+     "round": "Matchday 32",
+     "n": 3
+    },
+    {
+     "round": "Matchday 33",
+     "n": 2
+    },
+    {
+     "round": "Matchday 34",
+     "n": 2
+    },
+    {
+     "round": "Matchday 35",
+     "n": 4
+    },
+    {
+     "round": "Matchday 36",
+     "n": 3
+    },
+    {
+     "round": "Matchday 37",
+     "n": 0
+    },
+    {
+     "round": "Matchday 38",
+     "n": 2
+    }
+   ],
+   "teams": [
+    {
+     "name": "Liverpool FC",
+     "cn": "利物浦",
+     "rank": 1,
+     "pts": 84,
+     "draws": 9,
+     "d00": 0,
+     "d11": 2,
+     "d22": 6,
+     "dother": 1,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Arsenal FC",
+     "cn": "阿森纳",
+     "rank": 2,
+     "pts": 74,
+     "draws": 14,
+     "d00": 2,
+     "d11": 7,
+     "d22": 5,
+     "dother": 0,
+     "streak": 2,
+     "gap": 4,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester City FC",
+     "cn": "曼城",
+     "rank": 3,
+     "pts": 71,
+     "draws": 8,
+     "d00": 2,
+     "d11": 2,
+     "d22": 4,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Chelsea FC",
+     "cn": "切尔西",
+     "rank": 4,
+     "pts": 69,
+     "draws": 9,
+     "d00": 2,
+     "d11": 5,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Newcastle United FC",
+     "cn": "纽卡斯尔联",
+     "rank": 5,
+     "pts": 66,
+     "draws": 6,
+     "d00": 1,
+     "d11": 4,
+     "d22": 0,
+     "dother": 1,
+     "streak": 2,
+     "gap": 20,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Aston Villa FC",
+     "cn": "阿斯顿维拉",
+     "rank": 6,
+     "pts": 66,
+     "draws": 9,
+     "d00": 1,
+     "d11": 3,
+     "d22": 5,
+     "dother": 0,
+     "streak": 2,
+     "gap": 12,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Nottingham Forest FC",
+     "cn": "诺丁汉森林",
+     "rank": 7,
+     "pts": 65,
+     "draws": 8,
+     "d00": 1,
+     "d11": 5,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 13,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brighton & Hove Albion FC",
+     "cn": "布莱顿",
+     "rank": 8,
+     "pts": 61,
+     "draws": 13,
+     "d00": 2,
+     "d11": 5,
+     "d22": 6,
+     "dother": 0,
+     "streak": 4,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "AFC Bournemouth",
+     "cn": "伯恩茅斯",
+     "rank": 9,
+     "pts": 56,
+     "draws": 11,
+     "d00": 2,
+     "d11": 5,
+     "d22": 4,
+     "dother": 0,
+     "streak": 2,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brentford FC",
+     "cn": "布伦特福德",
+     "rank": 10,
+     "pts": 56,
+     "draws": 8,
+     "d00": 3,
+     "d11": 4,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Fulham FC",
+     "cn": "富勒姆",
+     "rank": 11,
+     "pts": 54,
+     "draws": 9,
+     "d00": 1,
+     "d11": 5,
+     "d22": 3,
+     "dother": 0,
+     "streak": 3,
+     "gap": 18,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Crystal Palace FC",
+     "cn": "水晶宫",
+     "rank": 12,
+     "pts": 53,
+     "draws": 14,
+     "d00": 3,
+     "d11": 6,
+     "d22": 5,
+     "dother": 0,
+     "streak": 3,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Everton FC",
+     "cn": "埃弗顿",
+     "rank": 13,
+     "pts": 48,
+     "draws": 15,
+     "d00": 5,
+     "d11": 7,
+     "d22": 3,
+     "dother": 0,
+     "streak": 4,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "West Ham United FC",
+     "cn": "西汉姆联",
+     "rank": 14,
+     "pts": 43,
+     "draws": 10,
+     "d00": 1,
+     "d11": 8,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester United FC",
+     "cn": "曼联",
+     "rank": 15,
+     "pts": 42,
+     "draws": 9,
+     "d00": 3,
+     "d11": 4,
+     "d22": 2,
+     "dother": 0,
+     "streak": 1,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Wolverhampton Wanderers FC",
+     "cn": "狼队",
+     "rank": 16,
+     "pts": 42,
+     "draws": 6,
+     "d00": 0,
+     "d11": 3,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Tottenham Hotspur FC",
+     "cn": "热刺",
+     "rank": 17,
+     "pts": 38,
+     "draws": 5,
+     "d00": 0,
+     "d11": 3,
+     "d22": 2,
+     "dother": 0,
+     "streak": 1,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Leicester City FC",
+     "cn": "莱斯特城",
+     "rank": 18,
+     "pts": 25,
+     "draws": 7,
+     "d00": 0,
+     "d11": 3,
+     "d22": 4,
+     "dother": 0,
+     "streak": 2,
+     "gap": 16,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Ipswich Town FC",
+     "cn": "伊普斯维奇",
+     "rank": 19,
+     "pts": 22,
+     "draws": 10,
+     "d00": 1,
+     "d11": 5,
+     "d22": 4,
+     "dother": 0,
+     "streak": 4,
+     "gap": 7,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Southampton FC",
+     "cn": "南安普顿",
+     "rank": 20,
+     "pts": 12,
+     "draws": 6,
+     "d00": 2,
+     "d11": 4,
+     "d22": 0,
+     "dother": 0,
+     "streak": 1,
+     "gap": 12,
+     "promo": true,
+     "releg": true
+    }
+   ],
+   "note": ""
+  },
+  "2023-24": {
+   "season": "2023-24",
+   "totalMatches": 380,
+   "totalDraws": 82,
+   "drawRate": 21.58,
+   "overall": [
+    {
+     "score": "0-0",
+     "n": 11,
+     "pct": 13.41,
+     "pctMatch": 2.89
+    },
+    {
+     "score": "1-1",
+     "n": 38,
+     "pct": 46.34,
+     "pctMatch": 10.0
+    },
+    {
+     "score": "2-2",
+     "n": 27,
+     "pct": 32.93,
+     "pctMatch": 7.11
+    },
+    {
+     "score": "其他",
+     "n": 6,
+     "pct": 7.32,
+     "pctMatch": 1.58
+    }
+   ],
+   "perRound": [
+    {
+     "round": "Matchday 1",
+     "n": 3
+    },
+    {
+     "round": "Matchday 2",
+     "n": 0
+    },
+    {
+     "round": "Matchday 3",
+     "n": 2
+    },
+    {
+     "round": "Matchday 4",
+     "n": 2
+    },
+    {
+     "round": "Matchday 5",
+     "n": 2
+    },
+    {
+     "round": "Matchday 6",
+     "n": 3
+    },
+    {
+     "round": "Matchday 7",
+     "n": 1
+    },
+    {
+     "round": "Matchday 8",
+     "n": 4
+    },
+    {
+     "round": "Matchday 9",
+     "n": 2
+    },
+    {
+     "round": "Matchday 10",
+     "n": 2
+    },
+    {
+     "round": "Matchday 11",
+     "n": 2
+    },
+    {
+     "round": "Matchday 12",
+     "n": 2
+    },
+    {
+     "round": "Matchday 13",
+     "n": 1
+    },
+    {
+     "round": "Matchday 14",
+     "n": 3
+    },
+    {
+     "round": "Matchday 15",
+     "n": 0
+    },
+    {
+     "round": "Matchday 16",
+     "n": 2
+    },
+    {
+     "round": "Matchday 17",
+     "n": 2
+    },
+    {
+     "round": "Matchday 18",
+     "n": 3
+    },
+    {
+     "round": "Matchday 19",
+     "n": 0
+    },
+    {
+     "round": "Matchday 20",
+     "n": 1
+    },
+    {
+     "round": "Matchday 21",
+     "n": 5
+    },
+    {
+     "round": "Matchday 22",
+     "n": 2
+    },
+    {
+     "round": "Matchday 23",
+     "n": 4
+    },
+    {
+     "round": "Matchday 24",
+     "n": 0
+    },
+    {
+     "round": "Matchday 25",
+     "n": 3
+    },
+    {
+     "round": "Matchday 26",
+     "n": 1
+    },
+    {
+     "round": "Matchday 27",
+     "n": 1
+    },
+    {
+     "round": "Matchday 28",
+     "n": 4
+    },
+    {
+     "round": "Matchday 29",
+     "n": 2
+    },
+    {
+     "round": "Matchday 30",
+     "n": 5
+    },
+    {
+     "round": "Matchday 31",
+     "n": 4
+    },
+    {
+     "round": "Matchday 32",
+     "n": 3
+    },
+    {
+     "round": "Matchday 33",
+     "n": 3
+    },
+    {
+     "round": "Matchday 34",
+     "n": 0
+    },
+    {
+     "round": "Matchday 35",
+     "n": 4
+    },
+    {
+     "round": "Matchday 36",
+     "n": 2
+    },
+    {
+     "round": "Matchday 37",
+     "n": 2
+    },
+    {
+     "round": "Matchday 38",
+     "n": 0
+    }
+   ],
+   "teams": [
+    {
+     "name": "Manchester City FC",
+     "cn": "曼城",
+     "rank": 1,
+     "pts": 91,
+     "draws": 7,
+     "d00": 1,
+     "d11": 3,
+     "d22": 1,
+     "dother": 2,
+     "streak": 3,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Arsenal FC",
+     "cn": "阿森纳",
+     "rank": 2,
+     "pts": 89,
+     "draws": 5,
+     "d00": 1,
+     "d11": 1,
+     "d22": 3,
+     "dother": 0,
+     "streak": 1,
+     "gap": 10,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Liverpool FC",
+     "cn": "利物浦",
+     "rank": 3,
+     "pts": 82,
+     "draws": 10,
+     "d00": 1,
+     "d11": 5,
+     "d22": 3,
+     "dother": 1,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Aston Villa FC",
+     "cn": "阿斯顿维拉",
+     "rank": 4,
+     "pts": 68,
+     "draws": 8,
+     "d00": 1,
+     "d11": 3,
+     "d22": 2,
+     "dother": 2,
+     "streak": 1,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Tottenham Hotspur FC",
+     "cn": "热刺",
+     "rank": 5,
+     "pts": 66,
+     "draws": 6,
+     "d00": 0,
+     "d11": 1,
+     "d22": 4,
+     "dother": 1,
+     "streak": 1,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Chelsea FC",
+     "cn": "切尔西",
+     "rank": 6,
+     "pts": 63,
+     "draws": 9,
+     "d00": 1,
+     "d11": 2,
+     "d22": 5,
+     "dother": 1,
+     "streak": 2,
+     "gap": 12,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Newcastle United FC",
+     "cn": "纽卡斯尔联",
+     "rank": 7,
+     "pts": 60,
+     "draws": 6,
+     "d00": 0,
+     "d11": 2,
+     "d22": 3,
+     "dother": 1,
+     "streak": 1,
+     "gap": 12,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester United FC",
+     "cn": "曼联",
+     "rank": 8,
+     "pts": 60,
+     "draws": 6,
+     "d00": 1,
+     "d11": 2,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 16,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "West Ham United FC",
+     "cn": "西汉姆联",
+     "rank": 9,
+     "pts": 52,
+     "draws": 10,
+     "d00": 1,
+     "d11": 5,
+     "d22": 4,
+     "dother": 0,
+     "streak": 3,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Crystal Palace FC",
+     "cn": "水晶宫",
+     "rank": 10,
+     "pts": 49,
+     "draws": 10,
+     "d00": 2,
+     "d11": 7,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brighton & Hove Albion FC",
+     "cn": "布莱顿",
+     "rank": 11,
+     "pts": 48,
+     "draws": 12,
+     "d00": 3,
+     "d11": 8,
+     "d22": 1,
+     "dother": 0,
+     "streak": 3,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Everton FC",
+     "cn": "埃弗顿",
+     "rank": 12,
+     "pts": 48,
+     "draws": 9,
+     "d00": 2,
+     "d11": 5,
+     "d22": 2,
+     "dother": 0,
+     "streak": 3,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "AFC Bournemouth",
+     "cn": "伯恩茅斯",
+     "rank": 13,
+     "pts": 48,
+     "draws": 9,
+     "d00": 1,
+     "d11": 3,
+     "d22": 5,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Fulham FC",
+     "cn": "富勒姆",
+     "rank": 14,
+     "pts": 47,
+     "draws": 8,
+     "d00": 3,
+     "d11": 2,
+     "d22": 2,
+     "dother": 1,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Wolverhampton Wanderers FC",
+     "cn": "狼队",
+     "rank": 15,
+     "pts": 46,
+     "draws": 7,
+     "d00": 1,
+     "d11": 4,
+     "d22": 2,
+     "dother": 0,
+     "streak": 1,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brentford FC",
+     "cn": "布伦特福德",
+     "rank": 16,
+     "pts": 39,
+     "draws": 9,
+     "d00": 2,
+     "d11": 3,
+     "d22": 3,
+     "dother": 1,
+     "streak": 3,
+     "gap": 19,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Nottingham Forest FC",
+     "cn": "诺丁汉森林",
+     "rank": 17,
+     "pts": 36,
+     "draws": 9,
+     "d00": 1,
+     "d11": 6,
+     "d22": 2,
+     "dother": 0,
+     "streak": 3,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Luton Town FC",
+     "cn": "卢顿",
+     "rank": 18,
+     "pts": 26,
+     "draws": 8,
+     "d00": 0,
+     "d11": 6,
+     "d22": 1,
+     "dother": 1,
+     "streak": 1,
+     "gap": 8,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Burnley FC",
+     "cn": "伯恩利",
+     "rank": 19,
+     "pts": 24,
+     "draws": 9,
+     "d00": 0,
+     "d11": 6,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 11,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Sheffield United FC",
+     "cn": "谢菲尔德联",
+     "rank": 20,
+     "pts": 16,
+     "draws": 7,
+     "d00": 0,
+     "d11": 2,
+     "d22": 4,
+     "dother": 1,
+     "streak": 2,
+     "gap": 7,
+     "promo": true,
+     "releg": true
+    }
+   ],
+   "note": ""
+  },
+  "2022-23": {
+   "season": "2022-23",
+   "totalMatches": 380,
+   "totalDraws": 87,
+   "drawRate": 22.89,
+   "overall": [
+    {
+     "score": "0-0",
+     "n": 23,
+     "pct": 26.44,
+     "pctMatch": 6.05
+    },
+    {
+     "score": "1-1",
+     "n": 38,
+     "pct": 43.68,
+     "pctMatch": 10.0
+    },
+    {
+     "score": "2-2",
+     "n": 20,
+     "pct": 22.99,
+     "pctMatch": 5.26
+    },
+    {
+     "score": "其他",
+     "n": 6,
+     "pct": 6.9,
+     "pctMatch": 1.58
+    }
+   ],
+   "perRound": [
+    {
+     "round": "Matchday 1",
+     "n": 2
+    },
+    {
+     "round": "Matchday 2",
+     "n": 5
+    },
+    {
+     "round": "Matchday 3",
+     "n": 2
+    },
+    {
+     "round": "Matchday 4",
+     "n": 2
+    },
+    {
+     "round": "Matchday 5",
+     "n": 4
+    },
+    {
+     "round": "Matchday 6",
+     "n": 3
+    },
+    {
+     "round": "Matchday 7",
+     "n": 1
+    },
+    {
+     "round": "Matchday 8",
+     "n": 3
+    },
+    {
+     "round": "Matchday 9",
+     "n": 3
+    },
+    {
+     "round": "Matchday 10",
+     "n": 1
+    },
+    {
+     "round": "Matchday 11",
+     "n": 4
+    },
+    {
+     "round": "Matchday 12",
+     "n": 2
+    },
+    {
+     "round": "Matchday 13",
+     "n": 2
+    },
+    {
+     "round": "Matchday 14",
+     "n": 2
+    },
+    {
+     "round": "Matchday 15",
+     "n": 1
+    },
+    {
+     "round": "Matchday 16",
+     "n": 0
+    },
+    {
+     "round": "Matchday 17",
+     "n": 1
+    },
+    {
+     "round": "Matchday 18",
+     "n": 3
+    },
+    {
+     "round": "Matchday 19",
+     "n": 3
+    },
+    {
+     "round": "Matchday 20",
+     "n": 0
+    },
+    {
+     "round": "Matchday 21",
+     "n": 5
+    },
+    {
+     "round": "Matchday 22",
+     "n": 2
+    },
+    {
+     "round": "Matchday 23",
+     "n": 4
+    },
+    {
+     "round": "Matchday 24",
+     "n": 2
+    },
+    {
+     "round": "Matchday 25",
+     "n": 2
+    },
+    {
+     "round": "Matchday 26",
+     "n": 1
+    },
+    {
+     "round": "Matchday 27",
+     "n": 3
+    },
+    {
+     "round": "Matchday 28",
+     "n": 3
+    },
+    {
+     "round": "Matchday 29",
+     "n": 3
+    },
+    {
+     "round": "Matchday 30",
+     "n": 1
+    },
+    {
+     "round": "Matchday 31",
+     "n": 1
+    },
+    {
+     "round": "Matchday 32",
+     "n": 4
+    },
+    {
+     "round": "Matchday 33",
+     "n": 2
+    },
+    {
+     "round": "Matchday 34",
+     "n": 1
+    },
+    {
+     "round": "Matchday 35",
+     "n": 0
+    },
+    {
+     "round": "Matchday 36",
+     "n": 2
+    },
+    {
+     "round": "Matchday 37",
+     "n": 4
+    },
+    {
+     "round": "Matchday 38",
+     "n": 3
+    }
+   ],
+   "teams": [
+    {
+     "name": "Manchester City FC",
+     "cn": "曼城",
+     "rank": 1,
+     "pts": 89,
+     "draws": 5,
+     "d00": 0,
+     "d11": 4,
+     "d22": 0,
+     "dother": 1,
+     "streak": 1,
+     "gap": 12,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Arsenal FC",
+     "cn": "阿森纳",
+     "rank": 2,
+     "pts": 84,
+     "draws": 6,
+     "d00": 1,
+     "d11": 2,
+     "d22": 2,
+     "dother": 1,
+     "streak": 3,
+     "gap": 10,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester United FC",
+     "cn": "曼联",
+     "rank": 3,
+     "pts": 75,
+     "draws": 6,
+     "d00": 2,
+     "d11": 2,
+     "d22": 2,
+     "dother": 0,
+     "streak": 1,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Newcastle United FC",
+     "cn": "纽卡斯尔联",
+     "rank": 4,
+     "pts": 71,
+     "draws": 14,
+     "d00": 7,
+     "d11": 5,
+     "d22": 1,
+     "dother": 1,
+     "streak": 3,
+     "gap": 12,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Liverpool FC",
+     "cn": "利物浦",
+     "rank": 5,
+     "pts": 67,
+     "draws": 10,
+     "d00": 4,
+     "d11": 2,
+     "d22": 2,
+     "dother": 2,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brighton & Hove Albion FC",
+     "cn": "布莱顿",
+     "rank": 6,
+     "pts": 62,
+     "draws": 8,
+     "d00": 2,
+     "d11": 2,
+     "d22": 2,
+     "dother": 2,
+     "streak": 1,
+     "gap": 10,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Aston Villa FC",
+     "cn": "阿斯顿维拉",
+     "rank": 7,
+     "pts": 61,
+     "draws": 7,
+     "d00": 1,
+     "d11": 6,
+     "d22": 0,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Tottenham Hotspur FC",
+     "cn": "热刺",
+     "rank": 8,
+     "pts": 60,
+     "draws": 6,
+     "d00": 0,
+     "d11": 2,
+     "d22": 3,
+     "dother": 1,
+     "streak": 2,
+     "gap": 11,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brentford FC",
+     "cn": "布伦特福德",
+     "rank": 9,
+     "pts": 59,
+     "draws": 14,
+     "d00": 3,
+     "d11": 7,
+     "d22": 3,
+     "dother": 1,
+     "streak": 2,
+     "gap": 6,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Fulham FC",
+     "cn": "富勒姆",
+     "rank": 10,
+     "pts": 52,
+     "draws": 7,
+     "d00": 3,
+     "d11": 1,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 11,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Crystal Palace FC",
+     "cn": "水晶宫",
+     "rank": 11,
+     "pts": 45,
+     "draws": 12,
+     "d00": 5,
+     "d11": 6,
+     "d22": 1,
+     "dother": 0,
+     "streak": 3,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Chelsea FC",
+     "cn": "切尔西",
+     "rank": 12,
+     "pts": 44,
+     "draws": 11,
+     "d00": 4,
+     "d11": 4,
+     "d22": 3,
+     "dother": 0,
+     "streak": 3,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Wolverhampton Wanderers FC",
+     "cn": "狼队",
+     "rank": 13,
+     "pts": 41,
+     "draws": 8,
+     "d00": 2,
+     "d11": 6,
+     "d22": 0,
+     "dother": 0,
+     "streak": 2,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "West Ham United FC",
+     "cn": "西汉姆联",
+     "rank": 14,
+     "pts": 40,
+     "draws": 7,
+     "d00": 0,
+     "d11": 5,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "AFC Bournemouth",
+     "cn": "伯恩茅斯",
+     "rank": 15,
+     "pts": 39,
+     "draws": 6,
+     "d00": 2,
+     "d11": 3,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 16,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Nottingham Forest FC",
+     "cn": "诺丁汉森林",
+     "rank": 16,
+     "pts": 38,
+     "draws": 11,
+     "d00": 1,
+     "d11": 7,
+     "d22": 3,
+     "dother": 0,
+     "streak": 1,
+     "gap": 7,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Everton FC",
+     "cn": "埃弗顿",
+     "rank": 17,
+     "pts": 36,
+     "draws": 12,
+     "d00": 3,
+     "d11": 6,
+     "d22": 3,
+     "dother": 0,
+     "streak": 4,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Leicester City FC",
+     "cn": "莱斯特城",
+     "rank": 18,
+     "pts": 34,
+     "draws": 7,
+     "d00": 2,
+     "d11": 2,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": true
+    },
+    {
+     "name": "Leeds United FC",
+     "cn": "利兹联",
+     "rank": 19,
+     "pts": 31,
+     "draws": 10,
+     "d00": 3,
+     "d11": 2,
+     "d22": 5,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": true
+    },
+    {
+     "name": "Southampton FC",
+     "cn": "南安普顿",
+     "rank": 20,
+     "pts": 25,
+     "draws": 7,
+     "d00": 1,
+     "d11": 2,
+     "d22": 1,
+     "dother": 3,
+     "streak": 1,
+     "gap": 13,
+     "promo": false,
+     "releg": true
+    }
+   ],
+   "note": ""
+  },
+  "2021-22": {
+   "season": "2021-22",
+   "totalMatches": 380,
+   "totalDraws": 88,
+   "drawRate": 23.16,
+   "overall": [
+    {
+     "score": "0-0",
+     "n": 22,
+     "pct": 25.0,
+     "pctMatch": 5.79
+    },
+    {
+     "score": "1-1",
+     "n": 42,
+     "pct": 47.73,
+     "pctMatch": 11.05
+    },
+    {
+     "score": "2-2",
+     "n": 20,
+     "pct": 22.73,
+     "pctMatch": 5.26
+    },
+    {
+     "score": "其他",
+     "n": 4,
+     "pct": 4.55,
+     "pctMatch": 1.05
+    }
+   ],
+   "perRound": [
+    {
+     "round": "Matchday 1",
+     "n": 0
+    },
+    {
+     "round": "Matchday 2",
+     "n": 3
+    },
+    {
+     "round": "Matchday 3",
+     "n": 5
+    },
+    {
+     "round": "Matchday 4",
+     "n": 1
+    },
+    {
+     "round": "Matchday 5",
+     "n": 2
+    },
+    {
+     "round": "Matchday 6",
+     "n": 4
+    },
+    {
+     "round": "Matchday 7",
+     "n": 5
+    },
+    {
+     "round": "Matchday 8",
+     "n": 2
+    },
+    {
+     "round": "Matchday 9",
+     "n": 3
+    },
+    {
+     "round": "Matchday 10",
+     "n": 1
+    },
+    {
+     "round": "Matchday 11",
+     "n": 4
+    },
+    {
+     "round": "Matchday 12",
+     "n": 2
+    },
+    {
+     "round": "Matchday 13",
+     "n": 3
+    },
+    {
+     "round": "Matchday 14",
+     "n": 4
+    },
+    {
+     "round": "Matchday 15",
+     "n": 2
+    },
+    {
+     "round": "Matchday 16",
+     "n": 1
+    },
+    {
+     "round": "Matchday 17",
+     "n": 3
+    },
+    {
+     "round": "Matchday 18",
+     "n": 4
+    },
+    {
+     "round": "Matchday 19",
+     "n": 1
+    },
+    {
+     "round": "Matchday 20",
+     "n": 2
+    },
+    {
+     "round": "Matchday 21",
+     "n": 1
+    },
+    {
+     "round": "Matchday 22",
+     "n": 3
+    },
+    {
+     "round": "Matchday 23",
+     "n": 3
+    },
+    {
+     "round": "Matchday 24",
+     "n": 4
+    },
+    {
+     "round": "Matchday 25",
+     "n": 3
+    },
+    {
+     "round": "Matchday 26",
+     "n": 1
+    },
+    {
+     "round": "Matchday 27",
+     "n": 3
+    },
+    {
+     "round": "Matchday 28",
+     "n": 0
+    },
+    {
+     "round": "Matchday 29",
+     "n": 1
+    },
+    {
+     "round": "Matchday 30",
+     "n": 1
+    },
+    {
+     "round": "Matchday 31",
+     "n": 3
+    },
+    {
+     "round": "Matchday 32",
+     "n": 1
+    },
+    {
+     "round": "Matchday 33",
+     "n": 1
+    },
+    {
+     "round": "Matchday 34",
+     "n": 4
+    },
+    {
+     "round": "Matchday 35",
+     "n": 0
+    },
+    {
+     "round": "Matchday 36",
+     "n": 2
+    },
+    {
+     "round": "Matchday 37",
+     "n": 5
+    },
+    {
+     "round": "Matchday 38",
+     "n": 0
+    }
+   ],
+   "teams": [
+    {
+     "name": "Manchester City FC",
+     "cn": "曼城",
+     "rank": 1,
+     "pts": 93,
+     "draws": 6,
+     "d00": 2,
+     "d11": 1,
+     "d22": 3,
+     "dother": 0,
+     "streak": 1,
+     "gap": 15,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Liverpool FC",
+     "cn": "利物浦",
+     "rank": 2,
+     "pts": 92,
+     "draws": 8,
+     "d00": 0,
+     "d11": 2,
+     "d22": 5,
+     "dother": 1,
+     "streak": 2,
+     "gap": 10,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Chelsea FC",
+     "cn": "切尔西",
+     "rank": 3,
+     "pts": 74,
+     "draws": 11,
+     "d00": 1,
+     "d11": 8,
+     "d22": 2,
+     "dother": 0,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Tottenham Hotspur FC",
+     "cn": "热刺",
+     "rank": 4,
+     "pts": 71,
+     "draws": 5,
+     "d00": 2,
+     "d11": 2,
+     "d22": 1,
+     "dother": 0,
+     "streak": 1,
+     "gap": 15,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Arsenal FC",
+     "cn": "阿森纳",
+     "rank": 5,
+     "pts": 69,
+     "draws": 3,
+     "d00": 2,
+     "d11": 0,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 17,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Manchester United FC",
+     "cn": "曼联",
+     "rank": 6,
+     "pts": 58,
+     "draws": 10,
+     "d00": 1,
+     "d11": 8,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "West Ham United FC",
+     "cn": "西汉姆联",
+     "rank": 7,
+     "pts": 56,
+     "draws": 8,
+     "d00": 2,
+     "d11": 3,
+     "d22": 3,
+     "dother": 0,
+     "streak": 2,
+     "gap": 9,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Leicester City FC",
+     "cn": "莱斯特城",
+     "rank": 8,
+     "pts": 52,
+     "draws": 10,
+     "d00": 1,
+     "d11": 5,
+     "d22": 4,
+     "dother": 0,
+     "streak": 2,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brighton & Hove Albion FC",
+     "cn": "布莱顿",
+     "rank": 9,
+     "pts": 51,
+     "draws": 15,
+     "d00": 4,
+     "d11": 9,
+     "d22": 2,
+     "dother": 0,
+     "streak": 3,
+     "gap": 7,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Wolverhampton Wanderers FC",
+     "cn": "狼队",
+     "rank": 10,
+     "pts": 51,
+     "draws": 6,
+     "d00": 3,
+     "d11": 2,
+     "d22": 1,
+     "dother": 0,
+     "streak": 2,
+     "gap": 16,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Newcastle United FC",
+     "cn": "纽卡斯尔联",
+     "rank": 11,
+     "pts": 49,
+     "draws": 10,
+     "d00": 0,
+     "d11": 8,
+     "d22": 1,
+     "dother": 1,
+     "streak": 2,
+     "gap": 14,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Crystal Palace FC",
+     "cn": "水晶宫",
+     "rank": 12,
+     "pts": 48,
+     "draws": 15,
+     "d00": 4,
+     "d11": 6,
+     "d22": 4,
+     "dother": 1,
+     "streak": 4,
+     "gap": 4,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Brentford FC",
+     "cn": "布伦特福德",
+     "rank": 13,
+     "pts": 46,
+     "draws": 7,
+     "d00": 3,
+     "d11": 1,
+     "d22": 1,
+     "dother": 2,
+     "streak": 2,
+     "gap": 9,
+     "promo": true,
+     "releg": false
+    },
+    {
+     "name": "Aston Villa FC",
+     "cn": "阿斯顿维拉",
+     "rank": 14,
+     "pts": 45,
+     "draws": 6,
+     "d00": 1,
+     "d11": 3,
+     "d22": 1,
+     "dother": 1,
+     "streak": 2,
+     "gap": 16,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Southampton FC",
+     "cn": "南安普顿",
+     "rank": 15,
+     "pts": 40,
+     "draws": 13,
+     "d00": 2,
+     "d11": 6,
+     "d22": 5,
+     "dother": 0,
+     "streak": 4,
+     "gap": 5,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Everton FC",
+     "cn": "埃弗顿",
+     "rank": 16,
+     "pts": 39,
+     "draws": 6,
+     "d00": 2,
+     "d11": 3,
+     "d22": 1,
+     "dother": 0,
+     "streak": 1,
+     "gap": 13,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Leeds United FC",
+     "cn": "利兹联",
+     "rank": 17,
+     "pts": 38,
+     "draws": 11,
+     "d00": 2,
+     "d11": 6,
+     "d22": 2,
+     "dother": 1,
+     "streak": 2,
+     "gap": 8,
+     "promo": false,
+     "releg": false
+    },
+    {
+     "name": "Burnley FC",
+     "cn": "伯恩利",
+     "rank": 18,
+     "pts": 35,
+     "draws": 14,
+     "d00": 5,
+     "d11": 6,
+     "d22": 2,
+     "dother": 1,
+     "streak": 3,
+     "gap": 6,
+     "promo": false,
+     "releg": true
+    },
+    {
+     "name": "Watford FC",
+     "cn": "沃特福德",
+     "rank": 19,
+     "pts": 23,
+     "draws": 5,
+     "d00": 3,
+     "d11": 2,
+     "d22": 0,
+     "dother": 0,
+     "streak": 1,
+     "gap": 12,
+     "promo": true,
+     "releg": true
+    },
+    {
+     "name": "Norwich City FC",
+     "cn": "诺维奇",
+     "rank": 20,
+     "pts": 22,
+     "draws": 7,
+     "d00": 4,
+     "d11": 3,
+     "d22": 0,
+     "dother": 0,
+     "streak": 2,
+     "gap": 8,
+     "promo": true,
+     "releg": true
+    }
+   ],
+   "note": ""
+  }
+ },
+ "cats": [
+  "0-0",
+  "1-1",
+  "2-2",
+  "其他"
+ ],
+ "cross": {
+  "seasonSeq": [
+   "2021-22",
+   "2022-23",
+   "2023-24",
+   "2024-25",
+   "2025-26"
+  ],
+  "teams": [
+   {
+    "name": "Crystal Palace FC",
+    "cn": "水晶宫",
+    "seasons": 5,
+    "per": [
+     15,
+     12,
+     10,
+     14,
+     12
+    ],
+    "total": 63,
+    "avgSeason": 12.6,
+    "rate": 33.16,
+    "min": 10,
+    "max": 15,
+    "range": 5,
+    "sd": 1.74,
+    "maxStreak": 4,
+    "d00": 20,
+    "d11": 28,
+    "d22": 13,
+    "dother": 2,
+    "rank": 1
+   },
+   {
+    "name": "Brighton & Hove Albion FC",
+    "cn": "布莱顿",
+    "seasons": 5,
+    "per": [
+     15,
+     8,
+     12,
+     13,
+     11
+    ],
+    "total": 59,
+    "avgSeason": 11.8,
+    "rate": 31.05,
+    "min": 8,
+    "max": 15,
+    "range": 7,
+    "sd": 2.32,
+    "maxStreak": 4,
+    "d00": 13,
+    "d11": 30,
+    "d22": 14,
+    "dother": 2,
+    "rank": 2
+   },
+   {
+    "name": "Everton FC",
+    "cn": "埃弗顿",
+    "seasons": 5,
+    "per": [
+     6,
+     12,
+     9,
+     15,
+     10
+    ],
+    "total": 52,
+    "avgSeason": 10.4,
+    "rate": 27.37,
+    "min": 6,
+    "max": 15,
+    "range": 9,
+    "sd": 3.01,
+    "maxStreak": 4,
+    "d00": 14,
+    "d11": 26,
+    "d22": 11,
+    "dother": 1,
+    "rank": 3
+   },
+   {
+    "name": "Chelsea FC",
+    "cn": "切尔西",
+    "seasons": 5,
+    "per": [
+     11,
+     11,
+     9,
+     9,
+     10
+    ],
+    "total": 50,
+    "avgSeason": 10.0,
+    "rate": 26.32,
+    "min": 9,
+    "max": 11,
+    "range": 2,
+    "sd": 0.89,
+    "maxStreak": 3,
+    "d00": 10,
+    "d11": 23,
+    "d22": 16,
+    "dother": 1,
+    "rank": 4
+   },
+   {
+    "name": "Brentford FC",
+    "cn": "布伦特福德",
+    "seasons": 5,
+    "per": [
+     7,
+     14,
+     9,
+     8,
+     11
+    ],
+    "total": 49,
+    "avgSeason": 9.8,
+    "rate": 25.79,
+    "min": 7,
+    "max": 14,
+    "range": 7,
+    "sd": 2.48,
+    "maxStreak": 5,
+    "d00": 15,
+    "d11": 18,
+    "d22": 12,
+    "dother": 4,
+    "rank": 5
+   },
+   {
+    "name": "Liverpool FC",
+    "cn": "利物浦",
+    "seasons": 5,
+    "per": [
+     8,
+     10,
+     10,
+     9,
+     9
+    ],
+    "total": 46,
+    "avgSeason": 9.2,
+    "rate": 24.21,
+    "min": 8,
+    "max": 10,
+    "range": 2,
+    "sd": 0.75,
+    "maxStreak": 4,
+    "d00": 7,
+    "d11": 16,
+    "d22": 17,
+    "dother": 6,
+    "rank": 6
+   },
+   {
+    "name": "AFC Bournemouth",
+    "cn": "伯恩茅斯",
+    "seasons": 4,
+    "per": [
+     null,
+     6,
+     9,
+     11,
+     18
+    ],
+    "total": 44,
+    "avgSeason": 11.0,
+    "rate": 28.95,
+    "min": 6,
+    "max": 18,
+    "range": 12,
+    "sd": 4.42,
+    "maxStreak": 5,
+    "d00": 10,
+    "d11": 17,
+    "d22": 15,
+    "dother": 2,
+    "rank": 7
+   },
+   {
+    "name": "West Ham United FC",
+    "cn": "西汉姆联",
+    "seasons": 5,
+    "per": [
+     8,
+     7,
+     10,
+     10,
+     9
+    ],
+    "total": 44,
+    "avgSeason": 8.8,
+    "rate": 23.16,
+    "min": 7,
+    "max": 10,
+    "range": 3,
+    "sd": 1.17,
+    "maxStreak": 3,
+    "d00": 6,
+    "d11": 26,
+    "d22": 12,
+    "dother": 0,
+    "rank": 8
+   },
+   {
+    "name": "Newcastle United FC",
+    "cn": "纽卡斯尔联",
+    "seasons": 5,
+    "per": [
+     10,
+     14,
+     6,
+     6,
+     7
+    ],
+    "total": 43,
+    "avgSeason": 8.6,
+    "rate": 22.63,
+    "min": 6,
+    "max": 14,
+    "range": 8,
+    "sd": 3.07,
+    "maxStreak": 3,
+    "d00": 12,
+    "d11": 20,
+    "d22": 7,
+    "dother": 4,
+    "rank": 9
+   },
+   {
+    "name": "Manchester United FC",
+    "cn": "曼联",
+    "seasons": 5,
+    "per": [
+     10,
+     6,
+     6,
+     9,
+     11
+    ],
+    "total": 42,
+    "avgSeason": 8.4,
+    "rate": 22.11,
+    "min": 6,
+    "max": 11,
+    "range": 5,
+    "sd": 2.06,
+    "maxStreak": 3,
+    "d00": 8,
+    "d11": 21,
+    "d22": 12,
+    "dother": 1,
+    "rank": 10
+   },
+   {
+    "name": "Nottingham Forest FC",
+    "cn": "诺丁汉森林",
+    "seasons": 4,
+    "per": [
+     null,
+     11,
+     9,
+     8,
+     11
+    ],
+    "total": 39,
+    "avgSeason": 9.8,
+    "rate": 25.66,
+    "min": 8,
+    "max": 11,
+    "range": 3,
+    "sd": 1.3,
+    "maxStreak": 3,
+    "d00": 6,
+    "d11": 24,
+    "d22": 9,
+    "dother": 0,
+    "rank": 11
+   },
+   {
+    "name": "Wolverhampton Wanderers FC",
+    "cn": "狼队",
+    "seasons": 5,
+    "per": [
+     6,
+     8,
+     7,
+     6,
+     11
+    ],
+    "total": 38,
+    "avgSeason": 7.6,
+    "rate": 20.0,
+    "min": 6,
+    "max": 11,
+    "range": 5,
+    "sd": 1.85,
+    "maxStreak": 2,
+    "d00": 8,
+    "d11": 22,
+    "d22": 8,
+    "dother": 0,
+    "rank": 12
+   },
+   {
+    "name": "Aston Villa FC",
+    "cn": "阿斯顿维拉",
+    "seasons": 5,
+    "per": [
+     6,
+     7,
+     8,
+     9,
+     8
+    ],
+    "total": 38,
+    "avgSeason": 7.6,
+    "rate": 20.0,
+    "min": 6,
+    "max": 9,
+    "range": 3,
+    "sd": 1.02,
+    "maxStreak": 2,
+    "d00": 7,
+    "d11": 19,
+    "d22": 9,
+    "dother": 3,
+    "rank": 13
+   },
+   {
+    "name": "Leeds United FC",
+    "cn": "利兹联",
+    "seasons": 3,
+    "per": [
+     11,
+     10,
+     null,
+     null,
+     14
+    ],
+    "total": 35,
+    "avgSeason": 11.7,
+    "rate": 30.7,
+    "min": 10,
+    "max": 14,
+    "range": 4,
+    "sd": 1.7,
+    "maxStreak": 3,
+    "d00": 9,
+    "d11": 14,
+    "d22": 10,
+    "dother": 2,
+    "rank": 14
+   },
+   {
+    "name": "Manchester City FC",
+    "cn": "曼城",
+    "seasons": 5,
+    "per": [
+     6,
+     5,
+     7,
+     8,
+     9
+    ],
+    "total": 35,
+    "avgSeason": 7.0,
+    "rate": 18.42,
+    "min": 5,
+    "max": 9,
+    "range": 4,
+    "sd": 1.41,
+    "maxStreak": 3,
+    "d00": 6,
+    "d11": 15,
+    "d22": 10,
+    "dother": 4,
+    "rank": 15
+   },
+   {
+    "name": "Arsenal FC",
+    "cn": "阿森纳",
+    "seasons": 5,
+    "per": [
+     3,
+     6,
+     5,
+     14,
+     7
+    ],
+    "total": 35,
+    "avgSeason": 7.0,
+    "rate": 18.42,
+    "min": 3,
+    "max": 14,
+    "range": 11,
+    "sd": 3.74,
+    "maxStreak": 3,
+    "d00": 8,
+    "d11": 13,
+    "d22": 13,
+    "dother": 1,
+    "rank": 16
+   },
+   {
+    "name": "Burnley FC",
+    "cn": "伯恩利",
+    "seasons": 3,
+    "per": [
+     14,
+     null,
+     9,
+     null,
+     10
+    ],
+    "total": 33,
+    "avgSeason": 11.0,
+    "rate": 28.95,
+    "min": 9,
+    "max": 14,
+    "range": 5,
+    "sd": 2.16,
+    "maxStreak": 3,
+    "d00": 7,
+    "d11": 17,
+    "d22": 8,
+    "dother": 1,
+    "rank": 17
+   },
+   {
+    "name": "Tottenham Hotspur FC",
+    "cn": "热刺",
+    "seasons": 5,
+    "per": [
+     5,
+     6,
+     6,
+     5,
+     11
+    ],
+    "total": 33,
+    "avgSeason": 6.6,
+    "rate": 17.37,
+    "min": 5,
+    "max": 11,
+    "range": 6,
+    "sd": 2.24,
+    "maxStreak": 2,
+    "d00": 3,
+    "d11": 12,
+    "d22": 16,
+    "dother": 2,
+    "rank": 18
+   },
+   {
+    "name": "Fulham FC",
+    "cn": "富勒姆",
+    "seasons": 4,
+    "per": [
+     null,
+     7,
+     8,
+     9,
+     7
+    ],
+    "total": 31,
+    "avgSeason": 7.8,
+    "rate": 20.39,
+    "min": 7,
+    "max": 9,
+    "range": 2,
+    "sd": 0.83,
+    "maxStreak": 3,
+    "d00": 9,
+    "d11": 12,
+    "d22": 9,
+    "dother": 1,
+    "rank": 19
+   },
+   {
+    "name": "Southampton FC",
+    "cn": "南安普顿",
+    "seasons": 3,
+    "per": [
+     13,
+     7,
+     null,
+     6,
+     null
+    ],
+    "total": 26,
+    "avgSeason": 8.7,
+    "rate": 22.81,
+    "min": 6,
+    "max": 13,
+    "range": 7,
+    "sd": 3.09,
+    "maxStreak": 4,
+    "d00": 5,
+    "d11": 12,
+    "d22": 6,
+    "dother": 3,
+    "rank": 20
+   },
+   {
+    "name": "Leicester City FC",
+    "cn": "莱斯特城",
+    "seasons": 3,
+    "per": [
+     10,
+     7,
+     null,
+     7,
+     null
+    ],
+    "total": 24,
+    "avgSeason": 8.0,
+    "rate": 21.05,
+    "min": 7,
+    "max": 10,
+    "range": 3,
+    "sd": 1.41,
+    "maxStreak": 2,
+    "d00": 3,
+    "d11": 10,
+    "d22": 11,
+    "dother": 0,
+    "rank": 21
+   },
+   {
+    "name": "Sunderland AFC",
+    "cn": "桑德兰",
+    "seasons": 1,
+    "per": [
+     null,
+     null,
+     null,
+     null,
+     12
+    ],
+    "total": 12,
+    "avgSeason": 12.0,
+    "rate": 31.58,
+    "min": 12,
+    "max": 12,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 4,
+    "d00": 4,
+    "d11": 7,
+    "d22": 1,
+    "dother": 0,
+    "rank": 22
+   },
+   {
+    "name": "Ipswich Town FC",
+    "cn": "伊普斯维奇",
+    "seasons": 1,
+    "per": [
+     null,
+     null,
+     null,
+     10,
+     null
+    ],
+    "total": 10,
+    "avgSeason": 10.0,
+    "rate": 26.32,
+    "min": 10,
+    "max": 10,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 4,
+    "d00": 1,
+    "d11": 5,
+    "d22": 4,
+    "dother": 0,
+    "rank": 23
+   },
+   {
+    "name": "Luton Town FC",
+    "cn": "卢顿",
+    "seasons": 1,
+    "per": [
+     null,
+     null,
+     8,
+     null,
+     null
+    ],
+    "total": 8,
+    "avgSeason": 8.0,
+    "rate": 21.05,
+    "min": 8,
+    "max": 8,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 1,
+    "d00": 0,
+    "d11": 6,
+    "d22": 1,
+    "dother": 1,
+    "rank": 24
+   },
+   {
+    "name": "Norwich City FC",
+    "cn": "诺维奇",
+    "seasons": 1,
+    "per": [
+     7,
+     null,
+     null,
+     null,
+     null
+    ],
+    "total": 7,
+    "avgSeason": 7.0,
+    "rate": 18.42,
+    "min": 7,
+    "max": 7,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 2,
+    "d00": 4,
+    "d11": 3,
+    "d22": 0,
+    "dother": 0,
+    "rank": 25
+   },
+   {
+    "name": "Sheffield United FC",
+    "cn": "谢菲尔德联",
+    "seasons": 1,
+    "per": [
+     null,
+     null,
+     7,
+     null,
+     null
+    ],
+    "total": 7,
+    "avgSeason": 7.0,
+    "rate": 18.42,
+    "min": 7,
+    "max": 7,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 2,
+    "d00": 0,
+    "d11": 2,
+    "d22": 4,
+    "dother": 1,
+    "rank": 26
+   },
+   {
+    "name": "Watford FC",
+    "cn": "沃特福德",
+    "seasons": 1,
+    "per": [
+     5,
+     null,
+     null,
+     null,
+     null
+    ],
+    "total": 5,
+    "avgSeason": 5.0,
+    "rate": 13.16,
+    "min": 5,
+    "max": 5,
+    "range": 0,
+    "sd": 0.0,
+    "maxStreak": 1,
+    "d00": 3,
+    "d11": 2,
+    "d22": 0,
+    "dother": 0,
+    "rank": 27
+   }
+  ],
+  "meta": {
+   "nTeams": 27,
+   "nFull": 14,
+   "stable8": [
+    "水晶宫",
+    "布莱顿",
+    "切尔西",
+    "利物浦"
+   ],
+   "stable10": [
+    "水晶宫"
+   ],
+   "topTotal": {
+    "cn": "水晶宫",
+    "total": 63,
+    "per": [
+     15,
+     12,
+     10,
+     14,
+     12
+    ]
+   },
+   "steady": [
+    {
+     "cn": "利物浦",
+     "sd": 0.75,
+     "range": 2
+    },
+    {
+     "cn": "切尔西",
+     "sd": 0.89,
+     "range": 2
+    },
+    {
+     "cn": "阿斯顿维拉",
+     "sd": 1.02,
+     "range": 3
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,474 @@
+{
+ "name": "德甲 2627",
+ "roundSource": "titan007",
+ "matches": [
+  {
+   "date": "2026-08-29",
+   "team1": "FC Bayern München",
+   "team2": "VfB Stuttgart",
+   "score": {
+    "ft": [
+     5,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "SV 07 Elversberg",
+   "team2": "Bayer 04 Leverkusen",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FC Köln",
+   "team2": "TSG 1899 Hoffenheim",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FSV Mainz 05",
+   "team2": "SC Paderborn 07",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "RB Leipzig",
+   "team2": "Borussia Mönchengladbach",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "1. FC Union Berlin",
+   "team2": "Eintracht Frankfurt",
+   "score": {
+    "ft": [
+     3,
+     3
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Borussia Dortmund",
+   "team2": "Hamburger SV",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "SC Freiburg",
+   "team2": "SV Werder Bremen",
+   "score": {
+    "ft": [
+     4,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "FC Augsburg",
+   "team2": "FC Schalke 04",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "VfB Stuttgart",
+   "team2": "1. FC Köln",
+   "score": {
+    "ft": [
+     4,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "SV Werder Bremen",
+   "team2": "RB Leipzig",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "TSG 1899 Hoffenheim",
+   "team2": "Borussia Dortmund",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "SC Paderborn 07",
+   "team2": "SC Freiburg",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Bayer 04 Leverkusen",
+   "team2": "1. FC Union Berlin",
+   "score": {
+    "ft": [
+     4,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Borussia Mönchengladbach",
+   "team2": "SV 07 Elversberg",
+   "score": {
+    "ft": [
+     3,
+     4
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "FC Schalke 04",
+   "team2": "FC Bayern München",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Hamburger SV",
+   "team2": "1. FSV Mainz 05",
+   "score": {
+    "ft": [
+     0,
+     5
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Eintracht Frankfurt",
+   "team2": "FC Augsburg",
+   "score": {
+    "ft": [
+     1,
+     4
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "1. FC Union Berlin",
+   "team2": "FC Schalke 04",
+   "score": {
+    "ft": [
+     1,
+     3
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "SC Freiburg",
+   "team2": "Borussia Mönchengladbach",
+   "score": {
+    "ft": [
+     5,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "TSG 1899 Hoffenheim",
+   "team2": "VfB Stuttgart",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "1. FSV Mainz 05",
+   "team2": "Eintracht Frankfurt",
+   "score": {
+    "ft": [
+     1,
+     3
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "FC Augsburg",
+   "team2": "Bayer 04 Leverkusen",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Borussia Dortmund",
+   "team2": "SC Paderborn 07",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "1. FC Köln",
+   "team2": "SV Werder Bremen",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "RB Leipzig",
+   "team2": "Hamburger SV",
+   "score": {
+    "ft": [
+     5,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "SV 07 Elversberg",
+   "team2": "FC Bayern München",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "FC Bayern München",
+   "team2": "1. FC Union Berlin",
+   "score": {
+    "ft": [
+     7,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Borussia Mönchengladbach",
+   "team2": "1. FSV Mainz 05",
+   "score": {
+    "ft": [
+     3,
+     4
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Eintracht Frankfurt",
+   "team2": "SC Freiburg",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Hamburger SV",
+   "team2": "1. FC Köln",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "SV Werder Bremen",
+   "team2": "FC Augsburg",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "VfB Stuttgart",
+   "team2": "Borussia Dortmund",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Bayer 04 Leverkusen",
+   "team2": "RB Leipzig",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "FC Schalke 04",
+   "team2": "SV 07 Elversberg",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-21",
+   "team1": "SC Paderborn 07",
+   "team2": "TSG 1899 Hoffenheim",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  }
+ ]
+}

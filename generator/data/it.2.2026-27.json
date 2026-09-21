@@ -1,0 +1,656 @@
+{
+ "name": "意乙 2627",
+ "roundSource": "titan007",
+ "matches": [
+  {
+   "date": "2026-08-22",
+   "team1": "L.R. Vicenza Virtus",
+   "team2": "US Catanzaro",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Carrarese Calcio",
+   "team2": "Mantova 1911 SSD",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "FC Südtirol",
+   "team2": "Virtus Entella",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "US Avellino",
+   "team2": "US Arezzo",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Benevento Calcio",
+   "team2": "Modena FC",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Empoli FC",
+   "team2": "US Cremonese",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-24",
+   "team1": "Pisa SC",
+   "team2": "Calcio Padova",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-24",
+   "team1": "Hellas Verona FC",
+   "team2": "Ascoli Calcio",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-24",
+   "team1": "Palermo FC",
+   "team2": "Juve Stabia",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-24",
+   "team1": "Cesena FC",
+   "team2": "Sampdoria",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "US Cremonese",
+   "team2": "Modena FC",
+   "score": {
+    "ft": [
+     0,
+     3
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Virtus Entella",
+   "team2": "Cesena FC",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Sampdoria",
+   "team2": "Juve Stabia",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Calcio Padova",
+   "team2": "Hellas Verona FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Ascoli Calcio",
+   "team2": "Carrarese Calcio",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "US Avellino",
+   "team2": "L.R. Vicenza Virtus",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-31",
+   "team1": "US Arezzo",
+   "team2": "Palermo FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-31",
+   "team1": "Mantova 1911 SSD",
+   "team2": "Empoli FC",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-31",
+   "team1": "Pisa SC",
+   "team2": "US Catanzaro",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-31",
+   "team1": "Benevento Calcio",
+   "team2": "FC Südtirol",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "FC Südtirol",
+   "team2": "US Catanzaro",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Ascoli Calcio",
+   "team2": "Benevento Calcio",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Carrarese Calcio",
+   "team2": "Empoli FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Cesena FC",
+   "team2": "Mantova 1911 SSD",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Virtus Entella",
+   "team2": "L.R. Vicenza Virtus",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Juve Stabia",
+   "team2": "Pisa SC",
+   "score": {
+    "ft": [
+     0,
+     3
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Modena FC",
+   "team2": "US Avellino",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Hellas Verona FC",
+   "team2": "US Arezzo",
+   "score": {
+    "ft": [
+     5,
+     0
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-07",
+   "team1": "US Cremonese",
+   "team2": "Calcio Padova",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-08",
+   "team1": "Palermo FC",
+   "team2": "Sampdoria",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Empoli FC",
+   "team2": "US Arezzo",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Pisa SC",
+   "team2": "Virtus Entella",
+   "score": {
+    "ft": [
+     1,
+     4
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Benevento Calcio",
+   "team2": "Hellas Verona FC",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "FC Südtirol",
+   "team2": "Modena FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "L.R. Vicenza Virtus",
+   "team2": "Juve Stabia",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Calcio Padova",
+   "team2": "Ascoli Calcio",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "US Catanzaro",
+   "team2": "Carrarese Calcio",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Cesena FC",
+   "team2": "US Cremonese",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "US Avellino",
+   "team2": "Palermo FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Mantova 1911 SSD",
+   "team2": "Sampdoria",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Juve Stabia",
+   "team2": "Cesena FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Carrarese Calcio",
+   "team2": "Benevento Calcio",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "US Cremonese",
+   "team2": "Virtus Entella",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Palermo FC",
+   "team2": "Calcio Padova",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Sampdoria",
+   "team2": "US Catanzaro",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Ascoli Calcio",
+   "team2": "US Avellino",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "US Arezzo",
+   "team2": "FC Südtirol",
+   "score": {
+    "ft": [
+     1,
+     4
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Hellas Verona FC",
+   "team2": "L.R. Vicenza Virtus",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Mantova 1911 SSD",
+   "team2": "Pisa SC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-21",
+   "team1": "Modena FC",
+   "team2": "Empoli FC",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  }
+ ]
+}

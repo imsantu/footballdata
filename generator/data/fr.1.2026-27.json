@@ -1,0 +1,591 @@
+{
+ "name": "法甲 2627",
+ "roundSource": "titan007",
+ "matches": [
+  {
+   "date": "2026-08-22",
+   "team1": "Olympique de Marseille",
+   "team2": "RC Strasbourg Alsace",
+   "score": {
+    "ft": [
+     4,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-22",
+   "team1": "Racing Club de Lens",
+   "team2": "AJ Auxerre",
+   "score": {
+    "ft": [
+     5,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Le Mans FC",
+   "team2": "Stade Brestois 29",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Toulouse FC",
+   "team2": "Olympique Lyonnais",
+   "score": {
+    "ft": [
+     0,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "ESTAC Troyes",
+   "team2": "Paris FC",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "OGC Nice",
+   "team2": "FC Lorient",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Angers SCO",
+   "team2": "Lille OSC",
+   "score": {
+    "ft": [
+     0,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-23",
+   "team1": "Le Havre AC",
+   "team2": "AS Monaco FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-24",
+   "team1": "Stade Rennais FC 1901",
+   "team2": "Paris Saint-Germain FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "1. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "Lille OSC",
+   "team2": "Paris Saint-Germain FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-29",
+   "team1": "RC Strasbourg Alsace",
+   "team2": "Racing Club de Lens",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "AJ Auxerre",
+   "team2": "Angers SCO",
+   "score": {
+    "ft": [
+     1,
+     3
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Stade Brestois 29",
+   "team2": "Toulouse FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "FC Lorient",
+   "team2": "ESTAC Troyes",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Olympique Lyonnais",
+   "team2": "Le Havre AC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Paris FC",
+   "team2": "OGC Nice",
+   "score": {
+    "ft": [
+     3,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-30",
+   "team1": "Stade Rennais FC 1901",
+   "team2": "Le Mans FC",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-08-31",
+   "team1": "AS Monaco FC",
+   "team2": "Olympique de Marseille",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "2. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-04",
+   "team1": "Toulouse FC",
+   "team2": "Lille OSC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Olympique Lyonnais",
+   "team2": "AJ Auxerre",
+   "score": {
+    "ft": [
+     3,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Paris Saint-Germain FC",
+   "team2": "AS Monaco FC",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-05",
+   "team1": "Racing Club de Lens",
+   "team2": "FC Lorient",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "OGC Nice",
+   "team2": "Le Mans FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Le Havre AC",
+   "team2": "Stade Brestois 29",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "ESTAC Troyes",
+   "team2": "RC Strasbourg Alsace",
+   "score": {
+    "ft": [
+     2,
+     6
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-06",
+   "team1": "Angers SCO",
+   "team2": "Stade Rennais FC 1901",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-07",
+   "team1": "Olympique de Marseille",
+   "team2": "Paris FC",
+   "score": {
+    "ft": [
+     2,
+     3
+    ]
+   },
+   "round": "3. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "Stade Rennais FC 1901",
+   "team2": "Olympique de Marseille",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-12",
+   "team1": "RC Strasbourg Alsace",
+   "team2": "AS Monaco FC",
+   "score": {
+    "ft": [
+     1,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Le Havre AC",
+   "team2": "Angers SCO",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "AJ Auxerre",
+   "team2": "OGC Nice",
+   "score": {
+    "ft": [
+     1,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "FC Lorient",
+   "team2": "Toulouse FC",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Paris FC",
+   "team2": "Olympique Lyonnais",
+   "score": {
+    "ft": [
+     0,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Lille OSC",
+   "team2": "ESTAC Troyes",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-13",
+   "team1": "Le Mans FC",
+   "team2": "Racing Club de Lens",
+   "score": {
+    "ft": [
+     2,
+     2
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-14",
+   "team1": "Stade Brestois 29",
+   "team2": "Paris Saint-Germain FC",
+   "score": {
+    "ft": [
+     0,
+     1
+    ]
+   },
+   "round": "4. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "AS Monaco FC",
+   "team2": "Racing Club de Lens",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-19",
+   "team1": "Paris FC",
+   "team2": "RC Strasbourg Alsace",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Toulouse FC",
+   "team2": "Le Havre AC",
+   "score": {
+    "ft": [
+     3,
+     2
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Le Mans FC",
+   "team2": "FC Lorient",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Olympique Lyonnais",
+   "team2": "Stade Rennais FC 1901",
+   "score": {
+    "ft": [
+     4,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "Angers SCO",
+   "team2": "ESTAC Troyes",
+   "score": {
+    "ft": [
+     2,
+     0
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "AJ Auxerre",
+   "team2": "Stade Brestois 29",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-20",
+   "team1": "OGC Nice",
+   "team2": "Lille OSC",
+   "score": {
+    "ft": [
+     2,
+     1
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  },
+  {
+   "date": "2026-09-21",
+   "team1": "Olympique de Marseille",
+   "team2": "Paris Saint-Germain FC",
+   "score": {
+    "ft": [
+     1,
+     2
+    ]
+   },
+   "round": "5. Round",
+   "_src": "titan007"
+  }
+ ]
+}

@@ -34,12 +34,12 @@ import sys
 import time
 import unicodedata
 
-WS = "/Users/santu/WorkBuddy AI/2026-09-02-02-18-19"
+WS = os.environ.get("FD_GENERATOR_DIR", "/Users/santu/WorkBuddy AI/2026-09-02-02-18-19")
 if WS not in sys.path:
     sys.path.insert(0, WS)
 from standings import compute_table, compute_goals, deduct_map, TIE_RULE
-GOALS_WS = "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
-SITE = "/Users/santu/footballdata/football-data-site"
+GOALS_WS = os.environ.get("FD_GOALS_WS", WS)
+SITE = os.environ.get("FD_SITE_DIR", "/Users/santu/footballdata/football-data-site")
 AUTO = os.path.join(SITE, "tools")
 
 # 进数球比分视角归一化：enrich 只覆盖平局数据里查得到的队，查不到的（升降级队）
