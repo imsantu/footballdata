@@ -35,7 +35,7 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      本队进球数正好相反（2 球色块看着像 1 球）。涉及 goals-pc.js / goals-champ.js（逻辑 JS），
 //      旧缓存是错版，必须 +1 强制浏览器重新拉取。
 // v10：次级联赛进球数页上线（pages/goals-champ.html + goals-champ.js + data/goals-champ/）。
-var CACHE = 'fds-shell-v13';
+var CACHE = 'fds-shell-v14';
 
 // 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
 // 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。

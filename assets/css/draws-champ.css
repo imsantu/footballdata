@@ -41,6 +41,9 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 
 /* 联赛 + 赛季切换（吸顶导航条） */
 .stickynav { position:sticky; top:0; z-index:45; background:var(--bg); padding:0 0 6px; margin-bottom:6px; box-shadow:0 1px 0 var(--border); }
+/* 联赛 tab：横向单行、可滑动。宽屏居中由 .site-center 的 margin:auto 伪元素负责
+   （见 site.css），这里保持 flex-start + overflow-x:auto，保证窄屏溢出时
+   第一个 tab 仍在滚动起点、可点可滑。 */
 .league-tabs { display:flex; flex-wrap:nowrap; gap:2px; justify-content:flex-start; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none; }
 .league-tabs::-webkit-scrollbar { display:none; }
 /* 字号/图标整体放大，未选中也用 text2（比 text-dim 更亮），选中态走高饱和亮色 */

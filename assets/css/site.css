@@ -113,15 +113,20 @@ body .stickynav.site-moved{display:none !important;}
 }
 .site-brand:hover .nm{filter:brightness(1.08);}
 
-/* 中段：页面的联赛 tab 搬到这里，可横向滚动（左对齐，保证第一个 tab 永远在起点、可点可滑）。
+/* 中段：页面的联赛 tab 搬到这里，可横向滚动（保证第一个 tab 永远在起点、可点可滑）。
    切勿用 justify-content:center + overflow-x:auto：内容比容器宽时两端都会溢出，
-   左端（第一个 tab，如英超）会被裁到滚动起点之外、滑不回来、点不到。 */
+   左端（第一个 tab，如英超）会被裁到滚动起点之外、滑不回来、点不到。
+   —— 宽屏「居中」改用两端 margin:auto 的伪元素实现：空间富余时两侧伪元素吸收剩余
+   空间、把 tab 推到正中；一旦内容溢出，伪元素宽度归零，内容仍从 flex-start 起排，
+   横向滑动一切照旧。 */
 .site-center{
   flex:1 1 auto; min-width:0;
   display:flex; align-items:center; justify-content:flex-start; gap:4px;
   overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;
   padding:0 6px;
 }
+.site-center::before,
+.site-center::after{content:""; flex:0 0 auto; margin:auto;}
 .site-center::-webkit-scrollbar{display:none;}
 .site-center > *{flex:0 0 auto;}
 
