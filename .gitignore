@@ -22,3 +22,10 @@ generator/football_big5_draws.html
 generator/football_champ_draws.html
 generator/data/report_all.json
 generator/data/report_champ.json
+
+# 小程序数据同步中间产物（tools/mobile/：由站点数据生成，不入库）
+tools/mobile/.build/
+tools/mobile/cloud-import/
+tools/mobile/node_modules/
+tools/mobile/package-lock.json
+tools/mobile/.env.local

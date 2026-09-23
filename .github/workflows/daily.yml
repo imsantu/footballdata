@@ -43,3 +43,32 @@ jobs:
           FD_PY: python3
           TZ: Asia/Shanghai
         run: bash tools/refresh.sh
+
+      # ── 小程序数据同步 ──────────────────────────────────────────────
+      # 用刚刷新并提交的最新站点数据，生成移动端集合并写进微信云开发数据库，
+      # 让小程序与 web 版共用同一份自动更新数据，全程无需任何手动操作。
+      # 未配置云端密钥（secrets.TENCENTCLOUD_SECRET_ID 为空）时只跑「生成+导出」做体检，
+      # 不写库，站点更新不受影响。
+      - name: 安装云开发服务端 SDK（小程序写库用）
+        working-directory: tools/mobile
+        run: npm install
+
+      - name: 生成移动端数据（读取本站最新数据）
+        working-directory: tools/mobile
+        run: node gen_app_data.js
+
+      - name: 导出云开发集合
+        working-directory: tools/mobile
+        env:
+          DEV_OPENIDS: ${{ secrets.DEV_OPENIDS }}
+        run: node export_data.js
+
+      - name: 写入云数据库
+        if: ${{ secrets.TENCENTCLOUD_SECRET_ID != '' }}
+        working-directory: tools/mobile
+        env:
+          TCB_ENV: ${{ secrets.TCB_ENV }}
+          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
+          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
+          DEV_OPENIDS: ${{ secrets.DEV_OPENIDS }}
+        run: node seed_cloud.js
