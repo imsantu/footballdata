@@ -79,11 +79,12 @@ async function main() {
     return;
   }
   if (!ENV || !SECRET_ID || !SECRET_KEY) {
-    console.error(
-      '缺少云环境配置。请在 weapp/.env.local 写入（或设置环境变量）：\n' +
-      '  TCB_ENV=<云开发环境ID>\n  TENCENTCLOUD_SECRET_ID=<SecretId>\n  TENCENTCLOUD_SECRET_KEY=<SecretKey>'
+    // 注意：这里是正常分支而非错误 —— CI 未配密钥时也要保持绿灯，只跳过写库。
+    console.log(
+      '⏭️  未配置云环境密钥，跳过写库（已完成「生成 + 导出」体检）。\n' +
+      '    配好 TCB_ENV / TENCENTCLOUD_SECRET_ID / TENCENTCLOUD_SECRET_KEY 后，下次运行即自动写入。'
     );
-    process.exit(1);
+    process.exit(0);
   }
 
   let tcb;

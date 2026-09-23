@@ -63,8 +63,7 @@ jobs:
           DEV_OPENIDS: ${{ secrets.DEV_OPENIDS }}
         run: node export_data.js
 
-      - name: 写入云数据库
-        if: ${{ secrets.TENCENTCLOUD_SECRET_ID != '' }}
+      - name: 写入云数据库（未配密钥时脚本自行跳过，保持绿灯）
         working-directory: tools/mobile
         env:
           TCB_ENV: ${{ secrets.TCB_ENV }}
