@@ -30,7 +30,12 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //     +1 强制浏览器重新拉取新版 SW 逻辑。
 // v2：goals-pc.js / goals-mb.js 去掉 升 icon 的 !isNewSeason 限制（2026-27 升班马也标升），
 //     旧 v1 缓存里是带限制的旧版，必须换新版本号强制浏览器重新拉取。
-var CACHE = 'fds-shell-v10';
+// v11：修正「各队 2 球 / 3 球走势分布」色块悬停框的比分口径 —— seq23Matches.score 是
+//      「主客视角」(主队进球-客队进球)，客场时把对手排到前面后比分不能再翻一次，否则读出来
+//      本队进球数正好相反（2 球色块看着像 1 球）。涉及 goals-pc.js / goals-champ.js（逻辑 JS），
+//      旧缓存是错版，必须 +1 强制浏览器重新拉取。
+// v10：次级联赛进球数页上线（pages/goals-champ.html + goals-champ.js + data/goals-champ/）。
+var CACHE = 'fds-shell-v11';
 
 // 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
 // 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。

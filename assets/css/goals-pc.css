@@ -147,6 +147,11 @@ td.col-sel .bar { background:var(--accent); }
 .move { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:4px; margin-left:3px; flex:0 0 auto; font-size:10px; line-height:1; font-weight:800; }
 .move.up { color:#fff; background:var(--green); }
 .move.down { color:#fff; background:#e74c3c; }
+/* 行政降级（非竞技原因）：琥珀色，与平局统计页一致 */
+.move.adm { color:#2a1c05; background:#f0a92e; box-shadow:0 0 0 1px rgba(240,169,46,.9) inset; }
+/* 队名配色：上季从顶级降入→红；上季从次次级联赛升入→绿（与平局统计页一致） */
+.team-table td.name .nm.up-clr { color:var(--green); }
+.team-table td.name .nm.down-clr { color:#e74c3c; }
 .cmp-up { color:var(--green); }
 .cmp-down { color:#e74c3c; }
 .cmp-eq { color:var(--text-muted); }

@@ -13,9 +13,29 @@ set -uo pipefail
 # 的 generator/ 目录；本机仍走 WorkBuddy 会话目录默认路径，行为与改造前完全一致。
 SITE="${FD_SITE_DIR:-/Users/santu/footballdata/football-data-site}"
 WS="${FD_GENERATOR_DIR:-/Users/santu/WorkBuddy AI/2026-09-02-02-18-19}"
-GOALS_WS="${FD_GOALS_WS:-$WS}"
+# GOALS_WS = 进球数报告（football_big5_goals.html / football_mobile.html）所在目录。
+#   本机：报告与脚本**不在同一目录**（脚本 09-02，报告 08-24）——历史事故：默认写成 $WS，
+#         sync_site.py 找不到源报告 → 「[FAIL] 进球数统计: 源报告不存在」→ 整条流水线中止、
+#         站点当天不更新（2026-09-22 两次）。
+#   云端/同仓：FD_GENERATOR_DIR 已给出，报告与脚本同在 generator/，此时必须跟随 $WS，
+#         否则会去找一个云端不存在的 macOS 路径。
+#   判定顺序：FD_GOALS_WS 显式给出 → 用它；给了 FD_GENERATOR_DIR → 跟随 $WS；都没有 → 本机报告目录。
+if [ -n "${FD_GOALS_WS:-}" ]; then
+    GOALS_WS="$FD_GOALS_WS"
+elif [ -n "${FD_GENERATOR_DIR:-}" ]; then
+    GOALS_WS="$WS"
+else
+    GOALS_WS="/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"
+fi
 AUTO="$SITE/tools"
 PY="${FD_PY:-/usr/bin/python3}"
+
+# 必须 export：sync_site.py 是独立进程，靠 FD_* 环境变量解析同一套路径
+# （refresh.sh 自己算出的 WS/GOALS_WS 只用于拼本脚本内的命令，不会自动传给子进程）。
+export FD_SITE_DIR="$SITE"
+export FD_GENERATOR_DIR="$WS"
+export FD_GOALS_WS="$GOALS_WS"
+export FD_PY="$PY"
 
 # ── 防重入 + 随机错峰 ──
 # 运行锁：避免 catchup.sh 在下方随机等待期间误判「窗口错过」而重复拉起本任务
@@ -97,9 +117,21 @@ step "出报告：平局·次级联赛" "$PY" "$WS/build_champ.py"
 # 4) 进球数统计（该页是增量打补丁式更新 2026-27 的进球分布）
 step "更新：进球数统计 2026-27" "$PY" "$WS/update_seq23_2627.py"
 
-# 5) 同步数据块到站点（含抽取+体检+enrich，随后由 sync_site.py 直传内存对象给
+# 5) 同步数据块到站点（第一遍：含抽取+体检+enrich，随后由 sync_site.py 直传内存对象给
 #    拆分器写出按季 chunk + 队徽外置 PNG；历史赛季 chunk 已冻结于 git，日常只动 2026-27）
 step "同步数据到站点" "$PY" "$AUTO/sync_site.py"
+
+# 5b) 进球数统计 · 次级联赛（新功能：英冠/西乙/德乙/法乙/意乙）
+#     由已上线的 draws-champ 分块（同源、覆盖完整）重建种子 HTML，再交 sync_site.py 拆 chunk。
+#     ⚠️ 顺序很重要：它读的是**站点里刚落盘的** draws-champ 分块，所以必须排在 5) 之后。
+#        若放在 5) 之前，读到的是昨天那版分块，会让「次级联赛进球数」比「次级联赛平局」滞后一天。
+#     该脚本随仓库走（$SITE/generator/），不在 $WS；云端模式下 FD_GENERATOR_DIR 就是
+#     $SITE/generator，两种模式此路径都成立。
+step "更新：进球数·次级联赛" "$PY" "$SITE/generator/build_champ_goals.py"
+
+# 5c) 再同步一遍，把刚重建的 goals-champ 种子拆成 chunk。
+#     此时其余三组会判定「无变化」直接跳过（幂等），额外代价很小。
+step "同步数据到站点（补：进球数·次级联赛）" "$PY" "$AUTO/sync_site.py"
 
 # 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
 SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"
@@ -122,10 +154,10 @@ else
         # 种子 HTML（football_big5_goals.html / football_mobile.html）；本机模式生成器
         # 在仓库外（WorkBuddy 会话目录），跳过以免 git add 报错。
         case "$WS" in
-            "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html 2>/dev/null || true ;;
+            "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html generator/football_champ_goals.html 2>/dev/null || true ;;
         esac
         if ! git add 'assets/js/meta.js' \
-                     'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' \
+                     'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
                      'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue

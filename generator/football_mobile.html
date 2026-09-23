@@ -995,7 +995,7 @@ syncNavH();
       var home=el.getAttribute('data-home'), away=el.getAttribute('data-away'), score=el.getAttribute('data-score'), date=el.getAttribute('data-date'), round=el.getAttribute('data-round'), ha=el.getAttribute('data-ha'), season=el.getAttribute('data-season');
       if(!home && !away) return;
       var line=home+' <b>'+score+'</b> '+away, sp=(''+score).split('-');
-      if(ha!=='H' && sp.length===2) line=away+' <b>'+sp[1]+'-'+sp[0]+'</b> '+home;
+      if(ha!=='H' && sp.length===2) line=away+' <b>'+sp[0]+'-'+sp[1]+'</b> '+home;
       tip.innerHTML='<b>'+season+' 第 '+round+' 轮</b> · '+date+' · '+(ha==='H'?'主场':'客场')+'<br>'+line;
       tip.style.display='block';
       var x=e.clientX, y=e.clientY; if((x==null)&&e.touches&&e.touches[0]){x=e.touches[0].clientX;y=e.touches[0].clientY;}

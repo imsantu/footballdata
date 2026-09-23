@@ -1,38 +1,106 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
+<html lang="zh-CN" data-page-node-id="0Fl7YgyGeJHEHbOlPRpxKE">
+<head data-page-node-id="1UicHN5wLhiSGraL1qonxd">
+<meta charset="UTF-8" data-page-node-id="xhl0WyiUvBGCwGYZFWr3DH">
 <meta name="viewport" content="width=1100, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f1117">
-<meta name="theme-color" media="(prefers-color-scheme: light)" content="#eef1f6">
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0f1117">
-<!-- 首帧前定主题（消除刷新 / 切页闪黑，详见 index.html 同名注释） -->
-<script>(function(){try{var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;var mt=document.querySelector('meta[name="theme-color"]');if(mt)mt.setAttribute('content',t==='dark'?'#0f1117':'#eef1f6');}catch(e){}})();</script>
-<meta name="description" content="叕中啦 · 五大次级联赛（英冠/西乙/德乙/法乙/意乙）进球数统计，数据接入中。">
-<title>叕中啦 · 次级联赛进球数统计（敬请期待）</title>
+<meta name="theme-color" content="#f4f6fa" data-page-node-id="TpZLzwSay0W3mrXfkXIsOU">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f4f6fa">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#f4f6fa">
+<!-- 移动端固定浅色：手机端直接把主题钉成 light，不读 localStorage / 不读系统外观，
+     杜绝任何深色闪现。桌面端仍由 site.js 的三态主题接管。 -->
+<script>(function(){try{var mb=!window.matchMedia||!matchMedia('(min-width:820px)').matches;if(mb){var r=document.documentElement;r.setAttribute('data-theme','light');r.style.colorScheme='light';return;}var m=null,k=['qzl_theme','fbg_theme'];for(var i=0;i<k.length;i++){try{m=localStorage.getItem(k[i]);}catch(e){}if(m)break;}if(m!=='auto'&&m!=='light'&&m!=='dark')m='auto';var t=m;if(m==='auto'){var hh=new Date().getHours();t=(hh>=6&&hh<18)?'light':'dark';if(window.matchMedia){if(matchMedia('(prefers-color-scheme: dark)').matches)t='dark';else if(matchMedia('(prefers-color-scheme: light)').matches)t='light';}}var r=document.documentElement;r.setAttribute('data-theme',t);r.style.colorScheme=t;}catch(e){}})();</script>
+<meta name="description" content="叕中啦 · 欧洲五大次级联赛（英冠/西乙/德乙/法乙/意乙）各赛季单场总进球数分布、球队进球榜与走势。">
+<title>欧洲五大次级联赛 · 总进球分布</title>
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/logo/png/logo-32x32.png">
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="apple-touch-icon" href="../assets/img/logo/on-white/apple-touch-icon-180x180.png">
-<link rel="stylesheet" href="../assets/css/site.css">
+<link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="C1lvxDb4mEvnaRmaQitwU4">
+<link rel="preload" href="../assets/css/goals-pc.css" as="style" media="(min-width:820px)">
+<!-- 首屏骨架（critical CSS，内联，不等任何外链/脚本）：顶住 4MB 数据脚本加载期的空窗，消除闪黑 -->
+<style id="bootCss">
+/* 遮罩首帧就是不透明的页面底色（与页面背景同色，所以看不出「多了一层」）；
+   骨架块延迟 0.25s 才淡入 —— 加载快的页面根本看不到骨架，也就不会「闪一下」。 */
+#bootVeil{position:fixed;inset:0;z-index:150;background:var(--bg,#0f1117);pointer-events:none;overflow:hidden;}
+#bootVeil .bv-wrap{opacity:0;animation:bvIn .22s ease .25s forwards;}
+@keyframes bvIn{to{opacity:1;}}
+#bootVeil.out{animation:bvOut .28s ease forwards;}
+@keyframes bvOut{from{opacity:1;}to{opacity:0;}}
+[data-theme="light"] #bootVeil{background:#eef1f6;}
+.bv-wrap{position:absolute;top:calc(var(--site-top-h,64px) + 22px);left:0;right:0;
+  margin:0 auto;max-width:1180px;padding:0 22px;}
+.bv-sh{position:relative;overflow:hidden;border-radius:9px;background:var(--card2,#252836);}
+[data-theme="light"] .bv-sh{background:#e3e8f0;}
+.bv-sh::after{content:"";position:absolute;inset:0;transform:translateX(-100%);
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.05),transparent);
+  animation:bvShim 1.3s infinite;}
+[data-theme="light"] .bv-sh::after{background:linear-gradient(90deg,transparent,rgba(0,0,0,.045),transparent);}
+@keyframes bvShim{to{transform:translateX(100%);}}
+.bv-t{width:200px;height:20px;margin-bottom:18px;}
+.bv-g{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;}
+.bv-g>.bv-sh{flex:1 1 200px;height:92px;}
+.bv-card{height:216px;margin-bottom:14px;}
+.bv-l{height:12px;margin-bottom:9px;border-radius:6px;}
+.bv-l.w7{width:74%;} .bv-l.w6{width:58%;}
+@media (max-width:820px){.bv-wrap{padding:0 14px;}.bv-t{width:140px;}.bv-card{height:170px;}
+  .bv-g>.bv-sh{flex:1 1 140px;height:80px;}}
+@media (prefers-reduced-motion:reduce){#bootVeil .bv-wrap{animation-duration:.01s;}.bv-sh::after{animation:none;}}
+</style>
 </head>
-<body>
-<div id="siteNav"></div>
-<script>window.SITE_ROOT='../';</script>
+<body data-page-node-id="U7EIoFzMdbzrhof5qUxtC4">
+<div id="bootVeil" aria-hidden="true"><div class="bv-wrap">
+  <div class="bv-sh bv-t"></div>
+  <div class="bv-g"><div class="bv-sh"></div><div class="bv-sh"></div><div class="bv-sh"></div></div>
+  <div class="bv-sh bv-card"></div>
+  <div class="bv-sh bv-l"></div><div class="bv-sh bv-l w7"></div><div class="bv-sh bv-l w6"></div>
+</div></div>
+<div id="siteNav" data-page-node-id="p9mxv9F9yHSEqF4LOFxEhJ"></div>
+<script>window.SITE_ROOT='../';window.GOALS_ASSET='../assets/';</script>
 <script src="../assets/js/site.js"></script>
 
-<div class="soon">
-  <div class="ico">⚽</div>
-  <h2>次级联赛 · 进球数统计</h2>
-  <p>英冠 / 西乙 / 德乙 / 法乙 / 意乙 的进球数分布正在接入中。
-     接入方式与「五大联赛进球数」完全一致：把数据落到 <code>assets/js/</code>，
-     页面放到 <code>pages/goals-champ.html</code>，再把 <code>site.js</code> 里
-     对应的 <code>ready</code> 改成 <code>true</code> 即可。</p>
-  <div class="links">
-    <a href="goals-big5.html">先看五大联赛进球数 →</a>
-    <a href="draws-champ.html">次级联赛平局统计 →</a>
-    <a href="../index.html">← 回到首页</a>
-  </div>
-  <div class="tip">本页为占位页，不含任何统计数据。</div>
+
+
+<button class="theme-btn" id="themeBtn" onclick="toggleTheme()"></button>
+<div class="trend-tip" id="avgTip"></div>
+<div class="scroll-nav">
+  <button class="scroll-btn" id="toTop" onclick="window.scrollTo({top:0,behavior:'smooth'})" title="回到页头"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M6 11l6-6 6 6"/></svg></button>
+  <button class="scroll-btn" id="toBottom" onclick="window.scrollTo({top:document.documentElement.scrollHeight,behavior:'smooth'})" title="回到页脚"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M6 13l6 6 6-6"/></svg></button>
 </div>
+<header class="site-head">
+  <div class="brand">
+    <svg class="mark" viewBox="0 0 40 40" aria-hidden="true">
+      <defs><linearGradient id="qzlGoalGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a9eff"/><stop offset="1" stop-color="#00b894"/></linearGradient></defs>
+      <rect width="40" height="40" rx="11" fill="url(#qzlGoalGrad)"/>
+      <g fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="20" cy="20" r="9.4"/><path d="M20 15 L24.76 18.55 L22.94 24.05 L17.06 24.05 L15.24 18.55 Z" fill="#fff" stroke="none"/>
+        <path d="M20 15 V10.6"/><path d="M24.76 18.55 L28.99 17.26"/><path d="M22.94 24.05 L25.53 27.61"/><path d="M17.06 24.05 L14.47 27.61"/><path d="M15.24 18.55 L11.01 17.26"/>
+      </g>
+    </svg>
+    <span class="brand-txt"><span class="nm">叕中啦</span><span class="sl">叕中啦 · 五大联赛数据站</span></span>
+  </div>
+  <nav class="crumb" id="headCrumb" aria-label="当前位置"></nav>
+</header>
+<div class="container">
+  <div class="header"></div>
+  <div class="stickynav">
+    <div class="league-tabs" id="leagueTabs"></div>
+    <div class="navrow"><div class="season-tabs" id="seasonTabs"></div></div>
+  </div>
+  <div class="win-switch" id="winSwitch" role="group" aria-label="赛季范围"></div>
+  <div id="overview"></div>
+  <div id="teams"></div>
+  <div id="trend"></div>
+  <div id="seq23"></div>
+
+  <div class="footer">逐场赛果：<a href="https://www.football-data.co.uk/data.php" target="_blank">Football-Data.co.uk</a>　｜　<span title="原始赛果文件最近一次抓取落盘的时间">数据源更新 <b id="ftSrc">–</b></span>　｜　<span title="本页最近一次重新生成的时间">本页更新 <b id="ftGen">–</b></span></div>
+
+
+<!-- 站点统一时间账本（本页更新），所有页面页脚都读它，保证几页时间一致 -->
+<script defer src="../assets/js/meta.js"></script>
+<link rel="stylesheet" href="../assets/css/goals-pc.css">
+<!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals-champ.js 同步到 URL -->
+<script defer src="../assets/js/view-url.js"></script>
+<script defer src="../assets/js/data/goals-champ/shell.js"></script>
+<script defer src="../assets/js/data/goals-champ/en/2026-27.js"></script>
+<script defer src="../assets/js/goals-champ.js"></script>
 </body>
 </html>

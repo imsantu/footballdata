@@ -43,8 +43,8 @@
       items: [
         { id: 'goals-big5',  label: '五大联赛', file: 'goals-big5.html',  ready: true,
           desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 单场总进球数分布、球队进球榜、赛季走势' },
-        { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: false,
-          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 数据接入中' }
+        { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: true,
+          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 单场总进球数分布、球队进球榜、赛季走势' }
       ]
     }
   ];

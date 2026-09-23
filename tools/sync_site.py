@@ -38,7 +38,17 @@ WS = os.environ.get("FD_GENERATOR_DIR", "/Users/santu/WorkBuddy AI/2026-09-02-02
 if WS not in sys.path:
     sys.path.insert(0, WS)
 from standings import compute_table, compute_goals, deduct_map, TIE_RULE
-GOALS_WS = os.environ.get("FD_GOALS_WS", WS)
+# 进球数报告（football_big5_goals.html / football_mobile.html）所在目录。
+#   本机：报告与脚本**不在同一目录**（脚本 09-02，报告 08-24）；
+#   云端/同仓：两者同在 generator/，即 WS 自身。
+# 判定顺序：① FD_GOALS_WS 显式给出 → 用它；② 给了 FD_GENERATOR_DIR（云端 / 显式覆盖）
+#           → 报告就在同一目录，跟随 WS；③ 都没给（本机裸跑）→ 用本机报告目录。
+# 历史事故：本机默认写成 WS → 找不到源报告 → 「[FAIL] 进球数统计: 源报告不存在」→
+#           整条流水线中止、站点当天不更新（2026-09-22 两次）。改默认值时务必保留 ②，
+#           否则云端 runner 会去找一个不存在的 macOS 路径。
+GOALS_WS = (os.environ.get("FD_GOALS_WS")
+            or (WS if os.environ.get("FD_GENERATOR_DIR")
+                else "/Users/santu/WorkBuddy AI/2026-08-24-11-07-48"))
 SITE = os.environ.get("FD_SITE_DIR", "/Users/santu/footballdata/football-data-site")
 AUTO = os.path.join(SITE, "tools")
 
@@ -78,6 +88,15 @@ JOBS = [
         "src": f"{GOALS_WS}/football_big5_goals.html",
         "marker": "window.DATA = ",
         "group": "goals",
+        "kind": "goals",
+    },
+    {
+        "name": "进球数统计 · 次级联赛",
+        # 该种子由 generator/build_champ_goals.py 生成，随仓库走（不在 $WS）；
+        # 云端模式 FD_GENERATOR_DIR 就是 $SITE/generator，两种模式此路径都成立。
+        "src": f"{SITE}/generator/football_champ_goals.html",
+        "marker": "window.DATA = ",
+        "group": "goals-champ",
         "kind": "goals",
     },
 ]
@@ -367,22 +386,28 @@ def main():
             die(f"{name}: 源报告不存在 {src}")
         new = extract(src, marker)
         if job["kind"] == "goals":
-            verify_goals_standings(new)   # 部署前最后一道闸：2026-27 积分榜必须与赛果一致
-            if draws_obj is not None:
+            is_champ = job["group"] == "goals-champ"
+            # 仅五大联赛需 verify_goals_standings：次级联赛的 rank/pts/ha/round 已在
+            # build_champ_goals.py 里直接由 draws-champ（同源）回填，无需再用 big5 赛果对账。
+            if not is_champ:
+                verify_goals_standings(new)   # 部署前最后一道闸：2026-27 积分榜须与赛果一致
+            # 五大联赛：用 draws-big5 回填官方轮次/主客场（次级联赛已在生成器同源回填，跳过）。
+            if not is_champ and draws_obj is not None:
                 n_hit, n_team, n_cell = enrich_goals(new, draws_obj)
                 print(f"    回填主客场/轮次：命中 {n_hit} 场，"
                       f"按日期重排 {n_team} 支球队 / {n_cell} 格（派生 gap/streak 已重算）")
-                # 统一比分视角（主客视角=主队在前），否则得失球统计会在客场场次整体颠倒
-                fixed = normalize_goals_perspective(new)
-                if fixed:
-                    head = "、".join(f"{lg} {s} {cn}" for lg, s, cn, _ in fixed[:5])
-                    print(f"    统一比分视角：修复 {len(fixed)} 支球队（{head}"
-                          f"{' …' if len(fixed) > 5 else ''}）")
-                bad = check_goals_conservation(new)
-                if bad:
-                    detail = "; ".join(f"{lg} {s} 进球{gf}≠失球{ga} 差{d}"
-                                       for lg, s, gf, ga, d in bad)
-                    die(f"{name}: 总进球不守恒（比分视角仍不一致）：{detail}")
+            # 统一比分视角（主客视角=主队在前）+ 总进球守恒校验：big5 / champ 通用，
+            # 作用于 goals 对象本身，对次级联赛是最后一道一致性兜底。
+            fixed = normalize_goals_perspective(new)
+            if fixed:
+                head = "、".join(f"{lg} {s} {cn}" for lg, s, cn, _ in fixed[:5])
+                print(f"    统一比分视角：修复 {len(fixed)} 支球队（{head}"
+                      f"{' …' if len(fixed) > 5 else ''}）")
+            bad = check_goals_conservation(new)
+            if bad:
+                detail = "; ".join(f"{lg} {s} 进球{gf}≠失球{ga} 差{d}"
+                                   for lg, s, gf, ga, d in bad)
+                die(f"{name}: 总进球不守恒（比分视角仍不一致）：{detail}")
 
         old = load_audit(audit_path(job))
         if old is None:
@@ -416,8 +441,8 @@ def main():
     for job, new, is_changed in planned:
         if not is_changed:
             continue
-        if job["group"] == "goals":
-            gen_goals_chunks.generate(new, only_current=only_current)
+        if job["group"] in ("goals", "goals-champ"):
+            gen_goals_chunks.generate(new, only_current=only_current, group=job["group"])
         else:
             gen_draws_big5_chunks.run(job["group"], obj=new, only_current=only_current)
 

@@ -21,13 +21,16 @@ pages 只首屏加载 shell.js + 2026-27.js，其余季懒加载，
 import os, re, json, base64, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, "assets/js", "goals-data.js")
-DATA_DIR = os.path.join(ROOT, "assets/js/data", "goals")
-CREST_DIR = os.path.join(ROOT, "assets/img/goals-crests")
+SRC = os.path.join(ROOT, "assets/js", "goals-data.js")  # 仅手动回放旧单体时用
 
 # scope 对象里的「重数组」键：壳里用 stub 替代，chunk 再填真实数据
 HEAVY_KEYS = ("teams", "buckets")
 CURRENT_SEASON = "2026-27"
+
+# 次级联赛 logo 文件名加 "2" 后缀（en2/es2/...），与五大联赛的 en/es/... 区分。
+# 原因：两套数据集共享 code 命名空间（en=英超/英冠、es=西甲/西乙 等），
+# 若同名会互相覆盖，导致一个页面看到另一个联赛的 logo。generate() 按 group 设置。
+LOGO_SUFFIX = ""
 
 
 def slugify(name):
@@ -64,13 +67,22 @@ def scope_stub(sc):
     return stub
 
 
-def generate(obj, only_current=True):
+def generate(obj, only_current=True, group="goals"):
     """把内存里的 goals 数据对象拆成按联赛+赛季的 chunk。
+
+    group="goals"      —— 五大联赛进球数（DATA_DIR=assets/js/data/goals，队徽=goals-crests，logo 无后缀）
+    group="goals-champ"—— 次级联赛进球数（DATA_DIR=assets/js/data/goals-champ，队徽=goals-champ-crests，logo 加 2 后缀）
 
     only_current=True 时只写 CURRENT_SEASON（2026-27）的 chunk，历史赛季的 chunk
     保持不动（已在 git 中冻结，日常同步只动当前进行中的赛季）；False 用于新赛季
     开局 / 结构性调整时的一次性全量重建。日常由 sync_site.py 直传内存对象调用。
     """
+    # 次级联赛：数据目录 / 队徽目录加 champ 区分；联赛 logo 文件名加 "2" 后缀。
+    global LOGO_SUFFIX
+    LOGO_SUFFIX = "2" if group == "goals-champ" else ""
+    DATA_DIR = os.path.join(ROOT, "assets/js/data", group)
+    CREST_DIR = os.path.join(ROOT, "assets/img",
+                             "goals-crests" if group == "goals" else "goals-champ-crests")
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(CREST_DIR, exist_ok=True)
 
@@ -96,7 +108,7 @@ def generate(obj, only_current=True):
             slug = "%s-%d" % (base, n)
         used.add(slug)
         out = decode_uri_to_file(uri, CREST_DIR, slug)
-        url_map[name] = "../assets/img/goals-crests/" + os.path.basename(out)
+        url_map[name] = "../assets/img/%s/" % os.path.basename(CREST_DIR) + os.path.basename(out)
     # 不回写 obj：调用方（sync_site.py）的 new 需要保持抽取时的原始形态（data URI），
     # 否则审计哈希在写入前后不一致，导致「无变化」判定永久误报。仅把 URL 映射用于写出。
 
@@ -109,9 +121,9 @@ def generate(obj, only_current=True):
         for sk, sc in (lg.get("scopes") or {}).items():
             scopes_stub[sk] = scope_stub(sc)
         code = lg.get("code")
-        logo_png = os.path.join(ROOT, "assets/img/leaguelogos", (code or "") + ".png")
+        logo_png = os.path.join(ROOT, "assets/img/leaguelogos", (code or "") + LOGO_SUFFIX + ".png")
         if code and os.path.exists(logo_png):
-            logo_val = "../assets/img/leaguelogos/" + code + ".png"
+            logo_val = "../assets/img/leaguelogos/" + code + LOGO_SUFFIX + ".png"
         else:
             logo_val = lg.get("logo")          # 兜底：内联 data URI
         leagues_shell.append({
@@ -131,7 +143,7 @@ def generate(obj, only_current=True):
     shell_js = "window.DATA = " + json.dumps(shell, ensure_ascii=False, separators=(",", ":")) + ";\n"
     with open(os.path.join(DATA_DIR, "shell.js"), "w", encoding="utf-8") as f:
         f.write(shell_js)
-    print("[goals] shell.js:", len(shell_js.encode("utf-8")), "bytes")
+    print("[%s] shell.js:" % group, len(shell_js.encode("utf-8")), "bytes")
 
     # ---- 3) 每个联赛 / 每季一个 chunk（弱网下单次只取几十 KB）
     # 文件形如 data/goals/en/2025-26.js；shell 只保留各赛季标量 stub。
@@ -154,7 +166,7 @@ def generate(obj, only_current=True):
             )
             with open(os.path.join(out_dir, season + ".js"), "w", encoding="utf-8") as f:
                 f.write(chunk)
-            print("  [goals] %s/%s.js:" % (code, season), len(chunk.encode("utf-8")), "bytes")
+            print("  [%s] %s/%s.js:" % (group, code, season), len(chunk.encode("utf-8")), "bytes")
 
     # ---- 4) 体积统计 ----
     total = len(shell_js.encode("utf-8"))
@@ -164,7 +176,7 @@ def generate(obj, only_current=True):
             if os.path.exists(p):
                 total += os.path.getsize(p)
     n_crest = len([f for f in os.listdir(CREST_DIR) if not f.startswith(".")])
-    print("\n[goals] 首屏需下载(壳+当前季, 无压缩文本；GitHub Pages 会 gzip):")
+    print("\n[%s] 首屏需下载(壳+当前季, 无压缩文本；GitHub Pages 会 gzip):" % group)
     first = len(shell_js.encode("utf-8"))
     for lg in obj["leagues"]:
         p = os.path.join(DATA_DIR, lg["code"], CURRENT_SEASON + ".js")
@@ -174,10 +186,10 @@ def generate(obj, only_current=True):
     print("  其余季在首屏后空闲时懒加载，零散按需")
     print("  队徽 PNG 总数:", n_crest)
     if os.path.exists(SRC):
-        print("[goals] 旧单体 goals-data.js:", os.path.getsize(SRC), "bytes")
+        print("[%s] 旧单体 goals-data.js:" % group, os.path.getsize(SRC), "bytes")
     else:
-        print("[goals] 单体文件已废弃（数据由 sync_site.py 直传，不再落盘）")
-    print("[goals] 全部 chunk 文本合计:", total, "bytes（含已外置的队徽，不再内联）")
+        print("[%s] 单体文件已废弃（数据由 sync_site.py 直传，不再落盘）" % group)
+    print("[%s] 全部 chunk 文本合计:" % group, total, "bytes（含已外置的队徽，不再内联）")
 
 
 def main():
