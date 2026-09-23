@@ -487,3 +487,14 @@
     });
   } catch (e) {}
 })();
+
+// ── 页脚「本页更新时间」──────────────────────────────────────────────
+// 全站统一读站点时间账本 window.SITE_META（assets/js/meta.js 由每次提交/同步刷新），
+// 五个页面（首页 + 四个统计页）共用同一份，保证时间永远一致。
+// 挂在 DOMContentLoaded 上：defer 的 meta.js 必定已执行完（首页只有这一处兜底填充）。
+document.addEventListener('DOMContentLoaded', function () {
+  var el = document.getElementById('ftGen');
+  if (!el) return;
+  var v = (window.SITE_META && window.SITE_META.generated) || '';
+  el.textContent = v || '–';
+});

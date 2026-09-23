@@ -289,6 +289,7 @@ body .stickynav.site-moved{display:none !important;}
   color:var(--muted);font-size:12px;line-height:1.8;
 }
 .home-footer .ft-brand{color:var(--text-strong);font-weight:800;letter-spacing:1px;}
+.home-footer b{color:var(--text-dim);font-weight:700;}
 .home-footer a{
   color:var(--text-dim);text-decoration:underline;
   text-underline-offset:2px;text-decoration-color:var(--border);
