@@ -171,7 +171,9 @@ td.col-sel .bar { background:var(--accent); }
 .trend-svg circle.tp:hover { stroke:var(--text-strong); stroke-width:2.4; }
 .trend-tip { position:fixed; z-index:60; pointer-events:none; background:var(--card); border:1px solid var(--border); color:var(--text); font-size:12px; line-height:1.5; padding:8px 10px; border-radius:8px; box-shadow:0 4px 16px rgba(0,0,0,.25); display:none; white-space:normal; word-break:break-word; }
 .trend-tip b { color:var(--text-strong); }
-.footer { text-align:center; padding:18px; color:var(--muted); font-size:12px; margin-top:18px; }
+.footer { text-align:center; padding:20px 12px; color:var(--muted); font-size:12px; margin-top:18px; line-height:1.8; }
+/* 页脚品牌前缀：与平局统计页（draws-big5.css / draws-champ.css 的 .footer .ft-brand）保持一致 */
+.footer .ft-brand { color:var(--text-strong); font-weight:800; letter-spacing:1px; }
 .footer b { color:var(--text-dim); font-weight:700; }
 /* 走势总览（五联赛汇总）：每张图配联赛小标题 */
 .t-chart-title { font-size:14px; font-weight:700; color:var(--text-strong); margin:4px 0 8px; }

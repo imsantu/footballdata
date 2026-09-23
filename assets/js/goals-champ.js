@@ -856,3 +856,10 @@ renderAfterEnsure(); _preloadRest();
   window.addEventListener('resize', onScroll);
   onScroll();
 })();
+
+// 页脚：填上「本页最近更新」（统一读站点 meta.js 的 SITE_META，
+// 与平局统计页同一份账本，保证几页时间永远一致；generated 由每次提交刷新）
+(function(){
+  const set = (id, v) => { const el = document.getElementById(id); if(el) el.textContent = (v && v !== '–') ? v : '–'; };
+  set('ftGen', (window.SITE_META && window.SITE_META.generated) || '');
+})();
