@@ -106,6 +106,13 @@ step "抓取 2026-27 最新赛果" "$PY" "$WS/build_2026_27.py"
 # 1b) 站点已不再展示「数据源更新时间」，mark_fetch_stamp.py 步骤已移除（其写入的
 #     srcUpdated 现在无人读取，保留 mark_fetch_stamp.py 脚本本身以备将来复用）。
 
+# 1c) 2026-27 赛程表（fixtures）：各联赛全季赛程，含未开赛场次与开球时间。
+#     与步骤 1 完全同源 —— titan007 那份 jsData/matchResult 文件本来就是全季赛程
+#     （已完赛 + 未开赛），build_2026_27.py 只取已完赛，这里换个过滤条件把未开赛
+#     也留下。因此**直接复用步骤 1 刚抓的 /tmp 缓存**，几乎零额外网络开销。
+#     全量覆盖天然处理赛程调整 / 补赛；单联赛失败时保留旧数据 + 告警，不拖垮主线。
+step "抓取 2026-27 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
+
 # 2) 平局统计 · 五大联赛
 step "分析：平局·五大联赛"  "$PY" "$WS/analyze_all.py"
 step "出报告：平局·五大联赛" "$PY" "$WS/build_big5.py"
@@ -158,6 +165,7 @@ else
         esac
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
+                     'assets/js/data/fixtures' \
                      'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue

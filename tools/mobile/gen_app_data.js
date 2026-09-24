@@ -200,6 +200,35 @@ function loadGoals() {
 }
 APP.goals = loadGoals();
 
+/* ---------- 2c. 赛程表（fixtures）---------- */
+// 各联赛 2026-27 全季赛程（含未开赛场次与开球时间），源 = titan007，与赛果同一份文件
+// （该文件本就是全季赛程，赛果只取已完赛部分）。结构与 PC 站 assets/js/data/fixtures/ 一致。
+//   matches = [[round, kickoff, home, away, state, score], ...]
+//   state: 'FT' 已完赛（score 形如 '3-0'，主客视角） | 'SCH' 未开赛（score 为空串）
+//   kickoff: 'YYYY-MM-DD HH:MM'（北京时间）；home/away: 规范英文队名（与 draws/goals 同一套）
+const FIX_DIR = path.join(SITE, 'assets/js/data/fixtures');
+function loadFixtures() {
+  const out = { schema: null, seasonOrder: [], meta: null, leagues: [], seasons: {} };
+  const f = { window: {} };
+  vm.createContext(f);
+  const runF = (p) => vm.runInContext(fs.readFileSync(p, 'utf8'), f, { filename: p });
+  const shell = path.join(FIX_DIR, 'shell.js');
+  if (!fs.existsSync(shell)) { console.warn('  ! 缺赛程数据:', shell); return out; }
+  runF(shell);
+  const FD = f.window.DATA;
+  out.schema = FD.schema; out.seasonOrder = FD.seasonOrder; out.meta = FD.meta;
+  out.leagues = FD.leagues.map((l) => ({ code: l.code, cn: l.cn, name: l.name, en: l.en, tier: l.tier }));
+  for (const l of FD.leagues) {
+    const p = path.join(FIX_DIR, l.code, '2026-27.js');
+    if (!fs.existsSync(p)) { console.warn('  ! 缺失赛程:', l.code); continue; }
+    runF(p);
+    const s = l.seasons && l.seasons['2026-27'];
+    if (s) out.seasons[l.code] = s;
+  }
+  return out;
+}
+APP.fixtures = loadFixtures();
+
 // 队徽：英文名 -> slug（与 assets/crests/<slug>.png 对应）
 const crestByName = {};
 for (const [name, uri] of Object.entries(D.crestByTeam || {})) {
@@ -276,4 +305,14 @@ for (const code of LEAGUES) {
   const n = g ? Object.keys(g.scopes).length : 0;
   const cur = g && g.scopes['2026-27'];
   console.log(`  ${g ? g.cn : code} 进球：${n} 季 · 本季 ${cur ? cur.totalMatches + '场/场均' + cur.avgGoals + '球/' + cur.teams.length + '队' : '—'}`);
+}
+const FX = APP.fixtures.seasons;
+const fxCodes = Object.keys(FX);
+if (fxCodes.length) {
+  const tt = fxCodes.reduce((a, c) => a + FX[c].total, 0);
+  const pf = fxCodes.reduce((a, c) => a + FX[c].played, 0);
+  console.log(`  赛程：${fxCodes.length} 个联赛 · ${tt} 场（已完赛 ${pf} / 未开赛 ${tt - pf}）` +
+    ` · 数据版本 ${(APP.fixtures.meta || {}).generated || '—'}`);
+} else {
+  console.warn('  ! 赛程数据为空，请先执行 generator/build_fixtures.py');
 }

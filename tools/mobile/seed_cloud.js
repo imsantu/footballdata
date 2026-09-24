@@ -16,7 +16,7 @@
  *      （也可以直接用环境变量传入，launchd / CI 推荐环境变量）
  *
  * 用法：
- *   node tools/seed_cloud.js                      # 全量同步 5 个集合
+ *   node tools/seed_cloud.js                      # 全量同步 6 个集合
  *   node tools/seed_cloud.js --only=meta,draw_seasons   # 只同步指定集合（日常增量）
  *   node tools/seed_cloud.js --dry-run            # 只打印将写入什么，不落库
  *
@@ -31,7 +31,9 @@ const path = require('path');
 // 本脚本随 football-data-site（web 仓库）走 CI：集合 jsonl 在同目录 cloud-import/
 const WEAPP = __dirname;
 const CLOUD_DIR = path.join(WEAPP, 'cloud-import');
-const ALL = ['meta', 'draw_seasons', 'draw_cross', 'draw_compare', 'goal_seasons'];
+// ⚠️ 硬编码白名单：export_data.js 里新增集合后，必须同步加到这里，否则不会写进云数据库
+// （--only= 参数也会校验此表）。fixture_seasons = 2026-27 各联赛全季赛程（含未开赛）。
+const ALL = ['meta', 'draw_seasons', 'draw_cross', 'draw_compare', 'goal_seasons', 'fixture_seasons'];
 
 // ---- 参数 ----
 const argv = process.argv.slice(2);

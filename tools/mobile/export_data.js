@@ -15,6 +15,7 @@
  *   draw_cross   每联赛一文档          —— 跨赛季汇总（近 N 季）
  *   draw_compare 每口径一文档(big5/champ/compare3) —— 五大联赛横评
  *   goal_seasons 每联赛每赛季一文档    —— 进球数：总览 / 球队（b 对象转数组规避字段名坑）
+ *   fixture_seasons 每联赛一文档        —— 赛程：全季场次（含未开赛），league code 与上面一致
  */
 const fs = require('fs');
 const path = require('path');
@@ -91,6 +92,10 @@ const devOpenids = (process.env.DEV_OPENIDS || '')
 
 const meta = {
   _id: 'global', seasonOrder, leagues, buckets, labels, cats,
+  // 赛程字段说明：matches 每项 = [round, kickoff, home, away, state, score]，
+  // state: 'FT' 已完赛（score 形如 '3-0'，主客视角）| 'SCH' 未开赛（score 空串）。
+  // 放 meta 里随数据版本下发，客户端无需硬编码解析规则。
+  fixtureSchema: (A.fixtures && A.fixtures.schema) || null,
   dataVersion: stamp(),
   updatedAt: new Date().toISOString(),
   devOpenids,
@@ -187,11 +192,40 @@ for (const code of goalCodes) {
 writeColl('goal_seasons', goalSeasons);
 console.log('goal_seasons docs =', goalSeasons.length);
 
+// ---- 6b. fixture_seasons（赛程表：每联赛一文档，含全季未开赛场次）----
+// 与其它集合不同：赛程不是「按赛季切片」的历史数据，而是 2026-27 一季一张全表，
+// 故每联赛只出一个文档。单文档约 30~45KB，远低于云数据库 16MB 单文档上限。
+// 每日随赛果一起全量刷新：赛程调整 / 补赛会在 matches 里体现，未开赛→已完赛
+// 只是同一场 state 由 SCH 变 FT 并补上比分。
+const fixtureSeasons = [];
+const FX = (A.fixtures && A.fixtures.seasons) || {};
+for (const code of Object.keys(FX)) {
+  const s = FX[code];
+  fixtureSeasons.push({
+    _id: `${code}_${s.season}`,
+    league: code,
+    season: s.season,
+    nteams: s.nteams,
+    roundMax: s.roundMax,
+    total: s.total,
+    played: s.played,
+    remaining: s.remaining,
+    first: s.first,
+    last: s.last,
+    updated: s.updated,
+    rounds: s.rounds,
+    matches: s.matches
+  });
+}
+writeColl('fixture_seasons', fixtureSeasons);
+console.log('fixture_seasons docs =', fixtureSeasons.length);
+
 // ---- 7. 本地离线 mock：en 最新赛季（平局 + 进球）+ cross + compare ----
 const mock = {
   meta,
   drawSeason: drawSeasons.find(d => d._id === `en_${LATEST}`),
   goalSeason: goalSeasons.find(d => d._id === `en_${LATEST}`),
+  fixtureSeason: fixtureSeasons.find(d => d._id === `en_${LATEST}`),
   drawCross: drawCross.find(d => d._id === 'en_5'),
   drawCross3: drawCross.find(d => d._id === 'en_3'),
   drawCompare: {
