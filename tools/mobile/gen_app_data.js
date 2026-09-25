@@ -67,8 +67,11 @@ const pickTeam = (t) => ({
   formSeq: t.formSeq, formMatches: t.formMatches,
   formDetail: t.formDetail || [],
   promo: !!t.promo, releg: !!t.releg,
-  // 队名红/绿（与 web 版 draws-champ.js 一致）：fromTop=从上一级降入（降班马，标红）；
+  upTop: !!t.upTop, demoted: !!t.demoted,
+  // 队名红/绿（与 web 版 draws.js 的 CFG.promotion=true 分支一致）：fromTop=从上一级降入（降班马，标红）；
   // promo=从下一级升入（升班马，标绿）。仅次级联赛可能出现 fromTop，顶级联赛恒为 false。
+  // 升降 icon（升/降/adm）由 upTop / releg / demoted 三个字段决定，且只在赛季已结束
+  // （season.moveFinal === true）时渲染 —— 进行中的赛季下季名单未定，一律不标。
   fromTop: !!t.fromTop,
 });
 const pickSeason = (s) => ({
