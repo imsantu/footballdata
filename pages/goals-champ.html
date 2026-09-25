@@ -15,7 +15,7 @@
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="apple-touch-icon" href="../assets/img/logo/on-white/apple-touch-icon-180x180.png">
 <link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="C1lvxDb4mEvnaRmaQitwU4">
-<link rel="preload" href="../assets/css/goals-pc.css" as="style" media="(min-width:820px)">
+<link rel="preload" href="../assets/css/goals.css" as="style" media="(min-width:820px)">
 <!-- 首屏骨架（critical CSS，内联，不等任何外链/脚本）：顶住 4MB 数据脚本加载期的空窗，消除闪黑 -->
 <style id="bootCss">
 /* 遮罩首帧就是不透明的页面底色（与页面背景同色，所以看不出「多了一层」）；
@@ -96,11 +96,16 @@
 
 <!-- 站点统一时间账本（本页更新），所有页面页脚都读它，保证几页时间一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<link rel="stylesheet" href="../assets/css/goals-pc.css">
-<!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals-champ.js 同步到 URL -->
+<link rel="stylesheet" href="../assets/css/goals.css">
+<!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/goals-champ/shell.js"></script>
-<!-- 当季 chunk 不再在此写死赛季：由 assets/js/goals-champ.js 按 shell.js 的 order[0] 预取 -->
-<script defer src="../assets/js/goals-champ.js"></script>
+<!-- 页面身份：goals.js 是「五大联赛 / 五大次级联赛」两页共用的实现。
+     promotion 决定升降级标记用哪套语义 —— 两页的数据集带的信息不同：次级联赛带权威
+     字段（upTop/releg/demoted/fromTop/promo + moveFinal），五大联赛只能按名单差集
+     推断。缺这个声明会立刻抛错，而不是静默用错一套。 -->
+<script>window.GOALS_CFG={group:'goals-champ',promotion:true};</script>
+<!-- 当季 chunk 不再在此写死赛季：由 goals.js 按 shell.js 的 order[0] 预取 -->
+<script defer src="../assets/js/goals.js"></script>
 </body>
 </html>

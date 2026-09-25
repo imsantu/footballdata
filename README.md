@@ -18,7 +18,7 @@
 └── assets/
     ├── css/
     │   ├── site.css               站点外壳：统一冻结顶栏 + 首页 + 占位页
-    │   ├── goals-pc.css           进球数页 · 桌面版样式
+    │   ├── goals.css              进球数页样式（五大 / 次级共用）
     │   └── draws.css              平局页样式（五大 / 次级共用；宽度差异走 --namecol-*，语义差异走页面的 DRAWS_CFG）
     ├── font/
     │   ├── ma-shan-zheng.woff2    品牌毛笔楷书（仅「叕中啦」三字，1.6 KB）
@@ -27,7 +27,7 @@
         ├── site.js                统一冻结顶栏（搬迁联赛/年份条）+ 全站唯一主题（★ 加页面改这里）
         ├── data/goals/             进球数 shell + 联赛/赛季 chunk
         ├── view-url.js             单页联赛/赛季 URL 同步（pushState）
-        ├── goals-pc.js            进球数页 · 桌面版逻辑
+        ├── goals.js               进球数页逻辑（五大 / 次级共用，差异由页面声明的 window.GOALS_CFG 决定）
         ├── data/draws-big5/       平局 shell + 联赛/赛季 chunk（五大）
         ├── draws.js               平局逻辑（五大 / 次级共用，差异由页面声明的 window.DRAWS_CFG 决定）
         └── data/draws-champ/      平局 shell + 联赛/赛季 chunk（次级）
@@ -113,15 +113,25 @@ python3 -m http.server 8000
 以「次级联赛进球数」为例（页面骨架已备好，只差数据）：
 
 1. 数据由 `tools/sync_site.py` + 对应拆分器落成 `assets/js/data/<group>/` 下的
-   按联赛+赛季 chunk（同一套流水线，与现有 big5/champ/goals 一致）；
-   页面逻辑落成 `assets/js/goals-champ.js`，样式落成 `assets/css/goals-champ.css`。
-2. 把页面放到 `pages/goals-champ.html`（照抄同主题的现有页面，换掉 css / js 引用即可）。
-3. 打开 `assets/js/site.js`，改顶部 `SITE_NAV`：
+   按联赛+赛季 chunk（同一套流水线，与现有 big5/champ/goals 一致）。
+2. **逻辑与样式不要复制一份**。新页面若只是「同一主题的另一个联赛层级」，复用已有的
+   `assets/js/<主题>.js` + `assets/css/<主题>.css`，差异全部在自己的页面里声明：
+
+   ```html
+   <script>window.DRAWS_CFG={group:'draws-champ',label:'五大次级联赛',promotion:true,badge:'<svg …>'};</script>
+   <script defer src="../assets/js/draws.js"></script>
+   ```
+
+   改一处即两页同时生效，不会再出现「改了一个页面忘了另一个」；缺声明会立刻抛错，
+   而不是静默渲染成另一个联赛的样式。现有共用实现：
+   `draws.js`（`window.DRAWS_CFG`）/ `goals.js`（`window.GOALS_CFG`）。
+3. 把页面放到 `pages/<新页>.html`（照抄同主题的现有页面，换掉 css / js 引用即可）。
+4. 打开 `assets/js/site.js`，改顶部 `SITE_NAV`：
    ```js
    { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: true, desc: '…' }
    ```
    `ready: false` 时导航会带「敬请期待」小圆点，设为 `true` 即恢复正常。
-4. 顶部导航和首页卡片都读同一份 `SITE_NAV`，改一处两边同步，不用分别维护。
+5. 顶部导航和首页卡片都读同一份 `SITE_NAV`，改一处两边同步，不用分别维护。
 
 其他地区联赛同理：在 `SITE_NAV` 里加一个新的主题分组（例如「荷甲 / 葡超」），
 或在同一主题下加新的 `items` 条目。

@@ -1,3 +1,31 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   进球数统计页 · 五大联赛 / 五大次级联赛 共用实现
+   ──────────────────────────────────────────────────────────────────────────
+   这两个页面此前是两份 876 / 883 行、96.7% 逐行相同的文件（goals-pc.js /
+   goals-champ.js，现已删除），差异只有 8 处，可归为两类：
+
+   ① 纯身份差异（由页面声明）
+        · 数据集目录（assets/js/data/goals/ ↔ goals-champ/）
+        · 冠军奖杯 SVG 常量（champ 侧提为常量，pc 侧内联，逐字节相同）
+   ② 升降级标记：**两套不同的判定方式**，根源是数据集带的信息不同
+        · 次级联赛（promotion:true）：数据由 generator/build_champ_goals.py 从
+          draws-champ 原样搬运，带权威字段 upTop / releg / demoted / fromTop /
+          promo + 赛季级 moveFinal，直接读字段，与「平局统计 · 次级联赛」逐字一致。
+        · 五大联赛（promotion:false）：gen_goals_chunks.py 没搬运这些字段，
+          只能按「上/下赛季名单差集」推断（3 层退化）。这是全站唯一的推断式实现。
+          -> 把字段补进 goals 数据集后即可删掉该分支，见 README「后续可做」。
+
+   页面加载顺序（缺 CFG 会立刻抛错，而不是静默用错一套升降级语义）：
+     <script>window.GOALS_CFG = {group:'goals', promotion:false};</script>
+     <script defer src="../assets/js/goals.js"></script>
+   ══════════════════════════════════════════════════════════════════════════ */
+var CFG = window.GOALS_CFG;
+if(!CFG || !CFG.group || typeof CFG.promotion !== 'boolean'){
+  throw new Error('goals.js：页面必须先声明 window.GOALS_CFG = {group, promotion}（promotion 必须是布尔值）');
+}
+
+// 冠军奖杯（与平局统计页同款），仅在本季「最终裁定」的赛季挂在榜首队名旁
+const CHAMP_SVG = '<span class="champ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>';
 window.LABELS = window.LABELS || ['0 球','1 球','2 球','3 球','4 球','5 球','6 球','7+ 球'];
 window.BUCKETS = window.BUCKETS || window.DATA.buckets;
 // 默认选中"数据完整的最新赛季"。新赛季刚开踢时只有几场（如 2026-27 仅首轮），
@@ -125,8 +153,6 @@ function lgCrestHtml(code, cn){
   if(lg.logo) return '<img src="'+lg.logo+'" alt="'+cn+'">';
   return '<span class="lg-fallback" style="background:'+colorFor(code)+'">'+cn.slice(0,1)+'</span>';
 }
-// 冠军奖杯（与平局统计页同款），仅在本季「最终裁定」的赛季挂在榜首队名旁
-const CHAMP_SVG = '<span class="champ"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg></span>';
 
 function buildLeagueTabs(){
   const el=document.getElementById('leagueTabs'); el.innerHTML='';
@@ -294,11 +320,21 @@ function renderTeams(){
   // 进入当季时若停留在历史赛季的「最大同时不出」排序键，复位回默认（该列在当季已移除）
   if(currentSeason===ONGOING_SEASON && teamSort.key==='gap23'){ teamSort={key:'rank',dir:1}; }
   const total=sc.totalMatches;
-  // 升降级标记 / 队名配色：与「平局统计 · 次级联赛」完全同一套语义与同一份数据字段
-  // （数据由 generator/build_champ_goals.py 从 draws-champ 原样搬运）。
-  //   moveFinal=false ⇒ 本季尚在进行、下季升降名单未定 ⇒ 不标任何升/降 icon。
-  // 旧实现用「上/下赛季名单差集」推断，进行中赛季会大面积误判，已废弃。
+  // 升降级标记有两套语义，由页面声明的 CFG.promotion 选择 —— 根源是两套数据集带的信息不同：
+  //  · 次级联赛（promotion:true）：goals-champ 数据由 generator/build_champ_goals.py 从
+  //    draws-champ 原样搬运，带权威字段 upTop / releg / demoted / fromTop / promo +
+  //    赛季级 moveFinal，直接读字段，不做任何推断。
+  //  · 五大联赛（promotion:false）：gen_goals_chunks.py 没有搬运升降级字段
+  //    （实测 2026-27 各联赛这些字段命中数全为 0），只能按名单差集推断。
   const moveFinal = sc.moveFinal !== false;
+  // 名单差集推断（仅五大联赛用；次级联赛有权威字段，连 scopes 都不必碰 —— 少一次
+  // 对 lg.scopes[s] 的存在性依赖）
+  const idx=lg.order.indexOf(currentSeason);
+  const prevKey = (idx>=0 && idx+1<lg.order.length) ? lg.order[idx+1] : null;
+  const nextKey = (idx>0) ? lg.order[idx-1] : null;
+  const teamSetOf = s => new Set(lg.scopes[s].teams.map(t=>t.name));
+  const prevSet = (!CFG.promotion && prevKey) ? teamSetOf(prevKey) : null;
+  const nextSet = (!CFG.promotion && nextKey) ? teamSetOf(nextKey) : null;
   let teams=sc.teams.slice();
   // 每队每轮只踢 1 场，故「已赛场次」= 经历轮次
   const roundsOfT = t => BUCKETS.reduce((s,bb)=>s+(t.b[bb]||0),0);
@@ -373,19 +409,36 @@ function renderTeams(){
   head+='</tr>';
   let rows='';
   teams.forEach(t=>{
-    // icon ＝ 本季「最终裁定」的去向：升入顶级 → 升；竞技降级 → 降；行政降级 → 降（琥珀色）。
-    // 队名配色 ＝ 上季的来源：从顶级降入 → 红；从次次级联赛升入 → 绿。
-    // 与平局统计页逐字一致，数据字段同源（见 build_champ_goals.py）。
-    let mark='';
-    if(moveFinal){
-      if(t.upTop) mark+='<span class="move up">升</span>';
-      if(t.releg) mark+='<span class="move down">降</span>';
-      if(t.demoted) mark+='<span class="move adm">降</span>';
-    }
-    const nmCls = t.fromTop ? ' down-clr' : (t.promo ? ' up-clr' : '');
     const rkCls = (teamSort.key==='rank')?' col-sel':'';
-    const champ = (t.rank===1 && moveFinal)?CHAMP_SVG:'';
-    let cells='<td class="rk'+rkCls+'">'+t.rank+'</td><td class="left name">'+crestHtml(t.name,t.cn)+'<span class="nm'+nmCls+'">'+t.cn+'</span><span class="pts-inline">'+t.pts+'</span>'+champ+mark+'</td>';
+    let mark='', nameHtml=t.cn, champ='';
+    if(CFG.promotion){
+      // 次级联赛：icon ＝ 本季「最终裁定」的去向（升入顶级 → 升；竞技降级 → 降；
+      // 行政降级 → 降（琥珀色））；队名配色 ＝ 上季的来源（从顶级降入 → 红；
+      // 从次次级联赛升入 → 绿）。字段与「平局统计 · 次级联赛」同源，绝不可用名单差集推断。
+      if(moveFinal){
+        if(t.upTop) mark+='<span class="move up">升</span>';
+        if(t.releg) mark+='<span class="move down">降</span>';
+        if(t.demoted) mark+='<span class="move adm">降</span>';
+      }
+      const nmCls = t.fromTop ? ' down-clr' : (t.promo ? ' up-clr' : '');
+      nameHtml = '<span class="nm'+nmCls+'">'+t.cn+'</span>';
+      champ = (t.rank===1 && moveFinal)?CHAMP_SVG:'';
+    } else {
+      const isNewSeason = (currentSeason===ONGOING_SEASON);
+      // 升班马(升 icon)：用"上赛季名单差集"判定，所有赛季(含进行中的最新赛季)都显示。
+      // 进行中赛季当前名单不全，但这只影响"已出场球队"——升班马一旦出场即被标记，无误判。
+      if(prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
+      // 降级判定：优先用"下赛季名单差集"，但只有当下赛季名单完整（球队数不少于本赛季）才可信。
+      // 进行中的最新赛季（如 2026-27 只打了首轮）名单只有已出场球队，用它做差集会把大量球队误判为降级。
+      // 名单不完整时，退化为"本赛季已完赛 → 按积分榜末 N 位"推断；本赛季也未完赛则不标 ↓。
+      const nextSetFull = nextSet && (nextSet.size >= sc.teams.length);
+      const curComplete = sc.expected>0 && sc.totalMatches>=sc.expected;
+      if(!isNewSeason && nextSetFull){ if(!nextSet.has(t.name)) mark+='<span class="move down">降</span>'; }
+      else if(!isNewSeason && curComplete){ const relN=(sc.teams.length===20)?3:2;   // 20 队降 3，18 队降 2（第 3 席为附加赛）
+        if(t.rank > sc.teams.length-relN) mark+='<span class="move down">降</span>'; }
+      champ = (!isNewSeason && t.rank===1)?CHAMP_SVG:'';
+    }
+    let cells='<td class="rk'+rkCls+'">'+t.rank+'</td><td class="left name">'+crestHtml(t.name,t.cn)+nameHtml+'<span class="pts-inline">'+t.pts+'</span>'+champ+mark+'</td>';
     BUCKETS.forEach((b,i)=>{
       const c=t.b[b];
       let tdcls=(String(teamSort.key)===String(b))?' col-sel':'';
@@ -424,7 +477,7 @@ function renderTeams(){
     rows+='<tr>'+cells+'</tr>';
   });
   const flag=sc.note?'<span class="note-flag">'+sc.note+'</span>':'';
-  // 图例文案与「平局统计 · 次级联赛」逐字一致
+  // 图例文案（仅次级联赛用）：与「平局统计 · 次级联赛」逐字一致
   const colorTxt = '；<b style="color:#e74c3c">队名标红</b>＝上季从顶级联赛降入'+
                    '；<b style="color:var(--green)">队名标绿</b>＝上季从次次级联赛升入';
   const moveTxt = (moveFinal
@@ -437,7 +490,9 @@ function renderTeams(){
     +'<button class="gap-toggle" onclick="toggleTeamGoals()" style="margin-left:10px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (teamGoalsShowAll?'隐藏 4–7+ 球列':'显示全部进球数')+'</button>'
     + (showWarn ? '<button class="gap-toggle" onclick="toggleTeamTotals()" style="margin-left:8px;padding:4px 12px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:12.5px;border-radius:8px;cursor:pointer;vertical-align:middle">'+ (totalsShown?'隐藏得失球':'显示得失球')+'</button>' : '') +'</div>'
     +'<table class="team-table"><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>'
-    +'<div class="note">'+(moveFinal?'🏆 当季冠军':'🏆 当前榜首')+moveTxt+'。</div>';
+    + (CFG.promotion
+       ? '<div class="note">'+(moveFinal?'🏆 当季冠军':'🏆 当前榜首')+moveTxt+'。</div>'
+       : '');
   document.querySelectorAll('.team-table th.sortable').forEach(th=>{
     th.onclick=()=>{ const kk=th.getAttribute('data-k');
       if(teamSort.key===kk){ teamSort.dir*=-1; }
@@ -725,7 +780,7 @@ function renderSeq23(){
 // ---------- goals 按季 chunk 懒加载（弱网/离线优先）----------
 // 首屏所需 chunk 已由文件顶部提前预取（页面 HTML 不再写死赛季）。
 // （_chunkInflight / _chunkRenderToken 已在文件顶部随预取一起声明）
-function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/goals-champ/'; }
+function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/' + CFG.group + '/'; }
 function isChunkLoaded(name){
   var m = /^([^/]+)\/(.+)\.js$/.exec(name);
   var code = m ? m[1] : currentLeague;

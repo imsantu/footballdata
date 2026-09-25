@@ -53,7 +53,10 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      差异下沉为页面声明的 window.DRAWS_CFG 与 :root{--namecol-*}。此前改一处忘另一处
 //      是「改不完整」的主要来源。旧文件名（draws-big5.js / draws-champ.js /
 //      draws-big5.css / draws-champ.css）已删除 → 旧缓存里的条目必须换新，+1。
-var CACHE = 'fds-shell-v19';
+// v20：进球数页的两份逻辑 JS 合并为 goals.js（差异走页面声明的 window.GOALS_CFG），
+//      样式 goals-pc.css 改名 goals.css（它本来就是两页共用，名字里的 pc 是历史遗留）。
+//      旧文件名 goals-pc.js / goals-champ.js / goals-pc.css 已删除 → +1。
+var CACHE = 'fds-shell-v20';
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;
