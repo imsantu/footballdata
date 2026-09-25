@@ -55,6 +55,8 @@
 </div></div>
 <div id="siteNav" data-page-node-id="p9mxv9F9yHSEqF4LOFxEhJ"></div>
 <script>window.SITE_ROOT='../';window.GOALS_ASSET='../assets/';</script>
+<!-- 页面身份清单（唯一真相源）：site.js 用它生成页头下拉，本页的 GOALS_CFG 也由它自动挂上 -->
+<script src="../assets/js/manifest.js"></script>
 <script src="../assets/js/site.js"></script>
 
 
@@ -99,11 +101,10 @@
 <!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/goals/shell.js"></script>
-<!-- 页面身份：goals.js 是「五大联赛 / 五大次级联赛」两页共用的实现。
-     promotion 决定升降级标记用哪套语义 —— 两页的数据集带的信息不同：次级联赛带权威
-     字段（upTop/releg/demoted/fromTop/promo + moveFinal），五大联赛只能按名单差集
-     推断。缺这个声明会立刻抛错，而不是静默用错一套。 -->
-<script>window.GOALS_CFG={group:'goals',promotion:false};</script>
+<!-- 页面身份（数据集目录、对照 Tab 的文案与徽标、promotion 升降级语义）不再在这里声明：
+     唯一真相源是 assets/js/manifest.js 的 PAGES 表，由它按文件名自动挂上 window.GOALS_CFG。
+     两页的升降级字段现在都是权威字段（五大由 sync_site.py:inject_promotion 从 draws-big5 搬运，
+     次级由 build_champ_goals.py 从 draws-champ 搬运），promotion 只决定用哪一套 icon 语义。 -->
 <!-- 当季 chunk 不再在此写死赛季：由 goals.js 按 shell.js 的 order[0] 预取 -->
 <script defer src="../assets/js/goals.js"></script>
 </body>

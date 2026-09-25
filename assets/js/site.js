@@ -11,46 +11,31 @@
    · 「范围」下拉菜单读页面 #winSwitch 按钮（不修改页面 JS），点击反向触发原按钮
    · 「品牌字体」走 assets/font/ma-shan-zheng.woff2（仅含「叕中啦」三字，1.6 KB）
 
-   ★ 以后要加新页面（次级联赛进球数、其他地区联赛…），只改下面的 SITE_NAV：
-       1) 在对应主题下面加一条 { id, label, file, ready, desc }
+   ★ 以后要加新页面（次级联赛进球数、其他地区联赛…），只改 assets/js/manifest.js：
+       1) 在 PAGES 里加一条记录，并把它的 id 加进对应 TOPICS 的 pages 数组
        2) 把页面 HTML 放进 pages/、数据与脚本放进 assets/js/、样式放进 assets/css/
-       3) file 名与 pages/ 下的文件名保持一致即可，导航与首页卡片会自动同步
+       3) file 名与 pages/ 下的文件名保持一致即可
+      —— 页头下拉、首页卡片、页面身份（CFG）都由那份清单派生，本文件不用动。
    ========================================================================== */
 (function () {
   'use strict';
 
-  // 站点导航与首页卡片共用同一份配置：必须先挂到 window 再做桌面/移动分叉。
-  // 否则手机上 4 张入口卡片（#homeCards）会因为 SITE_NAV 未定义而消失，只剩标题。
+  // 站点导航与首页卡片共用同一份配置，唯一真相源是 assets/js/manifest.js（P2-② 之前
+  // 是写在本文件里的 SITE_NAV，与各页面内联的 DRAWS_CFG/GOALS_CFG 各写一遍）。
+  // 这里只做派生：必须先挂到 window 再做桌面/移动分叉，否则首页 4 张入口卡片
+  // （#homeCards）会因为 SITE_NAV 未定义而消失，只剩标题。
   //
   // 移动端（<820px）：站点外壳整体让位给 H5 移动外壳（assets/js/h5-shell.js）；
   // 桌面顶栏、三态主题、下拉菜单在手机上都是多余且会打架的东西，直接不建。
   // 页面脚本仍会照常渲染数据，只是顶栏交给移动端自己的 AppBar + 底部 tab。
 
-  var SITE_NAV = [
-    {
-      id: 'draws',
-      label: '平局统计',
-      items: [
-        { id: 'draws-big5',  label: '五大联赛', file: 'draws-big5.html',  ready: true,
-          desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 平局率、比分分布、各轮走势与各队平局' },
-        { id: 'draws-champ', label: '次级联赛', file: 'draws-champ.html', ready: true,
-          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 平局率、比分分布、各轮走势与各队平局' }
-      ]
-    },
-    {
-      id: 'goals',
-      label: '进球数统计',
-      items: [
-        { id: 'goals-big5',  label: '五大联赛', file: 'goals-big5.html',  ready: true,
-          desc: '英超 / 西甲 / 德甲 / 意甲 / 法甲 · 单场总进球数分布、球队进球榜、赛季走势' },
-        { id: 'goals-champ', label: '次级联赛', file: 'goals-champ.html', ready: true,
-          desc: '英冠 / 西乙 / 德乙 / 法乙 / 意乙 · 单场总进球数分布、球队进球榜、赛季走势' }
-      ]
-    }
-  ];
+  if (typeof window.FD_NAV !== 'function') {
+    throw new Error('site.js：assets/js/manifest.js 必须排在 site.js 之前同步加载（导航与首页卡片由它生成）');
+  }
+  var SITE_NAV = window.FD_NAV();
 
   // 无法确定当前页时（首页 / 占位页）默认落在「平局统计」
-  var DEFAULT_GROUP_ID = 'draws';
+  var DEFAULT_GROUP_ID = (window.FD_MANIFEST && window.FD_MANIFEST.defaultTopic) || 'draws';
 
   // 暴露给首页复用（首页直接按这份配置渲染卡片，避免两处维护）
   window.SITE_NAV = SITE_NAV;

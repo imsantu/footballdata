@@ -18,12 +18,17 @@
              该季 5 个联赛的升班马全部漏标；fr 2022-23 欧塞尔漏标降级）。已删除。
 
    页面加载顺序（缺 CFG 会立刻抛错，而不是静默用错一套升降级语义）：
-     <script>window.GOALS_CFG = {group:'goals', promotion:false};</script>
+     <script src="../assets/js/manifest.js"></script>   <!-- 页面身份唯一真相源 -->
+     <script src="../assets/js/site.js"></script>
      <script defer src="../assets/js/goals.js"></script>
+   页面身份（group / label / badge / promotion）不再由页面内联声明：manifest.js 按当前
+   文件名自动挂上 window.GOALS_CFG。本文件里原先硬编码的「五大联赛」+ UEFA 徽标
+   （对照 Tab、对照图标题与说明）已改为读 CFG —— 在此之前 goals-champ 页会显示成
+   「UEFA五大联赛对照」（2026-09-26 修复），正是「同一件事写两遍」的后果。
    ══════════════════════════════════════════════════════════════════════════ */
 var CFG = window.GOALS_CFG;
-if(!CFG || !CFG.group || typeof CFG.promotion !== 'boolean'){
-  throw new Error('goals.js：页面必须先声明 window.GOALS_CFG = {group, promotion}（promotion 必须是布尔值）');
+if(!CFG || !CFG.group || !CFG.label || typeof CFG.promotion !== 'boolean'){
+  throw new Error('goals.js：页面身份缺失 —— 需先同步加载 assets/js/manifest.js 且本页 id 已登记（必须提供 group / label / promotion）');
 }
 
 // 冠军奖杯（与平局统计页同款），仅在本季「最终裁定」的赛季挂在榜首队名旁
@@ -185,7 +190,9 @@ function buildLeagueTabs(){
   });
   const all=document.createElement('div');
   all.className='league-tab big5'+('__all__'===currentLeague?' active':'');
-  all.innerHTML='<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="UEFA"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">UEFA</text></svg><span>五大联赛</span><span class="rt">对照</span>';
+  // 徽标与文案都取自页面身份（CFG）—— 以前这里是硬编码的 UEFA + 「五大联赛」，
+  // 于是 goals-champ（次级联赛）页的对照 Tab 显示成了「UEFA五大联赛对照」。
+  all.innerHTML=CFG.badge+'<span>'+CFG.label+'</span><span class="rt">对照</span>';
   all.onclick=()=>{ currentLeague='__all__'; syncGoalUrl(false); renderAfterEnsure(); };
   el.appendChild(all);
 }
@@ -622,7 +629,7 @@ function renderCombinedChart(){
   var seasonBtns='<div class="comb-seasons">';
   seasons.forEach(function(s){ seasonBtns+='<button type="button" class="comb-season'+(s===trendSeason?' on':'')+'" data-s="'+s+'">'+fullSeason(s)+'</button>'; });
   seasonBtns+='</div>';
-  var hint='<div class="note">选择赛季查看五大联赛各进球档分布；下方按钮可隐藏 / 显示进球档与联赛，颜色＝联赛。悬停柱形看精确场次与占比。</div>';
+  var hint='<div class="note">选择赛季查看'+CFG.label+'各进球档分布；下方按钮可隐藏 / 显示进球档与联赛，颜色＝联赛。悬停柱形看精确场次与占比。</div>';
   var bkChips='<div class="comb-ctrl"><span class="comb-ctrl-label">进球档</span>';
   BUCKETS.forEach(function(b){var on=!trendBucketHidden[b]; bkChips+='<button type="button" class="comb-chip'+(on?' on':' off')+'" data-b="'+b+'">'+LABELS[BUCKETS.indexOf(b)]+'</button>';});
   bkChips+='</div>';
@@ -630,7 +637,7 @@ function renderCombinedChart(){
   leagues.forEach(function(lg){var on=!trendLeagueHidden[lg.code]; var st=on?('background:'+COLORS[lg.code]+';border-color:transparent;color:#fff;'):''; lgChips+='<button type="button" class="comb-chip'+(on?' on':' off')+'" data-lg="'+lg.code+'" style="'+st+'">'+NAMES[lg.code]+'</button>';});
   lgChips+='</div>';
   var metricHtml='<span class="comb-metric"><a class="cm'+(!pct?' on':'')+'" data-m="count">场次</a><i>/</i><a class="cm'+(pct?' on':'')+'" data-m="pct">占比</a></span>';
-  var head='<div class="section-title comb-head"><span>五大联赛 · 进球数分布对比</span>'+metricHtml+'</div>';
+  var head='<div class="section-title comb-head"><span>'+CFG.label+' · 进球数分布对比</span>'+metricHtml+'</div>';
   var style='<style id="combStyle">'+'.comb-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}.comb-metric{font-size:13.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;}.comb-metric .cm{color:var(--text-muted);cursor:pointer;text-decoration:none;padding:4px 10px;border-radius:9px;transition:all .15s;}.comb-metric .cm:hover{background:var(--col-sel-bg);}.comb-metric .cm.on{color:#fff;background:var(--accent);}.comb-metric i{color:var(--text-muted);font-style:normal;}.comb-seasons{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0 4px;}.comb-season{padding:8px 16px;border-radius:11px;border:1px solid var(--border);background:var(--card);color:var(--text2);font-size:13.5px;font-weight:800;cursor:pointer;transition:all .16s;letter-spacing:.2px;}.comb-season:hover{transform:translateY(-1px);border-color:var(--accent);}.comb-season.on{background:linear-gradient(90deg,#2f7bdc,#4a9eff);color:#fff;border-color:transparent;box-shadow:0 5px 14px rgba(47,123,220,.30);}.comb-ctrl{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:12px 0 2px;}.comb-ctrl-label{font-size:12.5px;color:var(--text-muted);font-weight:700;margin-right:2px;}.comb-chip{padding:6px 13px;border-radius:18px;border:1px solid var(--border);background:var(--card2);color:var(--text2);font-size:13px;font-weight:700;cursor:pointer;transition:all .15s;user-select:none;line-height:1.2;}.comb-chip:hover{transform:translateY(-1px);}.comb-chip.off{opacity:.4;text-decoration:line-through;}.comb-chip.on{color:#fff;border-color:transparent;background:var(--accent);}.comb-svg .cb{cursor:pointer;transition:opacity .12s;}.comb-svg .cb:hover{opacity:.82;}'+'</style>';
   document.getElementById('trend').innerHTML=head+hint+seasonBtns+style+svg+bkChips+lgChips+'<div class="trend-tip" id="combTip"></div>';
   document.querySelectorAll('#trend .comb-season').forEach(function(b){b.onclick=function(){trendSeason=b.getAttribute('data-s'); renderCombinedChart();};});

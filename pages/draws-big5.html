@@ -54,6 +54,8 @@
 </div></div>
 <div id="siteNav" data-page-node-id="FIzUuI4sk6CsYkYrY3PDUC"></div>
 <script>window.SITE_ROOT='../';</script>
+<!-- 页面身份清单（唯一真相源）：site.js 用它生成页头下拉，本页的 DRAWS_CFG 也由它自动挂上 -->
+<script src="../assets/js/manifest.js"></script>
 <script src="../assets/js/site.js"></script>
 <div class="trend-tip" id="avgTip" data-page-node-id="XwGWmHuwZxnlClpJWEDFDU"></div>
 
@@ -177,10 +179,9 @@
 <!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/draws-big5/shell.js"></script>
-<!-- 页面身份：draws.js 是「五大联赛 / 五大次级联赛」两页共用的实现，
-     差异（数据集目录、横向对照 Tab 的文案与徽标、升降级标记语义）全部由这里声明。
-     缺这个声明会立刻抛错，而不是静默渲染成另一个联赛的样式。 -->
-<script>window.DRAWS_CFG={group:'draws-big5',label:'五大联赛',promotion:false,badge:'<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="UEFA"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">UEFA</text></svg>'};</script>
+<!-- 页面身份（数据集目录、横向对照 Tab 的文案与徽标、升降级标记语义）不再在这里声明：
+     唯一真相源是 assets/js/manifest.js 的 PAGES 表，由它按文件名自动挂上 window.DRAWS_CFG。
+     缺 manifest.js 或本页 id 未登记会立刻抛错，而不是静默渲染成另一个联赛的样式。 -->
 <!-- 当季 chunk 不再在此写死赛季：由 draws.js 按 shell.js 的 seasonOrder[0] 预取 -->
 <script defer src="../assets/js/draws.js"></script>
 </body>

@@ -22,6 +22,8 @@
 <body data-page-node-id="enuNzSiK9KAh7jcKH8v7DD">
 <div id="siteNav" data-page-node-id="gRwN08yKjnQuXSoOKNmMaV"></div>
 <script>window.SITE_ROOT='';window.SITE_NO_SEL=true; /* 首页去掉页头下拉（统计主题/联赛层级/范围），只留主题按钮 */</script>
+<!-- 页面身份清单（唯一真相源）：site.js 用它生成页头下拉，下面这段用它渲染首页卡片 -->
+<script src="assets/js/manifest.js"></script>
 <script src="assets/js/site.js"></script>
 
 <div class="home" data-page-node-id="FuEG4AGClxRp4DGa1XQ43v">
@@ -33,7 +35,8 @@
 
   <div class="home-grid" id="homeCards" data-page-node-id="WxdpA1CWpYzK434iR58QPe"></div>
 
-  <!-- 新增页面：编辑 assets/js/site.js 顶部的 SITE_NAV 配置即可，导航与首页卡片会自动同步。
+  <!-- 新增页面：编辑 assets/js/manifest.js 的 PAGES / TOPICS 两张表即可，
+       页头下拉与首页卡片都会自动同步（本页下面这段只是按 window.SITE_NAV 渲染）。
        （原为页脚可见文案，现移入注释，让页脚与各统计页一样单行、位置统一） -->
   <div class="home-footer" data-page-node-id="tQ4Lbvcv6kCoW27anz2cgH">
     <span class="ft-brand" data-page-node-id="Msnurd75m5scSgFJqf2KIq">又中啦 · ⚽️足球数据统计站</span>　｜　本页更新时间 <b id="ftGen">–</b>

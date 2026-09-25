@@ -9,17 +9,19 @@
      ③ 走势图标题 / 说明 / 面包屑里的同一处文案
      ④ 升降级标记语义：五大用 promo / releg；次级用 upTop / releg / demoted
         （行政降级）并对队名着色
-   于是把差异下沉为页面声明的 window.DRAWS_CFG，共用本文件。
+   于是把差异下沉为页面身份 window.DRAWS_CFG，共用本文件。
    改一处即两页同时生效，不会再出现「改了一个页面忘了另一个」。
 
    页面加载顺序（缺 CFG 会立刻抛错，而不是静默渲染成另一个联赛的样式）：
-     <script>window.DRAWS_CFG = {group:'draws-big5', label:'五大联赛',
-                                 badge:'<svg …>…</svg>', promotion:false};</script>
+     <script src="../assets/js/manifest.js"></script>   <!-- 页面身份唯一真相源 -->
+     <script src="../assets/js/site.js"></script>
      <script defer src="../assets/js/draws.js"></script>
+   页面身份（group / label / badge / promotion）不再由页面内联声明：manifest.js 按当前
+   文件名自动挂上 window.DRAWS_CFG。
    ══════════════════════════════════════════════════════════════════════════ */
 var CFG = window.DRAWS_CFG;
 if(!CFG || !CFG.group || !CFG.label){
-  throw new Error('draws.js：页面必须先声明 window.DRAWS_CFG = {group, label, badge, promotion}');
+  throw new Error('draws.js：页面身份缺失 —— 需先同步加载 assets/js/manifest.js 且本页 id 已登记（必须提供 group / label / badge / promotion）');
 }
 
 const SCORE_COLORS = {"0-0": "#4a9eff", "1-1": "#00b894", "2-2": "#a29bfe", "其他": "#fdcb6e"};
