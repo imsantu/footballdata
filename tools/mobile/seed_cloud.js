@@ -73,6 +73,23 @@ const ENV = process.env.TCB_ENV || process.env.WEAPP_CLOUD_ENV;
 const SECRET_ID = process.env.TENCENTCLOUD_SECRET_ID;
 const SECRET_KEY = process.env.TENCENTCLOUD_SECRET_KEY;
 
+// ---- 错误分类：环境级 / 密钥级（配合下方预检，快速失败） ----
+function errText(e) {
+  return ((e && e.code) || '') + ' ' + ((e && e.message) || '') + ' ' + ((e && e.errMsg) || '');
+}
+const isEnvErr = (e) => /INVALID_ENV|Env Not Exists/i.test(errText(e));
+const isAuthErr = (e) => /AuthFailure|Signature|Credential|Unauthorize/i.test(errText(e));
+
+// Env Not Exists 的两种常见成因（2026-09-25 实况：6 集合全部 INVALID_ENV）：
+// ① TCB_ENV 值不对；② 密钥不是「小程序绑定腾讯云账号」的密钥 —— 微信云开发环境
+//    属于小程序对应的腾讯云账号，拿别的账号（哪怕是自己的另一个腾讯云账号）的
+//    密钥访问，API 层面就报 Env Not Exists，而不是权限错误。
+const ENV_FAIL_HELP =
+  '腾讯云在「密钥所属账号」下找不到环境 ' + (process.env.TCB_ENV || '') + '。请检查：' +
+  '① GitHub 仓库 Settings → Secrets and variables → Actions 里 TCB_ENV 的值是否为完整环境 ID（无空格/换行/拼错）；' +
+  '② SecretId/SecretKey 是否来自小程序绑定主体的腾讯云账号（用该主体的微信扫码登录 console.cloud.tencent.com → 访问管理 → API 密钥管理），' +
+  '其他账号的密钥会报 Env Not Exists；CAM 子用户还需授权 QcloudTCBFullAccess。';
+
 function readDocs(name) {
   const jsonl = path.join(CLOUD_DIR, name + '.jsonl');
   const json = path.join(CLOUD_DIR, 'json-backup', name + '.json');
@@ -113,6 +130,30 @@ async function main() {
 
   const app = tcb.init({ secretId: SECRET_ID, secretKey: SECRET_KEY, env: ENV });
   const db = app.database();
+
+  // ---- 写库前预检：先发一次最轻量的读请求，验证「密钥 ↔ 环境」配对是否可用 ----
+  // 过去 INVALID_ENV 会拖着 6 个集合几百条重复错误跑完全程，日志不可读也没法定位；
+  // 预检失败 → 第一秒就停，并给出可操作结论。
+  try {
+    await db.collection('meta').limit(1).get();
+    console.log('✅ 预检通过：密钥可访问环境 ' + ENV);
+  } catch (e) {
+    if (isEnvErr(e)) {
+      console.error('❌ 预检失败：' + ENV_FAIL_HELP);
+      console.error('   原始错误：' + ((e && e.message) || e) + ' · code=' + ((e && e.code) || '-'));
+      annotate('error', '写库失败（预检）', ENV_FAIL_HELP + ' · 原始错误：' + ((e && e.message) || e));
+      process.exit(1);
+    }
+    if (isAuthErr(e)) {
+      const m = '密钥无效或被拒（' + ((e && e.message) || e) + '）。请检查 SecretId/SecretKey 是否正确、是否已停用。';
+      console.error('❌ 预检失败：' + m);
+      annotate('error', '写库失败（预检）', m);
+      process.exit(1);
+    }
+    // 其他错误（如集合暂时不存在）说明「密钥 + 环境」配对没问题，放行走正常写库流程
+    console.log('ℹ️ 预检读 meta 未通过但非环境/密钥问题（' + ((e && e.message) || e) + '），继续写库。');
+  }
+
   const t0 = Date.now();
   const report = [];
   const failed = [];
@@ -160,6 +201,12 @@ async function main() {
         + (e && e.errMsg ? ` · errMsg=${e.errMsg}` : '')
         + (e && e.requestId ? ` · requestId=${e.requestId}` : '');
       console.error(`   ❌ ${detail}`);
+      // 环境级错误（Env Not Exists 等）对所有集合都必然失败，继续循环只会刷屏 —— 立即中止
+      if (isEnvErr(e)) {
+        console.error('   环境级错误，中止后续所有集合。' + ENV_FAIL_HELP);
+        annotate('error', '写库失败（环境不可用）', ENV_FAIL_HELP);
+        process.exit(1);
+      }
       annotate('error', '写库失败', detail);
       failed.push(name);
     }
