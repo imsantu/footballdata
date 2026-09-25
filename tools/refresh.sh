@@ -158,11 +158,28 @@ cd "$SITE" || { echo "[FAIL] 站点目录不存在"; exit 1; }
 if [ ! -d .git ]; then
     echo "[SKIP] 站点尚未 git init，跳过提交"
 else
+    # 静态资源引用闸门（**非阻断**）：shell / 页面引用的 assets/img/** 必须真实存在且已被 git 跟踪。
+    # 为什么需要：渲染快照门禁只覆盖「用例里那几十个容器 + 那几个赛季」，抓不到**队徽映射**
+    # 这类全量字符串表的变化。2026-09-26 的真实事故就是这样溜过去的 —— 生成器把源图格式
+    # 从 png 换成 jpeg 时**另存了一份新文件**（既有的 png 变孤儿），shell 立刻改指新文件，
+    # 而新文件默认未被 git 跟踪 → 提交时极易漏掉、线上 404 / 错图。
+    # 不阻断的理由：这是「资源完整性」问题，不该拖垮当天的数据更新；但必须打注解让人看见。
+    if ! "$PY" "$AUTO/check_asset_refs.py" > /tmp/fd_asset_refs.log 2>&1; then
+        echo "[WARN] 静态资源引用检查未通过："
+        sed -n '1,25p' /tmp/fd_asset_refs.log
+        notify "资源引用有问题" "$(grep -c '^   ' /tmp/fd_asset_refs.log) 处 assets/img 引用缺失或未被 git 跟踪（详见日志）" warning
+    fi
+
     pushed=0
     for attempt in 1 2 3; do
         # 刷新「本页更新时间」为本机当前时间（与 pre-commit 钩子 bump_meta.py 双重保险；
         # 钩子未被安装时这里兜底，保证任何一次同步提交都会让页脚「本页更新」前进）
         "$PY" "$AUTO/bump_meta.py" || true
+        # 外壳文件（site.js / CSS / 页面 HTML / 逻辑 JS）有改动时自动把 sw.js 的 CACHE +1。
+        # 漏 +1 是「明明上线了却看不到变化」的经典原因（cache-first，不报错、只是不生效）。
+        # 基线 hash 存在 sw.js 自身，所以云端每次全新 checkout 也能正确比对。
+        # 幂等：无变化不动版本号；失败不阻断数据同步（下面会把 sw.js 一起提交）。
+        "$PY" "$AUTO/bump_sw.py" || true
         # 清掉可能的 stale 写锁（WorkBuddy 后台 git 沙箱会反复重建 .git/index.lock，
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
@@ -175,7 +192,8 @@ else
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
                      'assets/js/data/fixtures' \
-                     'assets/img/crests' 'assets/img/leaguelogos'; then
+                     'assets/img/crests' 'assets/img/leaguelogos' \
+                     'sw.js'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue
         fi

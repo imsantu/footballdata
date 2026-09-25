@@ -7,13 +7,15 @@
    ① 纯身份差异（由页面声明）
         · 数据集目录（assets/js/data/goals/ ↔ goals-champ/）
         · 冠军奖杯 SVG 常量（champ 侧提为常量，pc 侧内联，逐字节相同）
-   ② 升降级标记：**两套不同的判定方式**，根源是数据集带的信息不同
+   ② 升降级标记：两套数据集、两套字段来源，但**都直接读权威字段，不做任何推断**
         · 次级联赛（promotion:true）：数据由 generator/build_champ_goals.py 从
           draws-champ 原样搬运，带权威字段 upTop / releg / demoted / fromTop /
           promo + 赛季级 moveFinal，直接读字段，与「平局统计 · 次级联赛」逐字一致。
-        · 五大联赛（promotion:false）：gen_goals_chunks.py 没搬运这些字段，
-          只能按「上/下赛季名单差集」推断（3 层退化）。这是全站唯一的推断式实现。
-          -> 把字段补进 goals 数据集后即可删掉该分支，见 README「后续可做」。
+        · 五大联赛（promotion:false）：字段由 tools/sync_site.py 的 inject_promotion()
+          从 draws-big5 原样搬运（promo / releg + 赛季级 moveFinal），同样直接读字段。
+          -> 2026-09-26 之前这里是**全站唯一的推断式实现**（「上/下赛季名单差集 +
+             积分榜末 N 位」三层退化），实测漏标 14 处（最早赛季没有上赛季可比，
+             该季 5 个联赛的升班马全部漏标；fr 2022-23 欧塞尔漏标降级）。已删除。
 
    页面加载顺序（缺 CFG 会立刻抛错，而不是静默用错一套升降级语义）：
      <script>window.GOALS_CFG = {group:'goals', promotion:false};</script>
@@ -83,6 +85,21 @@ function syncGoalUrl(replace){
 }
 // lg.order 为「新 → 旧」，取最近 N 季；进行中的最新季天然落在最前，始终在窗口内
 function winSeasons(lg){ return (lg && lg.order ? lg.order : []).slice(0, SEASON_WIN); }
+// 把 currentSeason 规范到当前窗口内 —— 必须在「决定加载哪些 chunk」之前调用。
+//
+// 背景（2026-09-26 修）：窗口会裁掉旧赛季（只保留最近 SEASON_WIN 季）。若 URL 深链指向
+// 窗口外赛季（w=5 时的第 6 季 2021-22），旧代码是在 render() 内部由 buildSeasonTabs()
+// 才把 currentSeason 落到 ws[0]，而 renderAfterEnsure() 早已按那个窗口外赛季算完
+// neededChunks() 并加载完对应 chunk —— 于是变成「按 2021-22 加载 chunk、却按 2026-27
+// 渲染」，而 2026-27 的 chunk 从未被请求（只有 shell stub，scope_stub 剥掉了
+// teams/buckets）→ maxBucket 读 sc.buckets 抛 TypeError → render() 中断 → 整页白屏。
+// 表现：分享/收藏一个历史赛季链接（第 6 季）打开是白屏。
+function normalizeSeason(){
+  if(currentLeague==='__all__') return;
+  var lg=leagueOf(currentLeague); if(!lg) return;
+  var ws=winSeasons(lg);
+  if(ws.length && ws.indexOf(currentSeason)<0) currentSeason=ws[0];
+}
 
 const THEME_KEY='fbg_theme';
 function paintTheme(t){ document.documentElement.setAttribute('data-theme', t); }
@@ -213,7 +230,14 @@ function setWin(n){
   renderAfterEnsure();
 }
 
-function maxBucket(sc){ return Math.max(...BUCKETS.map(b=>sc.buckets[b])); }
+function maxBucket(sc){
+  // 守卫：sc 可能是 shell 里的 stub（scope_stub 剥掉了 teams/buckets 两个重数组键），
+  // 也可能当前季 chunk 尚未加载。此时返回 0 而不是抛错 —— 抛错会中断整个 render()，
+  // 页面变成白屏。正常路径下 currentSeason 已由 normalizeSeason() 保证落在窗口内、
+  // 且 render() 开头的兜底已确保对应 chunk 已加载，这里只是最后一道防线。
+  if(!sc || !sc.buckets) return 0;
+  return Math.max(...BUCKETS.map(b=>sc.buckets[b]||0));
+}
 // 平均每轮出现几场：单轮有 队数/2 场（双循环），故 轮次 = 已赛场次 ÷ (队数/2)。
 // 赛季未打完时轮次可能是小数（如西甲 2026-27 只踢了 14 场 ≈ 1.4 轮），用实际值算更贴近真实节奏。
 function roundsOf(sc){
@@ -320,21 +344,15 @@ function renderTeams(){
   // 进入当季时若停留在历史赛季的「最大同时不出」排序键，复位回默认（该列在当季已移除）
   if(currentSeason===ONGOING_SEASON && teamSort.key==='gap23'){ teamSort={key:'rank',dir:1}; }
   const total=sc.totalMatches;
-  // 升降级标记有两套语义，由页面声明的 CFG.promotion 选择 —— 根源是两套数据集带的信息不同：
+  // 升降级标记：两套数据集、两套字段来源，但**都直接读权威字段，不做任何推断**。
   //  · 次级联赛（promotion:true）：goals-champ 数据由 generator/build_champ_goals.py 从
-  //    draws-champ 原样搬运，带权威字段 upTop / releg / demoted / fromTop / promo +
-  //    赛季级 moveFinal，直接读字段，不做任何推断。
-  //  · 五大联赛（promotion:false）：gen_goals_chunks.py 没有搬运升降级字段
-  //    （实测 2026-27 各联赛这些字段命中数全为 0），只能按名单差集推断。
+  //    draws-champ 原样搬运，带 upTop / releg / demoted / fromTop / promo + 赛季级 moveFinal。
+  //  · 五大联赛（promotion:false）：tools/sync_site.py 的 inject_promotion() 从 draws-big5
+  //    原样搬运 promo / releg + 赛季级 moveFinal（2026-09-26 起）。
+  //    → 此前这里是一套「上/下赛季名单差集 + 积分榜末 N 位」的三层退化推断，是全站唯一的
+  //      推断式实现，且实测漏标 14 处：最早赛季（2021-22）没有上赛季可比，该季 5 个联赛的
+  //      升班马**全部漏标**（13 处）；fr 2022-23 欧塞尔漏标降级（1 处）。该推断已删除。
   const moveFinal = sc.moveFinal !== false;
-  // 名单差集推断（仅五大联赛用；次级联赛有权威字段，连 scopes 都不必碰 —— 少一次
-  // 对 lg.scopes[s] 的存在性依赖）
-  const idx=lg.order.indexOf(currentSeason);
-  const prevKey = (idx>=0 && idx+1<lg.order.length) ? lg.order[idx+1] : null;
-  const nextKey = (idx>0) ? lg.order[idx-1] : null;
-  const teamSetOf = s => new Set(lg.scopes[s].teams.map(t=>t.name));
-  const prevSet = (!CFG.promotion && prevKey) ? teamSetOf(prevKey) : null;
-  const nextSet = (!CFG.promotion && nextKey) ? teamSetOf(nextKey) : null;
   let teams=sc.teams.slice();
   // 每队每轮只踢 1 场，故「已赛场次」= 经历轮次
   const roundsOfT = t => BUCKETS.reduce((s,bb)=>s+(t.b[bb]||0),0);
@@ -424,19 +442,16 @@ function renderTeams(){
       nameHtml = '<span class="nm'+nmCls+'">'+t.cn+'</span>';
       champ = (t.rank===1 && moveFinal)?CHAMP_SVG:'';
     } else {
-      const isNewSeason = (currentSeason===ONGOING_SEASON);
-      // 升班马(升 icon)：用"上赛季名单差集"判定，所有赛季(含进行中的最新赛季)都显示。
-      // 进行中赛季当前名单不全，但这只影响"已出场球队"——升班马一旦出场即被标记，无误判。
-      if(prevSet && !prevSet.has(t.name)) mark+='<span class="move up">升</span>';
-      // 降级判定：优先用"下赛季名单差集"，但只有当下赛季名单完整（球队数不少于本赛季）才可信。
-      // 进行中的最新赛季（如 2026-27 只打了首轮）名单只有已出场球队，用它做差集会把大量球队误判为降级。
-      // 名单不完整时，退化为"本赛季已完赛 → 按积分榜末 N 位"推断；本赛季也未完赛则不标 ↓。
-      const nextSetFull = nextSet && (nextSet.size >= sc.teams.length);
-      const curComplete = sc.expected>0 && sc.totalMatches>=sc.expected;
-      if(!isNewSeason && nextSetFull){ if(!nextSet.has(t.name)) mark+='<span class="move down">降</span>'; }
-      else if(!isNewSeason && curComplete){ const relN=(sc.teams.length===20)?3:2;   // 20 队降 3，18 队降 2（第 3 席为附加赛）
-        if(t.rank > sc.teams.length-relN) mark+='<span class="move down">降</span>'; }
-      champ = (!isNewSeason && t.rank===1)?CHAMP_SVG:'';
+      // 五大联赛：直接读 draws-big5 搬来的权威字段（tools/sync_site.py: inject_promotion），
+      // 与「平局统计 · 五大联赛」的 draws.js（CFG.promotion=false 分支）逐字一致：
+      //   · promo —— 本季升班马（季初从下一级升入）；所有赛季都标，含进行中的当季
+      //     （升班马一旦出场即可确认，不存在误判）
+      //   · releg —— 本季结束后降出本联赛；仅在赛季已结束（moveFinal）时才标
+      //   · 队名不着色：五大联赛没有「上季从顶级降入 / 从次次级升入」这两个来源，
+      //     故不加 up-clr / down-clr（与 draws.js 一致，不要"顺手"补上配色）。
+      if(t.promo) mark+='<span class="move up">升</span>';
+      if(moveFinal && t.releg) mark+='<span class="move down">降</span>';
+      champ = (moveFinal && t.rank===1)?CHAMP_SVG:'';
     }
     let cells='<td class="rk'+rkCls+'">'+t.rank+'</td><td class="left name">'+crestHtml(t.name,t.cn)+nameHtml+'<span class="pts-inline">'+t.pts+'</span>'+champ+mark+'</td>';
     BUCKETS.forEach((b,i)=>{
@@ -846,6 +861,7 @@ function neededChunks(){
   return need.filter(function(n){ if(seen[n]) return false; seen[n] = 1; return true; });
 }
 function renderAfterEnsure(){
+  normalizeSeason();
   var token = ++_chunkRenderToken;
   var need = neededChunks();
   if(need.every(function(n){ return isChunkLoaded(n); })){ _chunkStatus(''); render(); return; }
@@ -877,6 +893,12 @@ function _preloadRest(){
 }
 
 function render(){
+  // 兜底：当前季数据尚未加载（只有 shell stub）时先补齐再渲染，绝不带着 undefined 渲染。
+  // normalizeSeason() 在此再调一次，覆盖「不经 renderAfterEnsure 直接调 render()」的路径。
+  normalizeSeason();
+  if(currentLeague!=='__all__' && !isChunkLoaded(currentLeague+'/'+currentSeason+'.js')){
+    renderAfterEnsure(); return;
+  }
   buildLeagueTabs(); buildSeasonTabs(); buildWinSwitch();
   if(currentLeague==='__all__'){
     document.getElementById('seasonTabs').style.display='none';

@@ -18,7 +18,7 @@ goals 与 draws 结构不同：
 pages 只首屏加载 shell.js + 2026-27.js，其余季懒加载，
 首屏 JS 体积从 ~4.35MB 降到 ~数十 KB（队徽 / 联赛 logo 外置后浏览器按需拉取可见 PNG）。
 """
-import os, re, sys, json, base64, unicodedata
+import os, re, sys, json, base64, glob, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "assets/js", "goals-data.js")  # 仅手动回放旧单体时用
@@ -66,6 +66,19 @@ def decode_uri_to_file(uri, out_dir, slug):
                 return path
         except OSError:
             pass
+    # 同 slug、不同扩展名（源图格式变了，例如 png -> jpeg）：**复用既有文件，不另存一份**。
+    # 为什么必须这样（2026-09-26 修，真实事故）：
+    #   ① 该目录被 draws-big5 / draws-champ / goals / goals-champ 四套数据共用，"同名即同图"，
+    #      多存一份 jpg 就是同一张队徽的重复文件；旧的 png 立刻变成孤儿。
+    #   ② 更严重的是：新文件默认**未被 git 跟踪**，而 shell 的 crests 映射会立刻改指向它 ——
+    #      提交时极易漏掉，线上就是 404。本次事故里本机报告（08-24 工作区）给 CD Leganés /
+    #      UD Las Palmas 的 base64 不是队徽而是**城市照片**（120×60），差点被当成新队徽推上线。
+    #   ③ 优先保留 png：队徽是透明底，png 是本仓既定格式（276 个里 275 个是 png）。
+    siblings = sorted(glob.glob(os.path.join(out_dir, slug + ".*")))
+    for want in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        for s in siblings:
+            if s.lower().endswith(want):
+                return s
     n = 2
     while os.path.exists(path):
         path = os.path.join(out_dir, slug + str(n) + "." + ext)

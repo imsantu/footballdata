@@ -19,7 +19,7 @@ crestByTeam + logoByCode）：
 
 由 sync_site.py 在抽取+健康校验通过后直传内存对象调用，保证 chunk 始终由校验过的数据派生。
 """
-import os, re, sys, json, base64, unicodedata, argparse
+import os, re, sys, json, base64, glob, unicodedata, argparse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CREST_DIR = os.path.join(ROOT, "assets/img/crests")
@@ -67,6 +67,14 @@ def decode_uri_to_file(uri, out_dir, slug, suffix=""):
                 return path
         except OSError:
             pass
+    # 同 slug、不同扩展名（源图格式变了，例如 png -> jpeg）：复用既有文件，不另存一份。
+    # 与 tools/gen_goals_chunks.py 的同名分支保持**逐字对称**（两份生成器共用 assets/img/crests/）。
+    # 理由见那边注释：避免重复文件 + 孤儿，更要紧的是新文件未被 git 跟踪而 shell 已引用它。
+    siblings = sorted(glob.glob(os.path.join(out_dir, base + ".*")))
+    for want in (".png", ".jpg", ".jpeg", ".webp", ".gif"):
+        for s in siblings:
+            if s.lower().endswith(want):
+                return s
     n = 2
     while os.path.exists(path):
         path = os.path.join(out_dir, base + str(n) + "." + ext)

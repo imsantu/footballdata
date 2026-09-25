@@ -281,6 +281,71 @@ def verify_goals_standings(goals):
 CACHE = os.path.join(AUTO, ".cache")
 
 
+def inject_promotion(goals, draws):
+    """把 draws-big5 的升降级权威字段搬进 goals 数据（仅五大联赛用）。
+
+    为什么必须搬而不是推断
+    ----------------------
+    goals 页面原先靠「上/下赛季名单差集 + 积分榜末 N 位」推断升降级，是全站**唯一**的
+    推断式实现，且实测有 14 处漏标 —— 根因是它天然依赖「相邻赛季的名单」：
+
+      · 最早赛季（2021-22）没有上赛季可比 → 该季 5 个联赛的升班马**全部漏标**（13 处）；
+      · fr 2022-23 欧塞尔：下赛季名单不完整、本赛季又未满足「已完赛」条件 → 漏标降级。
+
+    搬过来之后与次级联赛（build_champ_goals.py 从 draws-champ 搬运）走同一条路子：
+    直接读字段，不做任何推断。字段定义见 draws 数据本身，语义与平局页同源。
+
+    搬运字段
+    --------
+      team.promo     —— 本季升班马（季初从下一级升入）
+      team.releg     —— 本季结束后降出本联赛
+      scope.moveFinal—— 该赛季是否已结束（False = 尚在进行、下季升降名单未定 → 不标 icon）
+
+    匹配规则
+    --------
+    先按英文 name 匹配，失败回退中文 cn。两套数据集的队名口径不同：
+    draws-big5 用完整官方名（VfL Bochum 1848 / SpVgg Greuther Fürth 1903），
+    goals 用短名（VfL Bochum / SpVgg Greuther Fürth）—— 实测 580 条里只有这 5 条需要回退。
+
+    返回 (命中队数, 未命中队数, 覆盖赛季数)，供调用方打印体检信息。
+    """
+    # 建索引：code -> season -> 队对象（name 与 cn 两个键）
+    idx = {}
+    for lg in draws.get("leagues") or []:
+        code = lg.get("code")
+        for season, sc in (lg.get("seasons") or {}).items():
+            m = {}
+            for t in sc.get("teams") or []:
+                if t.get("name"):
+                    m[t["name"]] = t
+                if t.get("cn"):
+                    m.setdefault("cn:" + t["cn"], t)
+            idx[(code, season)] = (m, sc)
+
+    hit = miss = n_scope = 0
+    for lg in goals.get("leagues") or []:
+        code = lg.get("code")
+        for season, sc in (lg.get("scopes") or {}).items():
+            got = idx.get((code, season))
+            if got is None:
+                continue
+            m, dsc = got
+            n_scope += 1
+            # 与平局页的 `s.moveFinal !== false` 完全一致：缺字段时按「可判定」处理。
+            sc["moveFinal"] = dsc.get("moveFinal") is not False
+            for t in sc.get("teams") or []:
+                dt = m.get(t.get("name"))
+                if dt is None and t.get("cn"):
+                    dt = m.get("cn:" + t["cn"])
+                if dt is None:
+                    miss += 1
+                    continue
+                t["promo"] = bool(dt.get("promo"))
+                t["releg"] = bool(dt.get("releg"))
+                hit += 1
+    return hit, miss, n_scope
+
+
 def audit_path(job):
     return os.path.join(CACHE, job["group"] + "-audit.json")
 
@@ -397,6 +462,11 @@ def main():
                 n_hit, n_team, n_cell = enrich_goals(new, draws_obj)
                 print(f"    回填主客场/轮次：命中 {n_hit} 场，"
                       f"按日期重排 {n_team} 支球队 / {n_cell} 格（派生 gap/streak 已重算）")
+                # 升降级权威字段：原样搬运 draws-big5 的 promo/releg/moveFinal，
+                # 取代页面里那套「名单差集推断」（全站唯一的推断式实现，实测漏标 14 处）。
+                n_inj, n_miss, n_scope = inject_promotion(new, draws_obj)
+                print(f"    搬运升降级字段：{n_inj} 支球队（promo/releg）/ {n_scope} 个赛季（moveFinal）"
+                      + (f"，{n_miss} 支未匹配" if n_miss else ""))
             # 统一比分视角（主客视角=主队在前）+ 总进球守恒校验：big5 / champ 通用，
             # 作用于 goals 对象本身，对次级联赛是最后一道一致性兜底。
             fixed = normalize_goals_perspective(new)
