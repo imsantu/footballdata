@@ -46,6 +46,16 @@ if (bad.length) {
   process.exit(1);
 }
 
+// ---- GHA 注解：把结果写进 GitHub 的 check-run annotation ----
+// 为什么不用普通日志：本仓库是**公开**仓库，Actions 的「日志」需要 admin 权限才能下载
+// （匿名请求 403 Must have admin rights），但 **annotation 匿名可读**。把「跳过/成功/失败原因」
+// 打成注解后，本机用一条 curl 就能监控云端写库状态，不必登录 GitHub 翻日志。
+// 注意：注解正文必须是单行，换行会被 GitHub 截断 → 统一替换成 ' ⏎ '。
+function annotate(level, title, msg) {
+  const one = String(msg == null ? '' : msg).replace(/\r?\n/g, ' ⏎ ').slice(0, 900);
+  console.log(`::${level} title=${title}::${one}`);
+}
+
 // ---- 密钥：环境变量优先，其次 weapp/.env.local ----
 function loadEnvFile() {
   const f = path.join(WEAPP, '.env.local');
@@ -86,6 +96,9 @@ async function main() {
       '⏭️  未配置云环境密钥，跳过写库（已完成「生成 + 导出」体检）。\n' +
       '    配好 TCB_ENV / TENCENTCLOUD_SECRET_ID / TENCENTCLOUD_SECRET_KEY 后，下次运行即自动写入。'
     );
+    // 打 notice 而非 error：这不是失败。但要让「跳过」在注解里可见 ——
+    // 否则「跳过（绿灯）」与「真写成功（绿灯）」在结论上完全一样，无法区分。
+    annotate('notice', '写库已跳过', '未配置云环境密钥（TCB_ENV / SECRET_ID / SECRET_KEY 有缺失），本次未写云数据库。');
     process.exit(0);
   }
 
@@ -94,6 +107,7 @@ async function main() {
     tcb = require('@cloudbase/node-sdk');
   } catch (e) {
     console.error('缺少依赖 @cloudbase/node-sdk，请先执行：cd weapp && npm i @cloudbase/node-sdk');
+    annotate('error', '写库失败', '缺少依赖 @cloudbase/node-sdk（CI 里检查「安装云开发服务端 SDK」那一步）');
     process.exit(1);
   }
 
@@ -111,15 +125,27 @@ async function main() {
       console.log('   + 新建集合 ' + name);
     } catch (e) { /* 已存在 → 忽略，继续写入 */ }
 
-    const docs = readDocs(name);
+    let docs;
+    try {
+      docs = readDocs(name);
+    } catch (e) {
+      // 本地 jsonl 缺失也要走注解：否则整脚本会以「未处理异常」告终，注解里啥也看不到。
+      const m = (e && e.message) || String(e);
+      console.error(`   ❌ ${name} 读取本地数据失败：` + m);
+      annotate('error', '写库失败', `集合 ${name} 读取本地数据失败：${m}`);
+      failed.push(name);
+      continue;
+    }
     console.log(`→ ${name}（${docs.length} 条）`);
     const BATCH = 20;
     let done = 0;
+    let curId = '';
     try {
       for (let i = 0; i < docs.length; i += BATCH) {
         const slice = docs.slice(i, i + BATCH);
         await Promise.all(slice.map((d) => {
           const { _id, ...rest } = d;
+          curId = _id;
           return db.collection(name).doc(_id).set(rest);
         }));
         done += slice.length;
@@ -129,29 +155,44 @@ async function main() {
       report.push(name + '=' + docs.length);
     } catch (e) {
       // 按集合隔离失败：一个集合失败不拖垮其他集合，最后统一报非 0 退出
-      console.error(`   ❌ ${name} 写入失败：` + ((e && e.message) || e));
+      const detail = `集合 ${name} 写至第 ${done + 1} 条（_id=${curId}）失败：` + ((e && e.message) || e)
+        + (e && e.code ? ` · code=${e.code}` : '')
+        + (e && e.errMsg ? ` · errMsg=${e.errMsg}` : '')
+        + (e && e.requestId ? ` · requestId=${e.requestId}` : '');
+      console.error(`   ❌ ${detail}`);
+      annotate('error', '写库失败', detail);
       failed.push(name);
     }
   }
 
   if (failed.length) {
     console.error('\n部分集合写入失败：' + failed.join(', ') + '（其余集合已正常写入）');
+    annotate('error', '写库汇总',
+      `失败集合：${failed.join(', ')} · 成功集合：${report.join(', ') || '无'}`);
     process.exit(1);
   }
 
   console.log('\n同步完成：' + report.join(' / ') + '  用时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's');
   console.log('小程序端：下次冷启动（或下拉刷新）即读到新数据；新用户无需任何操作。');
+  // 成功也打一条注解：与「跳过」区分开，且能一眼看出每个集合写了多少条。
+  annotate('notice', '写库完成', report.join(' / ') + '  用时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's');
 }
 
 main().catch((e) => {
-  console.error('同步失败：', (e && e.message) || e);
+  const msg = (e && e.message) || String(e);
+  console.error('同步失败：', msg);
   // 诊断信息：CI 日志里能直接看出是「密钥/环境没配好」还是「写库本身报错」，
   // 不必再靠猜（密钥只打印前缀，不泄露完整值）。
   if (e && e.code) console.error('  错误码：', e.code);
   if (e && e.errMsg) console.error('  errMsg：', e.errMsg);
   if (e && e.requestId) console.error('  requestId：', e.requestId);
-  console.error('  环境诊断：TCB_ENV=' + (ENV || '(未设置)')
+  const diag = 'TCB_ENV=' + (ENV || '(未设置)')
     + ' · SECRET_ID=' + (SECRET_ID ? '已设置(' + String(SECRET_ID).slice(0, 8) + '…)' : '(未设置)')
-    + ' · SECRET_KEY=' + (SECRET_KEY ? '已设置' : '(未设置)'));
+    + ' · SECRET_KEY=' + (SECRET_KEY ? '已设置' : '(未设置)');
+  console.error('  环境诊断：' + diag);
+  // 关键：把诊断塞进注解 —— 这是本机唯一能读到云端失败原因的通道。
+  annotate('error', '写库异常',
+    `${msg} · code=${(e && e.code) || '-'} · errMsg=${(e && e.errMsg) || '-'}`
+    + ` · requestId=${(e && e.requestId) || '-'} · ${diag}`);
   process.exit(1);
 });
