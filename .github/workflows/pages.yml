@@ -1,0 +1,154 @@
+name: 部署站点到 GitHub Pages
+
+# ══════════════════════════════════════════════════════════════════════════
+# P2-③：把「部署」与「仓库」解耦 —— **只发布站点子集**，而不是整个仓库。
+#
+# 背景：站点原先用 GitHub Pages 的「Deploy from a branch」模式，会把**整个 main 分支**
+# 原样发布到网上。于是仓库里的 `generator/`（3 个单体报告 HTML 10.4 MB + 2 个队徽 JSON
+# 4.5 MB）、`tools/`、`.github/`、`README.md` 全都被公开托管 —— 既没必要（站点运行时
+# 一个都不引用），也让每次部署多传 22 MB。
+#
+# 现在只发布这些（合计 445 个文件 / 8.5 MB）：
+#     index.html  favicon.ico  sw.js  .nojekyll  assets/  pages/
+# 排除：generator/  tools/  .github/  README.md  .gitignore  .workbuddy-ai/
+#   （合计 151 个文件 / 22.1 MB；已 grep 确认站点文件对 generator/ 与 tools/
+#     只有注释里的文字提及，无运行时引用）
+# 组装方式：`git archive HEAD -- <白名单>`，因此发布集合按构造恒等于「HEAD 里
+#   被跟踪的那些文件」，工作区里任何未跟踪内容（.DS_Store、编辑器备份等）都进不来。
+#
+# ⚠️ 前置条件：仓库 Settings → Pages → Source 必须选「GitHub Actions」。
+#    仍是「Deploy from a branch」时，下面的预检会打 ::notice 并**跳过部署**，
+#    不会把每次推送都变成一条红色运行（分支源此时仍在正常构建，站点不受影响）。
+# ══════════════════════════════════════════════════════════════════════════
+
+on:
+  push:
+    branches: [main]
+  # ⚠️ 必须同时挂 workflow_run：daily.yml 的回推提交带 `[skip ci]`，
+  #    GitHub 会跳过该次 push 触发的所有 workflow → 只靠 push 触发的话，
+  #    **每天自动同步的数据永远发布不出去**。workflow_run 不受 [skip ci] 影响。
+  workflow_run:
+    workflows: ["每日数据更新"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只允许一个 Pages 部署；不打断进行中的部署（否则可能发布出半截站点）
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: 组装站点子集
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      deploy: ${{ steps.preflight.outputs.deploy }}
+    steps:
+      - name: 检出仓库
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          # push 事件：github.sha = 本次推送的提交；workflow_run 事件：github.sha =
+          # 默认分支最新提交 —— 两种情况都正是「要发布的那份 main」，所以用默认值。
+
+      - name: 预检 Pages 是否已切到「GitHub Actions」源
+        id: preflight
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -uo pipefail
+          api="$GITHUB_API_URL/repos/$GITHUB_REPOSITORY/pages"
+          bt="$(curl -sS -H "Authorization: Bearer $GH_TOKEN" \
+                    -H "Accept: application/vnd.github+json" "$api" 2>/dev/null \
+                | python3 -c 'import json,sys; print(json.load(sys.stdin).get("build_type",""))' \
+                2>/dev/null || true)"
+          echo "Pages build_type = ${bt:-<读不到>}"
+          if [ "$bt" = "legacy" ]; then
+            echo "deploy=0" >> "$GITHUB_OUTPUT"
+            echo "::notice title=已跳过 Pages 部署::Pages 源仍是「Deploy from a branch」（build_type=legacy）。请到 Settings → Pages → Source 选「GitHub Actions」；在此之前分支源会继续正常构建，站点不受影响，本次不做任何事。"
+          else
+            # build_type=workflow → 正常部署；读不到（权限/网络）→ 也按正常部署处理，
+            # 让真正的失败在 deploy 步骤里暴露出来，而不是被预检静默吞掉。
+            echo "deploy=1" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 组装待发布子集 _site/
+        if: steps.preflight.outputs.deploy == '1'
+        run: |
+          set -euo pipefail
+          # 白名单：只有这些路径下的东西才可能上线。新增站点目录时必须同步加进来。
+          PUBLISH_PATHS=(index.html favicon.ico sw.js .nojekyll assets pages)
+
+          # ⚠️ 用 `git archive HEAD` 导出**该修订的跟踪集合**，不要 `cp -R`：
+          #    cp -R 会把工作区里未被跟踪的东西（assets/.DS_Store、编辑器备份 foo~、
+          #    .swp、.orig …）一起带上线；git archive 按构造只含「已提交且被跟踪」
+          #    的文件，且发布的是 HEAD 的内容而非工作区 —— 两者都正是部署要的语义。
+          rm -rf _site
+          mkdir -p _site
+          git archive HEAD -- "${PUBLISH_PATHS[@]}" | tar -x -C _site
+
+          # ── 体检：宁可在这里失败，也不要把缺文件 / 多文件的站点发出去 ──
+          fail=0
+          for f in index.html favicon.ico sw.js .nojekyll assets/js/manifest.js \
+                   assets/js/site.js assets/js/meta.js assets/css/site.css \
+                   pages/draws-big5.html pages/draws-champ.html \
+                   pages/goals-big5.html pages/goals-champ.html; do
+            if [ ! -f "_site/$f" ]; then echo "::error title=站点子集缺文件::$f 不在 _site 里"; fail=1; fi
+          done
+          for d in generator tools .github; do
+            if [ -e "_site/$d" ]; then echo "::error title=站点子集混入了不该发布的目录::_site/$d 存在"; fail=1; fi
+          done
+
+          # 未跟踪的零散垃圾一旦漏进来（例如误改回 cp -R），这里拦住
+          junk="$(find _site -type f \( -name '.DS_Store' -o -name '*~' -o -name '*.swp' -o -name '*.orig' -o -name '*.bak' \) | wc -l | tr -d ' ')"
+          if [ "$junk" != "0" ]; then
+            echo "::error title=站点子集混入了临时文件::发现 $junk 个（.DS_Store / 备份 / 交换文件），前 20 个："
+            find _site -type f \( -name '.DS_Store' -o -name '*~' -o -name '*.swp' -o -name '*.orig' -o -name '*.bak' \) | head -20 || true
+            fail=1
+          fi
+
+          n=$(find _site -type f | wc -l | tr -d ' ')
+          expect=$(git ls-files -- "${PUBLISH_PATHS[@]}" | wc -l | tr -d ' ')
+          if [ "$n" != "$expect" ]; then
+            echo "::error title=站点子集文件数不符::实际 ${n} ≠ 仓库跟踪的 ${expect}（拷贝过程可能有文件丢失）"
+            fail=1
+          fi
+          [ "$fail" = "0" ] || exit 1
+
+          sz=$(du --apparent-size -sh _site 2>/dev/null | cut -f1 || true)
+          echo "::notice title=站点子集已组装::共 $n 个文件 / ${sz:-?}（全仓 596 个 / 30.6 MB；已排除 generator、tools、.github、README 共 151 个 / 22.1 MB）"
+
+      - name: 配置 Pages
+        if: steps.preflight.outputs.deploy == '1'
+        uses: actions/configure-pages@v5
+
+      - name: 上传站点产物
+        if: steps.preflight.outputs.deploy == '1'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: 发布到 Pages
+    needs: build
+    if: needs.build.outputs.deploy == '1'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: 部署
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: 部署完成注解
+        if: success()
+        run: echo "::notice title=站点已发布::${{ steps.deployment.outputs.page_url }}"
