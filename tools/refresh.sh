@@ -5,7 +5,8 @@
 #   2. 重算三份报告的数据（平局·五大 / 平局·次级 / 进球数）
 #   3. 把数据块同步进静态站点（带备份 + 体检，历史赛季绝不改动）
 #   4. git 提交并推送到 GitHub
-# 由 launchd 每天 06:00 调用（脚本内含 0~3599s 随机错峰，避免整点集中请求数据源）。
+# 由 GitHub Actions 每天 06:00（cron 定时）或手动 Run workflow 触发（脚本内含 0~3599s
+# 随机错峰，仅定时任务生效，避免整点集中请求数据源）。
 
 set -uo pipefail
 
@@ -53,10 +54,15 @@ if [ -e "$REFRESH_LOCK" ]; then
 fi
 echo $$ > "$REFRESH_LOCK"
 trap 'rm -f "$REFRESH_LOCK"' EXIT
-# 随机错峰：本任务由 launchd 在每天 06:00 触发，这里再随机等待 0~3599 秒，
-# 使实际抓取/同步落在 06:00~07:00 之间任意时刻，避免整点集中打数据源。
-echo "════════ 随机错峰等待（0~3599s）════════"
-sleep $(( RANDOM % 3600 ))
+# 随机错峰：仅「自动定时（schedule / cron）」触发时才等待 0~3599 秒，
+# 把实际抓取/同步错开到 06:00~07:00 之间，避免整点集中打数据源。
+# 手动触发（workflow_dispatch）或本机直接运行 → 立即执行，不等待。
+if [ "${GITHUB_EVENT_NAME:-}" = "schedule" ]; then
+  echo "════════ 随机错峰等待（0~3599s，仅定时任务）════════"
+  sleep $(( RANDOM % 3600 ))
+else
+  echo "════════ 跳过随机错峰等待（非定时触发，立即运行）════════"
+fi
 
 # 0) 路径护栏：站点必须位于 ~/footballdata，绝不允许落在桌面。
 #    历史事故：站点曾放在 ~/Desktop/soccerdata，迁移后 launchd 仍指向旧路径，

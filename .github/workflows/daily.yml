@@ -18,7 +18,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 90       # 含脚本内 0~60 分钟随机错峰等待 + 抓取/构建
+    timeout-minutes: 90       # 定时任务含脚本内 0~60 分钟随机错峰等待 + 抓取/构建；手动触发无等待，更快完成
     # 统一时区（整条 job 生效）。之前只有 refresh.sh 那一步设了 TZ，小程序三步没有 →
     # export_data.js 的 dataVersion / updatedAt 按 UTC 生成：北京 06:00 跑出来是
     # 前一天 22:00，客户端按日期显示就成了「1 天前」，看着像数据没更新。
@@ -47,6 +47,8 @@ jobs:
           FD_GENERATOR_DIR: ${{ github.workspace }}/generator
           FD_PY: python3
           TZ: Asia/Shanghai
+          # 仅「定时(cron)」触发时 refresh.sh 才做随机错峰等待；手动 Run workflow 立即跑
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: bash tools/refresh.sh
 
       # ── 小程序数据同步 ──────────────────────────────────────────────
