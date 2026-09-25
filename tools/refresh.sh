@@ -15,12 +15,12 @@ set -uo pipefail
 SITE="${FD_SITE_DIR:-/Users/santu/footballdata/football-data-site}"
 WS="${FD_GENERATOR_DIR:-/Users/santu/WorkBuddy AI/2026-09-02-02-18-19}"
 # GOALS_WS = 进球数报告（football_big5_goals.html / football_mobile.html）所在目录。
-#   本机：报告与脚本**不在同一目录**（脚本 09-02，报告 08-24）——历史事故：默认写成 $WS，
+#   本机：报告与脚本**不在同一目录**（脚本 09-02，报告 08-24）——历史事故：默认写成 ${WS}，
 #         sync_site.py 找不到源报告 → 「[FAIL] 进球数统计: 源报告不存在」→ 整条流水线中止、
 #         站点当天不更新（2026-09-22 两次）。
-#   云端/同仓：FD_GENERATOR_DIR 已给出，报告与脚本同在 generator/，此时必须跟随 $WS，
+#   云端/同仓：FD_GENERATOR_DIR 已给出，报告与脚本同在 generator/，此时必须跟随 ${WS}，
 #         否则会去找一个云端不存在的 macOS 路径。
-#   判定顺序：FD_GOALS_WS 显式给出 → 用它；给了 FD_GENERATOR_DIR → 跟随 $WS；都没有 → 本机报告目录。
+#   判定顺序：FD_GOALS_WS 显式给出 → 用它；给了 FD_GENERATOR_DIR → 跟随 ${WS}；都没有 → 本机报告目录。
 if [ -n "${FD_GOALS_WS:-}" ]; then
     GOALS_WS="$FD_GOALS_WS"
 elif [ -n "${FD_GENERATOR_DIR:-}" ]; then
@@ -70,7 +70,7 @@ fi
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
 case "$SITE" in
     "$DESKTOP_DIR"/*|"$DESKTOP_DIR")
-        echo "[FAIL] 站点路径位于桌面（$SITE），已中止，避免在桌面产生任何内容"
+        echo "[FAIL] 站点路径位于桌面（${SITE}），已中止，避免在桌面产生任何内容"
         exit 1 ;;
 esac
 if [ -e "$DESKTOP_DIR/soccerdata" ]; then
@@ -94,7 +94,7 @@ step() {
     "$@"
     local rc=$?
     if [ "$rc" -ne 0 ]; then
-        echo "[FAIL] $name（退出码 $rc）"
+        echo "[FAIL] ${name}（退出码 ${rc}）"
         echo "=== 本次更新中止，站点未做任何改动 ==="
         echo "日志：$LOG"
         notify "足球数据更新失败" "$name 失败，详见日志" "error"
@@ -141,7 +141,7 @@ step "同步数据到站点" "$PY" "$AUTO/sync_site.py"
 #     由已上线的 draws-champ 分块（同源、覆盖完整）重建种子 HTML，再交 sync_site.py 拆 chunk。
 #     ⚠️ 顺序很重要：它读的是**站点里刚落盘的** draws-champ 分块，所以必须排在 5) 之后。
 #        若放在 5) 之前，读到的是昨天那版分块，会让「次级联赛进球数」比「次级联赛平局」滞后一天。
-#     该脚本随仓库走（$SITE/generator/），不在 $WS；云端模式下 FD_GENERATOR_DIR 就是
+#     该脚本随仓库走（$SITE/generator/），不在 ${WS}；云端模式下 FD_GENERATOR_DIR 就是
 #     $SITE/generator，两种模式此路径都成立。
 step "更新：进球数·次级联赛" "$PY" "$SITE/generator/build_champ_goals.py"
 
@@ -215,7 +215,7 @@ else
                 br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
                 if git fetch -q origin 2>/dev/null && git rev-parse --verify -q "origin/$br" >/dev/null; then
                     if [ "$(git rev-list --count HEAD.."origin/$br" 2>/dev/null || echo 0)" != "0" ]; then
-                        echo "[INFO] 本地落后 origin/$br，先 rebase 再推送"
+                        echo "[INFO] 本地落后 origin/${br}，先 rebase 再推送"
                         if git rebase "origin/$br" >/dev/null 2>&1; then
                             echo "[OK] rebase 完成"
                         else

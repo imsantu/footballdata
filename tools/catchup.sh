@@ -14,7 +14,7 @@ REFRESH_LOCK="$AUTO/.refresh.lock"
 if [ -e "$REFRESH_LOCK" ]; then
     _pid=$(cat "$REFRESH_LOCK" 2>/dev/null)
     if [ -n "$_pid" ] && kill -0 "$_pid" 2>/dev/null; then
-        echo "$(date '+%F %T') [catchup] refresh 正在运行（pid $_pid），跳过"
+        echo "$(date '+%F %T') [catchup] refresh 正在运行（pid ${_pid}），跳过"
         exit 0
     fi
     rm -f "$REFRESH_LOCK"
@@ -24,7 +24,7 @@ fi
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
 case "$SITE" in
     "$DESKTOP_DIR"/*|"$DESKTOP_DIR")
-        echo "$(date '+%F %T') [catchup][FAIL] 站点路径位于桌面（$SITE），已中止"
+        echo "$(date '+%F %T') [catchup][FAIL] 站点路径位于桌面（${SITE}），已中止"
         exit 1 ;;
 esac
 
@@ -64,7 +64,7 @@ if [ "$best" -gt "$LAST" ]; then
         date +%s > "$LR"
         echo "$(date '+%F %T') [catchup] 补跑成功，已更新 .lastrun"
     else
-        echo "$(date '+%F %T') [catchup] 补跑失败（退出码 $rc），下次间隔再试"
+        echo "$(date '+%F %T') [catchup] 补跑失败（退出码 ${rc}），下次间隔再试"
     fi
     exit $rc
 else

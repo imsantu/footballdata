@@ -17,7 +17,7 @@ log "boot-catchup 启动 (pid $$)"
 DESKTOP_DIR="${HOME:-/Users/santu}/Desktop"
 case "$SITE" in
     "$DESKTOP_DIR"/*|"$DESKTOP_DIR")
-        log "[FAIL] 站点路径位于桌面（$SITE），已中止"; exit 1 ;;
+        log "[FAIL] 站点路径位于桌面（${SITE}），已中止"; exit 1 ;;
 esac
 
 # 1) 等联网（最多 30 分钟，每 10s 探一次 github，借 SSH 绕墙配置亦可连通）
@@ -42,10 +42,10 @@ if [ -f "$LAST" ]; then
     last_day=$(date -j -f %s "$(cat "$LAST" 2>/dev/null)" '+%Y-%m-%d' 2>/dev/null)
     today_day=$(date '+%Y-%m-%d')
     if [ "$last_day" = "$today_day" ]; then
-        log "今日已成功同步（.lastrun=$last_day），无需补跑，退出"
+        log "今日已成功同步（.lastrun=${last_day}），无需补跑，退出"
         exit 0
     fi
-    log "上次成功同步为 $last_day（非今日），执行补跑"
+    log "上次成功同步为 ${last_day}（非今日），执行补跑"
 else
     log "无 .lastrun 记录，执行补跑"
 fi
