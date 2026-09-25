@@ -35,12 +35,18 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      本队进球数正好相反（2 球色块看着像 1 球）。涉及 goals-pc.js / goals-champ.js（逻辑 JS），
 //      旧缓存是错版，必须 +1 强制浏览器重新拉取。
 // v10：次级联赛进球数页上线（pages/goals-champ.html + goals-champ.js + data/goals-champ/）。
-var CACHE = 'fds-shell-v14';
+// v15：meta.js 从 stale-while-revalidate 改为 **network-first**。它原先归在 DATA_RE 里，
+//      导致页脚「本页更新时间」永远「晚一次访问」——先返回旧缓存、后台才更新。用户在不同时间
+//      访问不同页面，就会看到不同日期（如平局页比进球数页旧一天），看起来像「没更新」。
+//      meta.js 只有几十字节，每次拉取成本可忽略，故改为有网必取最新。
+var CACHE = 'fds-shell-v15';
 
-// 数据文件判定（meta.js / 按联赛+赛季拆出的 chunk 等；这些每天随数据源更新，
-// 必须用 stale-while-revalidate，否则 cache-first 会一直命中旧数据，页面“数据不变”。
-// 注：单体 *-data.js 已废弃不再产出，不再纳入此正则。）
-var DATA_RE = /(^|\/)meta\.js$|(^|\/)assets\/js\/data\//;
+// meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
+var META_RE = /(^|\/)meta\.js$/;
+// 数据文件判定（按联赛+赛季拆出的 chunk；这些每天随数据源更新且体积大，
+// 用 stale-while-revalidate 保证弱网/二次打开秒出，最多「晚到一次」是划算的）。
+// 注：单体 *-data.js 已废弃不再产出，不再纳入此正则。
+var DATA_RE = /(^|\/)assets\/js\/data\//;
 // 静态资源判定（外壳 / 资源）
 var SHELL_RE = /\.(?:html|css|js|mjs|woff2?|ttf|eot|png|jpe?g|gif|webp|svg|ico|json)$/;
 
@@ -71,6 +77,26 @@ self.addEventListener('fetch', function (event) {
   var url;
   try { url = new URL(req.url); } catch (e) { return; }
   if (!sameOrigin(url)) return;
+
+  // ---- meta.js：network-first（页脚时间必须新鲜，体积可忽略）----
+  if (META_RE.test(url.pathname)) {
+    event.respondWith((function () {
+      return caches.open(CACHE).then(function (cache) {
+        return fetch(req, { cache: 'no-cache' }).then(function (res) {
+          if (res && res.ok) cache.put(req, res.clone());
+          return res;
+        }).catch(function () {
+          // 离线：回退缓存；连缓存都没有就给一个安全空值，避免页脚报错
+          return cache.match(req).then(function (c) {
+            return c || new Response('window.SITE_META=null;', {
+              headers: { 'Content-Type': 'application/javascript; charset=utf-8' }
+            });
+          });
+        });
+      });
+    })());
+    return;
+  }
 
   // ---- 数据文件：stale-while-revalidate ----
   if (DATA_RE.test(url.pathname)) {

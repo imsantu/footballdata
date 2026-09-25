@@ -101,23 +101,42 @@ async function main() {
   const db = app.database();
   const t0 = Date.now();
   const report = [];
+  const failed = [];
 
   for (const name of targets) {
+    // 集合不存在会让整次写库失败（2026-09-24 的 fixture_seasons 即此因）——
+    // 写入前先尝试建集合；已存在时 createCollection 报错，直接忽略。
+    try {
+      await db.createCollection(name);
+      console.log('   + 新建集合 ' + name);
+    } catch (e) { /* 已存在 → 忽略，继续写入 */ }
+
     const docs = readDocs(name);
     console.log(`→ ${name}（${docs.length} 条）`);
     const BATCH = 20;
     let done = 0;
-    for (let i = 0; i < docs.length; i += BATCH) {
-      const slice = docs.slice(i, i + BATCH);
-      await Promise.all(slice.map((d) => {
-        const { _id, ...rest } = d;
-        return db.collection(name).doc(_id).set(rest);
-      }));
-      done += slice.length;
-      process.stdout.write(`   ${done}/${docs.length}\r`);
+    try {
+      for (let i = 0; i < docs.length; i += BATCH) {
+        const slice = docs.slice(i, i + BATCH);
+        await Promise.all(slice.map((d) => {
+          const { _id, ...rest } = d;
+          return db.collection(name).doc(_id).set(rest);
+        }));
+        done += slice.length;
+        process.stdout.write(`   ${done}/${docs.length}\r`);
+      }
+      console.log(`   ✅ ${name} 写入完成（${docs.length} 条）          `);
+      report.push(name + '=' + docs.length);
+    } catch (e) {
+      // 按集合隔离失败：一个集合失败不拖垮其他集合，最后统一报非 0 退出
+      console.error(`   ❌ ${name} 写入失败：` + ((e && e.message) || e));
+      failed.push(name);
     }
-    console.log(`   ✅ ${name} 写入完成（${docs.length} 条）          `);
-    report.push(name + '=' + docs.length);
+  }
+
+  if (failed.length) {
+    console.error('\n部分集合写入失败：' + failed.join(', ') + '（其余集合已正常写入）');
+    process.exit(1);
   }
 
   console.log('\n同步完成：' + report.join(' / ') + '  用时 ' + ((Date.now() - t0) / 1000).toFixed(1) + 's');
@@ -126,5 +145,13 @@ async function main() {
 
 main().catch((e) => {
   console.error('同步失败：', (e && e.message) || e);
+  // 诊断信息：CI 日志里能直接看出是「密钥/环境没配好」还是「写库本身报错」，
+  // 不必再靠猜（密钥只打印前缀，不泄露完整值）。
+  if (e && e.code) console.error('  错误码：', e.code);
+  if (e && e.errMsg) console.error('  errMsg：', e.errMsg);
+  if (e && e.requestId) console.error('  requestId：', e.requestId);
+  console.error('  环境诊断：TCB_ENV=' + (ENV || '(未设置)')
+    + ' · SECRET_ID=' + (SECRET_ID ? '已设置(' + String(SECRET_ID).slice(0, 8) + '…)' : '(未设置)')
+    + ' · SECRET_KEY=' + (SECRET_KEY ? '已设置' : '(未设置)'));
   process.exit(1);
 });
