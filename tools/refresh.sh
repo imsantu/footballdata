@@ -206,6 +206,24 @@ else
         if git commit -q -F - <<< "$MSG"; then
             echo "[OK] 已提交：$(git log -1 --format='%h %s')"
             if git remote get-url origin >/dev/null 2>&1; then
+                # 推送前先把远端新提交 rebase 进来。
+                # 为什么需要：本机手动推送与云端定时任务会互相踩 —— 不拉取就直接 push 会被
+                # non-fast-forward 拒绝，重试 3 次也一样失败，结果是**当天数据静默不上线**
+                # （2026-09-26 本机推送时踩到过反向的同一种冲突，靠手动 rebase 才推上去）。
+                # 只在「确实落后于远端」时才 rebase；rebase 失败就 abort 并保持原行为
+                # （直接 push），**绝不把仓库留在 rebase 中间态**。
+                br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+                if git fetch -q origin 2>/dev/null && git rev-parse --verify -q "origin/$br" >/dev/null; then
+                    if [ "$(git rev-list --count HEAD.."origin/$br" 2>/dev/null || echo 0)" != "0" ]; then
+                        echo "[INFO] 本地落后 origin/$br，先 rebase 再推送"
+                        if git rebase "origin/$br" >/dev/null 2>&1; then
+                            echo "[OK] rebase 完成"
+                        else
+                            git rebase --abort >/dev/null 2>&1 || true
+                            echo "[WARN] rebase 失败（疑似冲突），已 abort，改为直接 push"
+                        fi
+                    fi
+                fi
                 if git push origin HEAD 2>&1; then
                     echo "[OK] 已推送到 origin"
                     notify "足球数据已更新" "${SUMMARY:-数据已同步}"
