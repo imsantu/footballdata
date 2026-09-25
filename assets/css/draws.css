@@ -1,3 +1,20 @@
+/* ══════════════════════════════════════════════════════════════════════════
+   平局统计页样式 · 五大联赛 / 五大次级联赛 共用
+   ──────────────────────────────────────────────────────────────────────────
+   这两个页面此前是两份 342 / 346 行、98.6% 逐行相同的文件
+   （draws-big5.css / draws-champ.css），差异只有 3 处：
+     ① .team-table .namecol 宽度（次级多一个「行政降级」徽标 -> 宽 8px）
+        -> 已下沉为 CSS 变量 --namecol-w / -min / -max，默认值即五大联赛
+     ② .tcell .nm.up-clr / .down-clr（次级联赛队名配色）
+     ③ .move.adm（次级联赛行政降级徽标）
+   ②③ 对五大联赛是惰性规则（promotion:false 时根本不生成这些 class），直接并入。
+   改一处即两页同时生效，不会再出现「改了一个页面忘了另一个」。
+
+   页面用法：
+     <link rel="stylesheet" href="../assets/css/draws.css">
+     <!-- 仅次级联赛需要，覆盖队名列宽度 -->
+     <style>:root{--namecol-w:232px;--namecol-min:204px;--namecol-max:268px;}</style>
+   ══════════════════════════════════════════════════════════════════════════ */
 :root{
   --bg:#0f1117; --card:#1a1d29; --card2:#252836; --border:#2a2d3a;
   --text:#e0e0e0; --text2:#cccccc; --text-dim:#aaaaaa; --text-strong:#ffffff; --text-muted:#8a90a0; --muted:#555555;
@@ -235,7 +252,9 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 /* PC：排名为独立窄列，队名另起一列（与参考榜单一致） */
 .team-table th.rkcol, .team-table td.rkcol { width:52px; min-width:52px; max-width:52px; padding-left:0; padding-right:0; }
 .team-table td.rk { color:var(--rk); font-weight:700; font-variant-numeric:tabular-nums; }
-.team-table th.namecol, .team-table td.namecol { width:232px; min-width:204px; max-width:268px; text-align:left; padding-left:10px; }
+/* 队名列宽度：次级联赛多一个「行政降级」徽标，需要宽 8px。
+   默认值即五大联赛；次级联赛页面用 :root{--namecol-*} 覆盖，不要在页面里重写这条规则。 */
+.team-table th.namecol, .team-table td.namecol { width:var(--namecol-w,224px); min-width:var(--namecol-min,196px); max-width:var(--namecol-max,260px); text-align:left; padding-left:10px; }
 /* 队名过长时只让「队名」这一段省略，积分 / 🏆 / 升降 icon 一律不参与压缩，避免 icon 被切掉 */
 .team-table td.namecol { overflow:hidden; }
 .tcell { display:flex; align-items:center; gap:8px; min-width:0; }
@@ -252,6 +271,8 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .tmeta { display:flex; align-items:center; gap:0; min-width:0; flex:1 1 auto; }
 .tagroup { display:inline-flex; align-items:center; gap:0; flex:0 0 auto; margin-left:6px; }
 .tcell .nm { font-weight:600; color:var(--text-strong); white-space:pre; overflow:hidden; text-overflow:ellipsis; min-width:0; flex:0 1 auto; }
+/* 队名配色：仅次级联赛（升班马 / 降班马）。draws.js 在 promotion:false 时不生成
+   .up-clr / .down-clr，故这两条对五大联赛是惰性规则。 */
 .tcell .nm.up-clr { color:var(--green); }
 .tcell .nm.down-clr { color:#e74c3c; }
 .pts-inline { margin-left:0; font-size:11.5px; font-weight:700; color:var(--text-muted); font-variant-numeric:tabular-nums; white-space:nowrap; }
@@ -261,7 +282,7 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .move { display:inline-flex; align-items:center; justify-content:center; width:16px; height:16px; border-radius:4px; margin-left:3px; flex:0 0 auto; font-size:10px; line-height:1; font-weight:800; }
 .move.up { color:#fff; background:var(--green); }
 .move.down { color:#fff; background:#e74c3c; }
-/* 行政降级 / 除名：非竞技原因（财务、注册裁定）被迫离队，与竞技降级区分 */
+/* 行政降级 / 除名：非竞技原因（财务、注册裁定）被迫离队，与竞技降级区分（仅次级联赛） */
 .move.adm { color:#2a1c05; background:#f0a92e; box-shadow:0 0 0 1px rgba(240,169,46,.9) inset; }
 .bcell { display:inline-flex; align-items:center; gap:7px; justify-content:center; }
 .bcell .bb { width:46px; max-width:46px; height:6px; border-radius:3px; background:var(--card2); overflow:hidden; }

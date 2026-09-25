@@ -14,7 +14,7 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/logo/png/logo-32x32.png">
 <link rel="icon" type="image/x-icon" href="../favicon.ico">
 <link rel="apple-touch-icon" href="../assets/img/logo/on-white/apple-touch-icon-180x180.png">
-<link rel="stylesheet" href="../assets/css/draws-big5.css" data-page-node-id="cWDfdFSJo1VpIclb27H2cD">
+<link rel="stylesheet" href="../assets/css/draws.css" data-page-node-id="cWDfdFSJo1VpIclb27H2cD">
 <link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="B6sLiHzCLvlonLuj2nqRFp">
 <style id="bootCss">
 /* 遮罩首帧就是不透明的页面底色（与页面背景同色，所以看不出「多了一层」）；
@@ -174,10 +174,14 @@
 <div class="trend-tip" id="formTip" style="max-width:300px" data-page-node-id="76lROm7KHqdFDVDH7VfUCH"></div>
 <!-- 站点统一时间账本（本页更新），页脚读它，与进球数页、更多页保持一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws-big5.js 同步到 URL -->
+<!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/draws-big5/shell.js"></script>
-<!-- 当季 chunk 不再在此写死赛季：由 assets/js/draws-big5.js 按 shell.js 的 seasonOrder[0] 预取 -->
-<script defer src="../assets/js/draws-big5.js"></script>
+<!-- 页面身份：draws.js 是「五大联赛 / 五大次级联赛」两页共用的实现，
+     差异（数据集目录、横向对照 Tab 的文案与徽标、升降级标记语义）全部由这里声明。
+     缺这个声明会立刻抛错，而不是静默渲染成另一个联赛的样式。 -->
+<script>window.DRAWS_CFG={group:'draws-big5',label:'五大联赛',promotion:false,badge:'<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="UEFA"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">UEFA</text></svg>'};</script>
+<!-- 当季 chunk 不再在此写死赛季：由 draws.js 按 shell.js 的 seasonOrder[0] 预取 -->
+<script defer src="../assets/js/draws.js"></script>
 </body>
 </html>

@@ -14,7 +14,9 @@
 <link rel="icon" type="image/png" sizes="32x32" href="../assets/img/logo/png/logo-32x32.png" data-page-node-id="h5B2H2wHpG8uW3sPAh0zHR">
 <link rel="icon" type="image/x-icon" href="../favicon.ico" data-page-node-id="51DdLIdTUzrgCGHBVoaa7x">
 <link rel="apple-touch-icon" href="../assets/img/logo/on-white/apple-touch-icon-180x180.png" data-page-node-id="KXNhjWtnLUUcHwo0XRDShi">
-<link rel="stylesheet" href="../assets/css/draws-champ.css" data-page-node-id="RwdQNxwRRA6o6G7Kod4TCb">
+<link rel="stylesheet" href="../assets/css/draws.css" data-page-node-id="RwdQNxwRRA6o6G7Kod4TCb">
+<!-- 次级联赛的队名列要容纳额外的「行政降级」徽标，比五大联赛宽 8px（draws.css 里的默认值就是五大联赛的 224/196/260） -->
+<style>:root{--namecol-w:232px;--namecol-min:204px;--namecol-max:268px;}</style>
 <link rel="stylesheet" href="../assets/css/site.css" data-page-node-id="vFBvq8EgyFGfna3pon4nx8">
 <style id="bootCss">
 /* 遮罩首帧就是不透明的页面底色（与页面背景同色，所以看不出「多了一层」）；
@@ -174,10 +176,14 @@
 <div class="trend-tip" id="formTip" style="max-width:300px" data-page-node-id="GXPOrWmdrxKqBRHJHFmJ4f"></div>
 <!-- 站点统一时间账本（本页更新），页脚读它，与进球数页、更多页保持一致 -->
 <script defer src="../assets/js/meta.js"></script>
-<!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws-champ.js 同步到 URL -->
+<!-- 按季 chunk + 弱网可重试；联赛/赛季由 draws.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/draws-champ/shell.js"></script>
-<!-- 当季 chunk 不再在此写死赛季：由 assets/js/draws-champ.js 按 shell.js 的 seasonOrder[0] 预取 -->
-<script defer src="../assets/js/draws-champ.js"></script>
+<!-- 页面身份：draws.js 是「五大联赛 / 五大次级联赛」两页共用的实现，
+     差异（数据集目录、横向对照 Tab 的文案与徽标、升降级标记语义）全部由这里声明。
+     缺这个声明会立刻抛错，而不是静默渲染成另一个联赛的样式。 -->
+<script>window.DRAWS_CFG={group:'draws-champ',label:'五大次级联赛',promotion:true,badge:'<svg class="uefa-logo" viewBox="0 0 30 18" aria-label="次级联赛"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">2ND</text></svg>'};</script>
+<!-- 当季 chunk 不再在此写死赛季：由 draws.js 按 shell.js 的 seasonOrder[0] 预取 -->
+<script defer src="../assets/js/draws.js"></script>
 </body>
 </html>

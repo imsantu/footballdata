@@ -49,7 +49,11 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      generator/season.py 一处。逻辑 JS 属外壳 → +1 强制换新。
 // v18：修复「展开比分明细」按钮在单季视图下点了没反应（renderTop() 依赖的 cross 分块
 //      8 秒后才预取，此前 CR() 为 undefined → 抛错并连带跳过 renderTeams()）。
-var CACHE = 'fds-shell-v18';
+// v19：平局页的两份逻辑 JS 与两份 CSS 合并为共用文件（draws.js / draws.css）——
+//      差异下沉为页面声明的 window.DRAWS_CFG 与 :root{--namecol-*}。此前改一处忘另一处
+//      是「改不完整」的主要来源。旧文件名（draws-big5.js / draws-champ.js /
+//      draws-big5.css / draws-champ.css）已删除 → 旧缓存里的条目必须换新，+1。
+var CACHE = 'fds-shell-v19';
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;

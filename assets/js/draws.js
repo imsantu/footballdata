@@ -1,4 +1,27 @@
 
+/* ══════════════════════════════════════════════════════════════════════════
+   平局数据页 · 五大联赛 / 次级联赛 共用实现
+   ──────────────────────────────────────────────────────────────────────────
+   这两个页面此前是两份 1200+ 行、97.0% 逐行相同的文件（draws-big5.js /
+   draws-champ.js，现已删除），差异只有 4 类、共 20 处：
+     ① 数据集目录（assets/js/data/draws-big5/ ↔ draws-champ/）
+     ② 第 6 个「横向对照」Tab 的文案与徽标（五大联赛·UEFA ↔ 五大次级联赛·2ND）
+     ③ 走势图标题 / 说明 / 面包屑里的同一处文案
+     ④ 升降级标记语义：五大用 promo / releg；次级用 upTop / releg / demoted
+        （行政降级）并对队名着色
+   于是把差异下沉为页面声明的 window.DRAWS_CFG，共用本文件。
+   改一处即两页同时生效，不会再出现「改了一个页面忘了另一个」。
+
+   页面加载顺序（缺 CFG 会立刻抛错，而不是静默渲染成另一个联赛的样式）：
+     <script>window.DRAWS_CFG = {group:'draws-big5', label:'五大联赛',
+                                 badge:'<svg …>…</svg>', promotion:false};</script>
+     <script defer src="../assets/js/draws.js"></script>
+   ══════════════════════════════════════════════════════════════════════════ */
+var CFG = window.DRAWS_CFG;
+if(!CFG || !CFG.group || !CFG.label){
+  throw new Error('draws.js：页面必须先声明 window.DRAWS_CFG = {group, label, badge, promotion}');
+}
+
 const SCORE_COLORS = {"0-0": "#4a9eff", "1-1": "#00b894", "2-2": "#a29bfe", "其他": "#fdcb6e"};
 const RESULT_COLORS = {"W": "#00b894", "D": "#f1c40f", "L": "#e74c3c"};
 const CRESTS = DATA.crestByTeam;
@@ -54,7 +77,7 @@ function curMode(){ return themeMode; }
 var _url0 = window.FD_URL ? window.FD_URL.read() : {};
 function _validDrawLeague(code){ return DATA.leagues.some(function(l){ return l.code === code; }); }
 let curLeague = _validDrawLeague(_url0.league) ? _url0.league : DATA.leagues[0].code;
-let currentSeason = DATA.seasonOrder.indexOf(_url0.season) >= 0 ? _url0.season : DATA.seasonOrder[0];
+let currentSeason = DATA.seasonOrder.indexOf(_url0.season) >= 0 ? _url0.season : DATA.seasonOrder[0];   // seasonOrder 新→旧
 let curView = (_url0.view === 'overview' || _url0.view === 'big5' || DATA.seasonOrder.indexOf(_url0.view) >= 0) ? _url0.view : currentSeason;
 let showBig5 = curView === 'big5';
 if(curView === 'overview') showBig5 = false;
@@ -77,7 +100,7 @@ var _chunkInflight = {};
 var _chunkRenderToken = 0;
 _loadChunk(curLeague + '/' + currentSeason + '.js', function(){});
 
-// 赛季窗口：5 = 近五赛季；3 = 近三赛季。
+// 赛季窗口：5 = 近五赛季；3 = 近三赛季。URL 可直接恢复当前筛选状态。
 let SEASON_WIN = (_url0.win === '3' ? 3 : 5);
 function syncDrawUrl(replace){
   var view = showBig5 ? 'big5' : (curView === 'overview' ? 'overview' : currentSeason);
@@ -136,8 +159,8 @@ function buildLeagueTabs(){
       '<img src="'+lgLogo(l.code)+'" alt="'+l.cn+'">'+l.cn+
       '<span class="rt">'+(cr.drawRate!=null?cr.drawRate:'–')+'%</span></div>';
   }).join('');
-  // 模块六：五大次级联赛横向对照，作为第 6 个一级 Tab，放在「法乙」之后
-  const big5 = '<div class="league-tab big5'+(showBig5?' active':'')+'" data-k="__big5__"><svg class="uefa-logo" viewBox="0 0 30 18" aria-label="次级联赛"><rect x="0" y="0" width="30" height="18" rx="3" fill="#0a1f44"/><text x="15" y="12.5" font-family="Arial,Helvetica,sans-serif" font-size="9" font-weight="800" fill="#fff" text-anchor="middle" letter-spacing="0.5">2ND</text></svg>五大次级联赛<span class="rt">对照</span></div>';
+  // 模块六：横向对照，作为第 6 个一级 Tab，放在最后一个联赛之后（文案与徽标见 CFG）
+  const big5 = '<div class="league-tab big5'+(showBig5?' active':'')+'" data-k="__big5__">'+CFG.badge+CFG.label+'<span class="rt">对照</span></div>';
   el.innerHTML = lg + big5;
   el.querySelectorAll('.league-tab').forEach(b=>{
     b.onclick = ()=>{
@@ -151,7 +174,7 @@ function buildLeagueTabs(){
 }
 function buildSeasonTabs(){
   const el = document.getElementById('seasonTabs');
-  // 「五大次级联赛」Tab 是跨联赛横向对照，没有单赛季维度 —— 只清空年份按钮；
+  // 「横向对照」Tab 跨联赛、没有单赛季维度 —— 只清空年份按钮；
   // 容器本身保留占位（flex:1），这样右侧「范围」开关仍停在原来的位置不动。
   if(showBig5){ el.innerHTML=''; buildWinSwitch(); return; }   // 只清空年份按钮；容器保留 flex:1 占位，「范围」开关不位移
   el.style.display='';
@@ -169,7 +192,7 @@ function buildSeasonTabs(){
   el.querySelectorAll('.season-tab').forEach(b=>{
     b.onclick = ()=>{
       const k = b.getAttribute('data-k');
-      showBig5 = false;   // 切赛季/总览即离开「五大次级联赛」Tab
+      showBig5 = false;   // 切赛季/总览即离开「横向对照」Tab
       if(k==='__overview__'){ curView='overview'; }
       else { curView=k; currentSeason=k; }
       syncDrawUrl(false);
@@ -205,7 +228,7 @@ const CHAMP_SVG = '<span class="champ"><svg viewBox="0 0 24 24" fill="none" stro
 /* ---------------- 比分明细折叠：默认收起，hover 浮层查看 ----------------
    队表四列比分（0-0/1-1/2-2/其他）默认收起以保持整洁；点「展开比分明细」按钮可展开为四列。
    跨赛季总榜（近五赛季平局总榜）无比分明细列。
-   需要明细时：鼠标悬停任意一行即弹出浮层，显示该队各比分平局场数。         */
+   需要明细时：鼠标悬停「平局」列单元格即弹出浮层，显示该队各比分平局场数（移动端轻点该列也弹出）。         */
 const BK_KEYS = ['d00','d11','d22','dother'];
 let showBuckets = false;          // 队表比分明细默认收起（保持整洁）
 let showBucketsTop = true;        // 总榜已无比分明细列，此开关仅保留兼容
@@ -732,16 +755,25 @@ function renderTeams(){
       if(c.rk){
         cells+='<td class="rkcol rk'+sel+'">'+t.rank+'</td>';
       } else if(c.namecol){
-        // icon ＝ 本季「最终裁定」的去向：升入顶级 → 升；降级离队 → 降。进行中的赛季不判定。
-        // 队名配色 ＝ 上季的来源：从顶级降入 → 红；从次次级联赛升入 → 绿。
-        let mark='';
-        if(moveFinal){
-          if(t.upTop) mark+='<span class="move up">升</span>';
-          if(t.releg) mark+='<span class="move down">降</span>';
-          // 行政降级 / 除名：不在降级区，但因财务、注册裁定被勒令离队，单独标记
-          if(t.demoted) mark+='<span class="move adm">降</span>';
+        // 升降级标记：两套语义由 CFG.promotion 选择 ——
+        //   五大联赛：升 = 本季升班马（季初即定，所有赛季都显示）；降 = 仅赛季已结束、
+        //             降级名单确定时显示。队名不着色。
+        //   次级联赛：icon = 本季「最终裁定」的去向（升入顶级 / 竞技降级 / 行政降级），
+        //             仅 moveFinal 时标注；队名配色 = 上季的来源（顶级降入标红、
+        //             次次级升入标绿）。字段原样来自 draws-champ，绝不可用名单差集推断。
+        let mark='', nmCls='';
+        if(CFG.promotion){
+          if(moveFinal){
+            if(t.upTop) mark+='<span class="move up">升</span>';
+            if(t.releg) mark+='<span class="move down">降</span>';
+            // 行政降级 / 除名：不在降级区，但因财务、注册裁定被勒令离队，单独标记
+            if(t.demoted) mark+='<span class="move adm">降</span>';
+          }
+          nmCls = t.fromTop ? ' down-clr' : (t.promo ? ' up-clr' : '');
+        } else {
+          if(t.promo) mark+='<span class="move up">升</span>';
+          if(moveFinal && t.releg) mark+='<span class="move down">降</span>';
         }
-        const nmCls = t.fromTop ? ' down-clr' : (t.promo ? ' up-clr' : '');
         cells+='<td class="namecol left"><div class="tcell">'+crestImg(t.name)+
           '<span class="tmeta"><span class="nm'+nmCls+'">'+t.cn+'</span>'+
           '<span class="tagroup"><span class="pts-inline">'+t.pts+'<span class="u">分</span></span>'+
@@ -782,14 +814,21 @@ function renderTeams(){
   bindRowDetail(table, rows);
   bindSortChip('teamSortChip', teamCols(), teamSort, ()=>{ teamSort={key:'rank',dir:1}; renderTeams(); }, showBuckets);
   syncHint();
-  // 进行中的赛季：下赛季名单未定，不标任何升降 icon，也不做「降班马」推断
+  // 图例：与上面的 icon / 队名配色同一套语义（见 CFG.promotion）
+  //  · 五大联赛：升班马（升 icon）所有赛季都显示；降 icon 仅赛季结束时显示，队名不着色。
+  //  · 次级联赛：进行中的赛季下季名单未定，一律不标升 / 降 icon（也不做「降班马」推断）；
+  //    赛季结束后才标「最终升级 / 竞技降级 / 行政降级」，并附队名红绿的来源说明。
   const colorTxt = '；<b style="color:#e74c3c">队名标红</b>＝上季从顶级联赛降入'+
                    '；<b style="color:var(--green)">队名标绿</b>＝上季从次次级联赛升入';
-  const moveTxt = (moveFinal
-    ? '；<span class="move up">升</span> 本季最终升级，下季升入顶级联赛'+
-      '；<span class="move down">降</span> 本季竞技降级，下季降出本联赛'+
-      (rows.some(t=>t.demoted)?'；<span class="move adm">降</span> 行政降级，非竞技原因':'')
-    : '；本季尚在进行、下季升降名单未定，暂不标注升 / 降 icon')+colorTxt;
+  const moveTxt = CFG.promotion
+    ? (moveFinal
+       ? '；<span class="move up">升</span> 本季最终升级，下季升入顶级联赛'+
+         '；<span class="move down">降</span> 本季竞技降级，下季降出本联赛'+
+         (rows.some(t=>t.demoted)?'；<span class="move adm">降</span> 行政降级，非竞技原因':'')
+       : '；本季尚在进行、下季升降名单未定，暂不标注升 / 降 icon')+colorTxt
+    : (moveFinal
+       ? '；<span class="move up">升</span> 本季升班马（季初升入本联赛）'+'；<span class="move down">降</span> 本季结束后降出本联赛'
+       : '；<span class="move up">升</span> 本季升班马（季初升入本联赛）；本季未结束，暂不标注降级');
   document.getElementById('teamNote').innerHTML=
     (moveFinal?'🏆 当季冠军':'🏆 当前榜首')+moveTxt+'。';
 }
@@ -934,7 +973,8 @@ function seasonAgg(k){
     champ
   };
 }
-/* 联赛规模说明：五大次级规模不一（英冠 24 / 西乙 22 / 意乙·法乙 20 / 德乙 18），必须按实际分档描述 */
+/* 联赛规模说明：各联赛规模不一（五大：法甲 2023-24 起由 20 队缩编为 18 队；
+   次级：英冠 24 / 西乙 22 / 意乙·法乙 20 / 德乙 18），必须按实际分档描述 */
 function fmtSizes(){
   const seq = DATA.seasonOrder.slice().reverse();   // 旧 → 新
   const parts = [];
@@ -1020,9 +1060,9 @@ function renderCompare(){
   document.getElementById('cmpNote').innerHTML=WLAB()+'平均平局率 <b>'+avg.toFixed(2)+'%</b>；最高 '+fmtSeason(best[0].k)+'（'+best[0].drawRate+'%，'+best[0].totalDraws+' 场），最低 '+fmtSeason(best[best.length-1].k)+'（'+best[best.length-1].drawRate+'%，'+best[best.length-1].totalDraws+' 场）。'+fmtSizes()+'，口径一致可直接横向比较。';
 }
 
-/* ---------------- 模块六：五大次级联赛横向对照（一级「五大次级联赛」Tab） ---------------- */
+/* ---------------- 模块六：横向对照（一级「横向对照」Tab） ---------------- */
 function big5Rows(){
-  // 默认按「联赛 Tab 顺序」排列（英冠→西乙→德乙→意乙→法乙）
+  // 默认按「联赛 Tab 顺序」排列（即上方联赛 Tab 的先后）
   const order = DATA.leagues.map(l=>l.code);
   let rows = CMP().rows.slice().sort((a,b)=> order.indexOf(a.code)-order.indexOf(b.code));
   if(big5Sort.key==='order') return rows;
@@ -1096,10 +1136,10 @@ function renderBig5(){
     r.rates.forEach((v,i)=>{ g+='<circle cx="'+X(i)+'" cy="'+Y(v)+'" r="3.5" fill="'+col+'"></circle>'; });
   });
   document.getElementById('big5Chart').innerHTML='<svg class="trend-svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">'+g+
-    '<text x="'+ml+'" y="14" font-size="11" fill="var(--text-dim)">五大次级联赛'+WLAB()+'平局率走势（按联赛着色）</text></svg>';
+    '<text x="'+ml+'" y="14" font-size="11" fill="var(--text-dim)">'+CFG.label+WLAB()+'平局率走势（按联赛着色）</text></svg>';
   const legend = rows.map(r=>'<span class="lg-leg'+(big5Hide[r.code]?' off':'')+'" data-code="'+r.code+'" role="button" tabindex="0"><i style="background:'+(LG_COLOR[r.code]||'#888')+'"></i>'+r.cn+'</span>').join('');
   const noteEl=document.getElementById('big5Note');
-  noteEl.innerHTML='五大次级联赛'+WLAB()+'累计平局率对照；'+legend+'。点击底部色块说明可显示 / 隐藏对应联赛的曲线；点击表头可按平局场次 / 平局率 / 各比分排序（再次点击反向）；点击「五大次级联赛」Tab 左邻的赛季 Tab 可回到单季或总览。';
+  noteEl.innerHTML=CFG.label+WLAB()+'累计平局率对照；'+legend+'。点击底部色块说明可显示 / 隐藏对应联赛的曲线；点击表头可按平局场次 / 平局率 / 各比分排序（再次点击反向）；点击「'+CFG.label+'」Tab 左邻的赛季 Tab 可回到单季或总览。';
   noteEl.querySelectorAll('.lg-leg').forEach(el=>{
     const toggle=()=>{ const c=el.getAttribute('data-code'); big5Hide[c]=!big5Hide[c]; renderAfterEnsure(); };
     el.onclick=toggle;
@@ -1151,18 +1191,17 @@ function renderTitles(){
 function renderCrumb(){
   const el = document.getElementById('headCrumb'); if(!el) return;
   let parts;
-  if(showBig5)      parts = ['五大次级联赛', '横向对照'];
+  if(showBig5)      parts = [CFG.label, '横向对照'];
   else if(curView==='overview') parts = [LG().cn, '赛季总览'];
   else              parts = [LG().cn, fmtSeason(currentSeason)+' 赛季'];
   el.innerHTML = '<span>数据中心</span>' + parts.map(p=>'<span class="sepi">›</span><b>'+p+'</b>').join('');
 }
 
-// ---------- 按季 / 跨季 chunk 懒加载（Phase 2：draws-champ，复用 big5 方案）----------
-// ---------- 按季 / 跨季 chunk 懒加载（Phase 2：draws-champ，复用 big5 方案）----------
+// ---------- 按季 / 跨季 chunk 懒加载 ----------
 // 首屏只加载 shell.js + 当季 chunk（当季由文件顶部按 seasonOrder[0] 提前预取，
 // 页面 HTML 不再写死赛季）；其余赛季、cross.js 按需/空闲时再取。
 // （_chunkInflight / _chunkRenderToken 已在文件顶部随预取一起声明）
-function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/draws-champ/'; }
+function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/' + CFG.group + '/'; }
 function isChunkLoaded(name){
   if(name === 'cross.js'){ var L0 = LG() || DATA.leagues[0]; return !!(L0 && L0.cross); }
   var m = /^([^/]+)\/(.+)\.js$/.exec(name);
