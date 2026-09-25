@@ -19,7 +19,7 @@ crestByTeam + logoByCode）：
 
 由 sync_site.py 在抽取+健康校验通过后直传内存对象调用，保证 chunk 始终由校验过的数据派生。
 """
-import os, re, json, base64, unicodedata, argparse
+import os, re, sys, json, base64, unicodedata, argparse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CREST_DIR = os.path.join(ROOT, "assets/img/crests")
@@ -33,7 +33,11 @@ LOGO_SUFFIX = ""
 HEAVY_KEYS = ("overall", "perRound", "teams")
 
 # 当前进行中的赛季（首屏必加载，其余季懒加载）。big5 / champ 共用同一套赛季序。
-CURRENT_SEASON = "2026-27"
+# 唯一来源 = generator/season.py；优先用流水线统一的 FD_GENERATOR_DIR。
+_GEN = os.environ.get("FD_GENERATOR_DIR") or os.path.join(ROOT, "generator")
+if _GEN not in sys.path:
+    sys.path.insert(0, _GEN)
+from season import SEASON as CURRENT_SEASON  # noqa: E402
 
 
 def slugify(name):

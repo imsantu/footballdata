@@ -43,7 +43,11 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      赛季一换就要改 4 个文件，漏一个默认联赛就空白）。改由逻辑 JS 按 shell.js 的
 //      seasonOrder[0] 在启动时预取；同时删除了完全重复的 assets/img/goals-crests/ 目录
 //      （队徽统一到 assets/img/crests/）。页面 HTML 与逻辑 JS 都属外壳 → +1 强制换新。
-var CACHE = 'fds-shell-v16';
+// v17：4 个逻辑 JS 不再写死赛季字面量（原 '2026-27' 共 57 处：进行中的赛季一换就要人工
+//      对齐 4 个文件，漏一处不报错、只静默出错）。改为从已加载的 shell.js 推导
+//      （draws 用 seasonOrder[0]；goals 用 leagues[0].order[0]）；Python 侧同步收敛到
+//      generator/season.py 一处。逻辑 JS 属外壳 → +1 强制换新。
+var CACHE = 'fds-shell-v17';
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;

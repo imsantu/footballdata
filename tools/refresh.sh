@@ -29,6 +29,9 @@ else
 fi
 AUTO="$SITE/tools"
 PY="${FD_PY:-/usr/bin/python3}"
+# 赛季唯一来源：generator/season.py（换季只改那一个文件）
+SEASON="$("$PY" "$WS/season.py" 2>/dev/null || true)"
+[ -n "$SEASON" ] || SEASON="(未知赛季)"
 
 # 必须 export：sync_site.py 是独立进程，靠 FD_* 环境变量解析同一套路径
 # （refresh.sh 自己算出的 WS/GOALS_WS 只用于拼本脚本内的命令，不会自动传给子进程）。
@@ -101,7 +104,7 @@ echo "════════ 足球数据自动更新 $(date '+%F %T') ══�
 rm -f /tmp/fd_*_2627.csv
 
 # 1) 抓取并重建 2026-27（五大联赛 + 五大次级联赛）
-step "抓取 2026-27 最新赛果" "$PY" "$WS/build_2026_27.py"
+step "抓取 $SEASON 最新赛果" "$PY" "$WS/build_2026_27.py"
 
 # 1b) 站点已不再展示「数据源更新时间」，mark_fetch_stamp.py 步骤已移除（其写入的
 #     srcUpdated 现在无人读取，保留 mark_fetch_stamp.py 脚本本身以备将来复用）。
@@ -111,7 +114,7 @@ step "抓取 2026-27 最新赛果" "$PY" "$WS/build_2026_27.py"
 #     （已完赛 + 未开赛），build_2026_27.py 只取已完赛，这里换个过滤条件把未开赛
 #     也留下。因此**直接复用步骤 1 刚抓的 /tmp 缓存**，几乎零额外网络开销。
 #     全量覆盖天然处理赛程调整 / 补赛；单联赛失败时保留旧数据 + 告警，不拖垮主线。
-step "抓取 2026-27 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
+step "抓取 $SEASON 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
 
 # 2) 平局统计 · 五大联赛
 step "分析：平局·五大联赛"  "$PY" "$WS/analyze_all.py"
@@ -122,7 +125,7 @@ step "分析：平局·次级联赛"  "$PY" "$WS/analyze_champ.py"
 step "出报告：平局·次级联赛" "$PY" "$WS/build_champ.py"
 
 # 4) 进球数统计（该页是增量打补丁式更新 2026-27 的进球分布）
-step "更新：进球数统计 2026-27" "$PY" "$WS/update_seq23_2627.py"
+step "更新：进球数统计 $SEASON" "$PY" "$WS/update_seq23_2627.py"
 
 # 5) 同步数据块到站点（第一遍：含抽取+体检+enrich，随后由 sync_site.py 直传内存对象给
 #    拆分器写出按季 chunk + 队徽外置 PNG；历史赛季 chunk 已冻结于 git，日常只动 2026-27）
@@ -174,7 +177,7 @@ else
             echo "[SKIP] 没有需要提交的改动"
             pushed=1; break
         fi
-        MSG="chore(data): 同步 2026-27 赛果 $(date '+%F') [skip ci]"
+        MSG="chore(data): 同步 $SEASON 赛果 $(date '+%F') [skip ci]"
         [ -n "$SUMMARY" ] && MSG="$(printf '%s\n\n%s' "$MSG" "$SUMMARY")"
         if git commit -q -F - <<< "$MSG"; then
             echo "[OK] 已提交：$(git log -1 --format='%h %s')"

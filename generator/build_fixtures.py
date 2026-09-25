@@ -41,10 +41,10 @@ if HERE not in sys.path:
 from build_2026_27 import (  # noqa: E402
     ESPN_MAP, LEAGUES, TITAN_CN_ALIAS, TITAN_LEAGUES, TITAN_SEASON, TITAN_URL,
 )
+from season import SEASON as CUR_SEASON  # noqa: E402  （赛季唯一来源）
 
 SITE = os.environ.get("FD_SITE_DIR") or os.path.dirname(HERE)
 OUT_DIR = os.path.join(SITE, "assets", "js", "data", "fixtures")
-CUR_SEASON = "2026-27"
 CACHE_MAX_AGE = 30 * 60          # /tmp 缓存有效期（秒）：步骤 1 刚抓过就直接复用
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")

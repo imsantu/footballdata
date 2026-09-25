@@ -1,8 +1,11 @@
-import json, re, shutil
+import json, re, shutil, sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
+if str(HERE) not in sys.path:
+    sys.path.insert(0, str(HERE))
+from season import SEASON as CUR_SEASON  # noqa: E402  （赛季唯一来源）
 FILES=[(HERE/"football_big5_goals.html",'window.DATA = '),(HERE/"football_mobile.html",'const DATA = ')]
 ALIASES={'Paris Saint-Germain':'Paris Saint-Germain FC','RC Lens':'Racing Club de Lens','Olympique Marseille':'Olympique de Marseille','Stade Rennais':'Stade Rennais FC 1901','AS Monaco':'AS Monaco FC','RC Strasbourg':'RC Strasbourg Alsace','SpVgg Greuther Fürth 1903':'SpVgg Greuther Fürth','VfL Bochum 1848':'VfL Bochum'}
 TOP=['en','es','it','de','fr']
@@ -18,9 +21,9 @@ from standings import (compute_table, compute_goals, canon_top,
 def standings_2627(code):
     tier='2' if code.endswith('.2') else '1'
     base=code.replace('.2','')
-    ms = json.load(open(f"{DATA_DIR}/{base}.{tier}.2026-27.json", encoding="utf-8"))["matches"]
+    ms = json.load(open(f"{DATA_DIR}/{base}.{tier}.{CUR_SEASON}.json", encoding="utf-8"))["matches"]
     reg = [m for m in ms if is_regular_match(m)]
-    ded = deduct_map(base, "2026-27", "top")
+    ded = deduct_map(base, CUR_SEASON, "top")
     tbl = compute_table(reg, TIE_RULE.get(base, "gd"), ded)
     goals = compute_goals(reg)
     return tbl, goals
@@ -97,7 +100,7 @@ def inject(path,marker,allstats):
      # 该赛季无本地赛果数据，跳过（保留报告内嵌值，不强行改写）
      continue
    out,n,buckets,goals_data=st
-   if season=='2026-27' and code in TOP:
+   if season==CUR_SEASON and code in TOP:
      sc['totalMatches']=n;sc['buckets']=buckets;sc['avgGoals']=round(goals_data/n,2) if n else 0
      tbl,team_goals=standings_2627(code)
    else:

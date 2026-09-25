@@ -13,10 +13,16 @@ function defaultSeason(lg){
 var _url0 = window.FD_URL ? window.FD_URL.read() : {};
 function _validGoalLeague(code){ return code === '__all__' || DATA.leagues.some(function(l){ return l.code === code; }); }
 let currentLeague = _validGoalLeague(_url0.league) ? _url0.league : DATA.leagues[0].code;
-// 默认落在进行中的最新赛季 2026-2027；若 URL 带赛季，则优先恢复可用的深链状态。
+// 默认落在进行中的最新赛季；若 URL 带赛季，则优先恢复可用的深链状态。
+/* ---------------- 进行中的赛季（唯一来源：已加载的 shell.js）----------------
+   各联赛 order 均为新→旧，[0] 即当季。此前本文件写死了赛季字面量，换季要人工回来
+   对齐 4 个逻辑文件（漏一处就静默出错）；改为推导后，换季只需改生成侧一处。 */
+var ONGOING_SEASON = ((DATA.leagues[0] || {}).order || [])[0] || '';
+/* seq23 走势图只对「当季 + 近五季」绘制（更早的赛季没有逐场 2/3 球明细） */
+var SEQ_SEASONS = ((DATA.leagues[0] || {}).order || []).slice(0, 6);
 let currentSeason = (function(){
   var lg = currentLeague === '__all__' ? DATA.leagues[0] : leagueOf(currentLeague);
-  return _url0.season && lg && (lg.order || []).includes(_url0.season) ? _url0.season : ((lg.order || []).includes('2026-27') ? '2026-27' : defaultSeason(lg));
+  return _url0.season && lg && (lg.order || []).includes(_url0.season) ? _url0.season : ((lg.order || []).includes(ONGOING_SEASON) ? ONGOING_SEASON : defaultSeason(lg));
 })();
 
 /* ---------------- 当季 chunk 提前预取 ----------------
@@ -33,10 +39,10 @@ ensureChunks(neededChunks(), function(){});
 let teamSort = {key:'rank', dir:1};
 let teamGoalsShowAll = false;
 function toggleTeamGoals(){ teamGoalsShowAll = !teamGoalsShowAll; renderTeams(); }
-// 进球数 / 失球数 / 净胜球数 三列（得失球）折叠状态：2026-27 默认收起，其余赛季默认显示；用户点「显示得失球」后锁定
+// 进球数 / 失球数 / 净胜球数 三列（得失球）折叠状态：进行中的当季默认收起，其余赛季默认显示；用户点「显示得失球」后锁定
 let teamTotalsShow = true;
 let teamTotalsPinned = null; // null = 跟随赛季默认；true/false = 用户手动设定
-function toggleTeamTotals(){ const cur=(teamTotalsPinned===null)?(currentSeason!=='2026-27'):teamTotalsPinned; teamTotalsPinned=!cur; renderTeams(); }
+function toggleTeamTotals(){ const cur=(teamTotalsPinned===null)?(currentSeason!==ONGOING_SEASON):teamTotalsPinned; teamTotalsPinned=!cur; renderTeams(); }
 // 不出预警：从最近一场往前，连续多少轮（场）该队总进球既 ≠2 也 ≠3（即只打出 0/1/4+ 球）
 function trailingNot23(seq){ if(!seq||!seq.length) return 0; let n=0; for(let i=seq.length-1;i>=0;i--){ const x=seq[i]; if(x!==2&&x!==3) n++; else break; } return n; }
 // 2/3 球走势面板筛选状态：关键词、2 球 / 3 球开关、被隐藏的球队
@@ -283,8 +289,8 @@ function renderOverview(){
 
 function renderTeams(){
   const lg=leagueOf(currentLeague); const sc=lg.scopes[currentSeason];
-  // 进入 2026-27 时若停留在历史赛季的「最大同时不出」排序键，复位回默认（该列在 2026-27 已移除）
-  if(currentSeason==='2026-27' && teamSort.key==='gap23'){ teamSort={key:'rank',dir:1}; }
+  // 进入当季时若停留在历史赛季的「最大同时不出」排序键，复位回默认（该列在当季已移除）
+  if(currentSeason===ONGOING_SEASON && teamSort.key==='gap23'){ teamSort={key:'rank',dir:1}; }
   const total=sc.totalMatches;
   const idx=lg.order.indexOf(currentSeason);
   const prevKey = (idx>=0 && idx+1<lg.order.length) ? lg.order[idx+1] : null;
@@ -337,16 +343,16 @@ function renderTeams(){
   let head='<tr><th class="sortable'+(teamSort.key==='rank'?' sorted':'')+'" data-k="rank">排名'+arr('rank')+'</th>'
     +'<th class="left">球队</th>';
   const hasSeq = sc.teams.some(t=>t.seq23 && t.seq23.length);
-  // 「不出预警 / 快要🀄️了」列 + 「显示得失球」按钮：仅 2026-27 赛季提供（历史赛季不显示、不收起、不加按钮）
-  const showWarn = (currentSeason==='2026-27');
+  // 「不出预警 / 快要🀄️了」列 + 「显示得失球」按钮：仅当季提供（历史赛季不显示、不收起、不加按钮）
+  const showWarn = (currentSeason===ONGOING_SEASON);
   BUCKETS.forEach((b,i)=>{
     // 列太多时默认只保留 2 球 / 3 球两档，其余进球档折叠，点「展开明细」再看
     const hide = (!teamGoalsShowAll && i!==2 && i!==3);
     head+='<th class="sortable'+(String(teamSort.key)===String(b)?' sorted':'')+(hide?'" style="display:none':'')+'" data-k="'+b+'">'+LABELS[i]+arr(b)+'</th>';
   });
-  // 进球数 / 失球数 / 净胜球（得失球）三列：仅 2026-27 默认收起（点「显示得失球」可展开/收起）；
+  // 进球数 / 失球数 / 净胜球（得失球）三列：仅当季默认收起（点「显示得失球」可展开/收起）；
   // 历史赛季始终展开，且不受 teamTotalsPinned 影响（历史赛季没有「显示得失球」按钮，不能让它们陷于收起态）
-  const totalsShown = (currentSeason==='2026-27') ? ((teamTotalsPinned===null)?false:teamTotalsPinned) : true;
+  const totalsShown = (currentSeason===ONGOING_SEASON) ? ((teamTotalsPinned===null)?false:teamTotalsPinned) : true;
   const thHide = totalsShown ? '' : ' style="display:none"';
   head+='<th class="sortable total-h'+(teamSort.key==='gf'?' sorted':'')+'" data-k="gf"'+thHide+'>进球数'+arr('gf')+'</th>';
   head+='<th class="sortable total-h'+(teamSort.key==='ga'?' sorted':'')+'" data-k="ga"'+thHide+'>失球数'+arr('ga')+'</th>';
@@ -356,7 +362,7 @@ function renderTeams(){
   }
   head+='<th class="sortable'+(teamSort.key==='gap2'?' sorted':'')+'" data-k="gap2">不出2球'+arr('gap2')+'</th>';
   head+='<th class="sortable'+(teamSort.key==='gap3'?' sorted':'')+'" data-k="gap3">不出3球'+arr('gap3')+'</th>';
-  if(currentSeason!=='2026-27'){ head+='<th class="sortable'+(teamSort.key==='gap23'?' sorted':'')+'" data-k="gap23">最大同时不出'+arr('gap23')+'</th>'; }
+  if(currentSeason!==ONGOING_SEASON){ head+='<th class="sortable'+(teamSort.key==='gap23'?' sorted':'')+'" data-k="gap23">最大同时不出'+arr('gap23')+'</th>'; }
   if(hasSeq){
     head+='<th class="sortable b2-h'+(teamSort.key==='avg2'?' sorted':'')+'" data-k="avg2">平均出2球'+arr('avg2')+'</th>';
     head+='<th class="sortable b3-h'+(teamSort.key==='avg3'?' sorted':'')+'" data-k="avg3">平均出3球'+arr('avg3')+'</th>';
@@ -366,7 +372,7 @@ function renderTeams(){
   head+='</tr>';
   let rows='';
   teams.forEach(t=>{
-    const isNewSeason = (currentSeason==='2026-27');
+    const isNewSeason = (currentSeason===ONGOING_SEASON);
     let mark='';
     // 升班马(升 icon)：用"上赛季名单差集"判定，所有赛季(含进行中的最新 2026-27)都显示。
     // 进行中赛季当前名单不全，但这只影响"已出场球队"——升班马一旦出场即被标记，无误判。
@@ -406,7 +412,7 @@ function renderTeams(){
     const g2=(t.gap2==null)?'—':t.gap2, g3=(t.gap3==null)?'—':t.gap3, g23=(t.gap23==null)?'—':t.gap23;
     cells+='<td class="gap-cell'+(teamSort.key==='gap2'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g2+'</td>';
     cells+='<td class="gap-cell'+(teamSort.key==='gap3'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g3+'</td>';
-    if(currentSeason!=='2026-27'){ cells+='<td class="gap-cell'+(teamSort.key==='gap23'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g23+'</td>'; }
+    if(currentSeason!==ONGOING_SEASON){ cells+='<td class="gap-cell'+(teamSort.key==='gap23'?' col-sel':'')+'" style="text-align:center;font-weight:600">'+g23+'</td>'; }
     if(hasSeq){
       // 注意：单元格顺序必须与表头一致（不出2球 / 不出3球 / 最大同时不出 / 平均出2球 / 平均出3球 / 连续2球 / 连续3球）
       const rnd=roundsOfT(t);
@@ -499,7 +505,7 @@ let combMetric='count'; var trendSeason=null; var trendLeagueHidden={}; var tren
 let combLeague='all', combBucket='both';
 function renderCombinedChart(){
   var leagues=DATA.leagues;
-  var seasons=leagues[0].order.filter(function(s){return s!=='2026-27';}).sort().slice(-SEASON_WIN).reverse();
+  var seasons=leagues[0].order.filter(function(s){return s!==ONGOING_SEASON;}).sort().slice(-SEASON_WIN).reverse();
   var COLORS={en:'#e0142b',es:'#ff9f1c',it:'#2ecc71',de:'#4a9eff',fr:'#9b59ff'};
   var NAMES={en:'英超',es:'西甲',it:'意甲',de:'德甲',fr:'法甲'};
   if(!trendSeason || seasons.indexOf(trendSeason)<0) trendSeason=seasons[0];
@@ -697,7 +703,7 @@ function updateSeqStrips(sc){
 }
 function renderSeq23(){
   var el=document.getElementById('seq23'); if(!el)return;
-  if(currentLeague==='__all__'||!['2026-27','2025-26','2024-25','2023-24','2022-23','2021-22'].includes(currentSeason)){el.innerHTML='';return;}
+  if(currentLeague==='__all__'||SEQ_SEASONS.indexOf(currentSeason)<0){el.innerHTML='';return;}
   var lg=leagueOf(currentLeague),sc=lg.scopes[currentSeason]; if(!sc||!sc.teams.some(function(t){return t.seq23&&t.seq23.length;})){el.innerHTML='';return;}
   seqHidden={};
   el.innerHTML='<div class="section-title">'+lg.cn+' '+fullSeason(currentSeason)+' · 各队 2 球 / 3 球走势分布</div>'

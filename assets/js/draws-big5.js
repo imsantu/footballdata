@@ -60,6 +60,12 @@ let showBig5 = curView === 'big5';
 if(curView === 'overview') showBig5 = false;
 if(curView !== 'overview' && curView !== 'big5' && DATA.seasonOrder.indexOf(curView) >= 0) currentSeason = curView;
 
+/* ---------------- 进行中的赛季（唯一来源：已加载的 shell.js）----------------
+   seasonOrder 新→旧，[0] 即当季。此前本文件写死了赛季字面量，换季要人工回来对齐
+   4 个逻辑文件（漏一处就静默出错，比如该隐藏的列没隐藏）；改为推导后，
+   换季只需改生成侧一处。 */
+var ONGOING_SEASON = DATA.seasonOrder[0];
+
 /* ---------------- 当季 chunk 提前预取 ----------------
    页面已**不再**写死 `data/<group>/en/<season>.js`：那行会在赛季切换时要求改 4 个 HTML，
    漏掉任何一个页面，它的默认联赛就加载不出数据（且不报错，只是空白）。
@@ -82,7 +88,7 @@ function sc(){ return LG().seasons[currentSeason]; }
 function winKey(){ return SEASON_WIN === 3 ? 'cross3' : 'cross'; }
 function CMP(){ return (SEASON_WIN === 3 ? DATA.compare3 : DATA.compare) || DATA.compare; }
 function CR(){ return LG()[winKey()] || LG().cross; }
-function winSeq(){ return DATA.seasonOrder.filter(k=>k!=='2026-27').slice(0, SEASON_WIN); }   // 新 → 旧；进行中的 2026-27 不进入总览窗口
+function winSeq(){ return DATA.seasonOrder.filter(k=>k!==ONGOING_SEASON).slice(0, SEASON_WIN); }   // 新 → 旧；进行中的当季不进入总览窗口
 function WN(){ return SEASON_WIN === 3 ? '三' : '五'; }              // 中文数字，用于文案
 function WLAB(){ return SEASON_WIN === 3 ? '近三赛季' : '近五赛季'; }
 function setWin(n){
@@ -149,10 +155,10 @@ function buildSeasonTabs(){
   // 容器本身保留占位（flex:1），这样右侧「范围」开关仍停在原来的位置不动。
   if(showBig5){ el.innerHTML=''; buildWinSwitch(); return; }   // 只清空年份按钮；容器保留 flex:1 占位，「范围」开关不位移
   el.style.display='';
-  // 范围开关同时控制「赛季 tab 按钮」：近三季时隐藏 2022-23/2021-22，进行中的 2026-27 始终保留。
+  // 范围开关同时控制「赛季 tab 按钮」：近三季时隐藏更早年份，进行中的当季始终保留。
   // 跨赛季口径（总览页）一直跟着 winSeq() 走，这一步把单联赛视图下的 tab 也接上，避免「
   // 切到近三季后，赛季栏还出现被裁掉的旧年份按钮」的不一致。
-  const ws = DATA.seasonOrder.filter(k => k === '2026-27' || winSeq().indexOf(k) >= 0);
+  const ws = DATA.seasonOrder.filter(k => k === ONGOING_SEASON || winSeq().indexOf(k) >= 0);
   const ov = '<div class="season-tab ov'+(curView==='overview' && !showBig5?' active':'')+'" data-k="__overview__">赛季总览</div>';
   const seas = ws.map(k=>{
     const s = LG().seasons[k];
@@ -674,19 +680,19 @@ const COLS=[
   {key:'streak', label:'最长连平'},
   {key:'gap',    label:'最长无平局间隔'},
 ];
-/* 赛季感知的队表列：仅 2026-2027 赛季在「平局」列之后插入「快要平了」列，
+/* 赛季感知的队表列：仅进行中的当季在「平局」列之后插入「快要平了」列，
    统计该队当前已连续多少轮没踢出平局（≥6 标红加粗）。历史赛季原样返回，不加该列。 */
 function teamCols(){
   const cols = COLS.slice();
-  if(currentSeason==='2026-27'){
-    // 进行中的 2026-27 赛季，「最长无平局间隔」尚无完整意义（赛季未结束）→ 移除该列
+  if(currentSeason===ONGOING_SEASON){
+    // 进行中的当季，「最长无平局间隔」尚无完整意义（赛季未结束）→ 移除该列
     const gi = cols.findIndex(c=>c.key==='gap');
     if(gi>=0) cols.splice(gi,1);
     cols.splice(3, 0, {
       key:'nodraw',
       label:'快要平了',
       thStyle:'color:#e03131',   // 红色表头，与进球数页「快要平了」警示列视觉一致
-      title:'统计该队当前已连续多少轮没踢出平局（从最近一场往前数，直到出现平局为止）；≥6 标红加粗。仅 2026-2027 赛季显示。'
+      title:'统计该队当前已连续多少轮没踢出平局（从最近一场往前数，直到出现平局为止）；≥6 标红加粗。仅 '+fmtSeason(ONGOING_SEASON)+' 赛季显示。'
     });
   }
   return cols;
@@ -697,8 +703,8 @@ function renderTeams(){
   const s = sc(), teams = s.teams;
   const moveFinal = s.moveFinal !== false;      // 下赛季名单未定的进行中赛季 → 不显示升降 icon
   // 跨赛季切换：若停留在历史赛季时仍残留「快要平了」排序键，复位回默认，避免无对应列的排序键
-  if(currentSeason!=='2026-27' && teamSort.key==='nodraw'){ teamSort={key:'rank',dir:1}; }
-  if(currentSeason==='2026-27' && teamSort.key==='gap'){ teamSort={key:'rank',dir:1}; }
+  if(currentSeason!==ONGOING_SEASON && teamSort.key==='nodraw'){ teamSort={key:'rank',dir:1}; }
+  if(currentSeason===ONGOING_SEASON && teamSort.key==='gap'){ teamSort={key:'rank',dir:1}; }
   const cols = visCols(teamCols());
   const rows=teams.slice().sort((a,b)=>{
     const r = cmpVal(a,b,teamSort.key,teamSort.dir);
@@ -1196,7 +1202,7 @@ function _preloadRest(){
   if(!isChunkLoaded('cross.js'))rest.push('cross.js');
   DATA.seasonOrder.forEach(function(k){
     var name = curLeague + '/' + k + '.js';
-    if(k !== '2026-27' && !isChunkLoaded(name)) rest.push(name);
+    if(k !== ONGOING_SEASON && !isChunkLoaded(name)) rest.push(name);
   });
   if(!rest.length)return;
   setTimeout(function(){ensureChunks([rest[0]],function(){});},8000);

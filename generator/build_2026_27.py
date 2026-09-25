@@ -25,7 +25,8 @@ from datetime import date
 import os
 WS = os.path.dirname(os.path.abspath(__file__))
 D = os.path.join(WS, "data")
-SEASON = "2627"
+# 赛季唯一来源：generator/season.py（本文件不再自带赛季常量）
+from season import SEASON_LONG, SEASON_TAG as SEASON  # noqa: E402
 
 # ---- 官方轮次源（openfootball）-------------------------------------------
 # ESPN 比分接口无轮次字段，任何「按日期推算」的算法在遇到「轮次先赛 / 补赛」时都会错乱
@@ -300,7 +301,7 @@ ESPN_MAP = {
 # 不再依赖 ESPN 主源（ESPN 仅作兜底，titan007 整联赛抓取失败时才用）。
 # 历史赛季（2025-26 及更早）由各自独立 JSON 维护，本脚本只写 *.2026-27.json，不受影响。
 # 任何抓取/解析失败都只告警、回退 ESPN，绝不中断主流程。
-TITAN_SEASON = "2026-2027"
+TITAN_SEASON = SEASON_LONG
 TITAN_URL = "https://zq.titan007.com/jsData/matchResult/{season}/s{SclassID}{sub}.js"
 # 流水线联赛 -> (titan007 SclassID, SubSclassID)；SubSclassID=0 时文件无后缀。
 # 下列 ID 全部由直抓页面 <title> 与 data 文件 arrLeague 核对，非站点导航（导航 ID 已过时）。

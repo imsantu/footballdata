@@ -70,7 +70,22 @@ def load_draw_crests():
 
 from standings import compute_table, compute_goals, canon_top, deduct_map, TIE_RULE
 
-SEASONS = ["2021-22", "2022-23", "2023-24", "2024-25", "2025-26", "2026-27"]
+from season import SEASON as CUR_SEASON  # noqa: E402  （赛季唯一来源）
+
+
+def _prev_season(s):
+    """'2026-27' → '2025-26'"""
+    a = int(s[:4]) - 1
+    return "%d-%02d" % (a, (a + 1) % 100)
+
+
+SEASON_COUNT = 6                                 # 报告覆盖的赛季数（当季 + 近五季）
+SEASONS = []                                     # 旧 → 新（由当季倒推，不再手写清单）
+_s = CUR_SEASON
+for _ in range(SEASON_COUNT):
+    SEASONS.append(_s)
+    _s = _prev_season(_s)
+SEASONS.reverse()
 ORDER = list(reversed(SEASONS))                  # 最新季在前
 CHAMP = [("en", "英冠"), ("es", "西乙"), ("de", "德乙"), ("it", "意乙"), ("fr", "法乙")]
 

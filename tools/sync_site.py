@@ -65,7 +65,8 @@ from fix_goals_perspective import (  # noqa: E402
 import gen_goals_chunks   # noqa: E402
 import gen_draws_big5_chunks  # noqa: E402
 
-CUR_SEASON = "2026-27"
+# 赛季唯一来源：generator/season.py（$WS 已在上方加入 sys.path）
+from season import SEASON as CUR_SEASON  # noqa: E402
 
 JOBS = [
     {
@@ -259,7 +260,7 @@ def verify_goals_standings(goals):
         sc = (lg.get("scopes") or {}).get(CUR_SEASON)
         if not sc:
             continue
-        src = os.path.join(DATA, f"{code}.1.2026-27.json")
+        src = os.path.join(DATA, f"{code}.1.{CUR_SEASON}.json")
         if not os.path.exists(src):
             continue
         ms = json.load(open(src, encoding="utf-8"))["matches"]
@@ -435,9 +436,9 @@ def main():
     # 本地历史快照（tools/backups）已按用户要求彻底关闭：sync_site.py 不再写入任何
     # 备份文件，每天生成的线上数据即唯一真相，回滚需求由 git 历史 / GitHub 承担。
 
-    print("\n=== 写入阶段：生成按季 chunk（仅 2026-27）+ 队徽外置 ===")
+    print(f"\n=== 写入阶段：生成按季 chunk（仅 {CUR_SEASON}）+ 队徽外置 ===")
     only_current = not os.environ.get("FD_FULL_REGEN")
-    print("  模式:", "全量(含历史)" if not only_current else "仅 2026-27")
+    print("  模式:", "全量(含历史)" if not only_current else f"仅 {CUR_SEASON}")
     for job, new, is_changed in planned:
         if not is_changed:
             continue
@@ -459,7 +460,7 @@ def main():
         for tag, season, n in season_rows(new, job["kind"]):
             if season == CUR_SEASON:
                 cur_total.append(f"{tag} {n}")
-    print("SUMMARY|2026-27 已赛场次：" + "，".join(cur_total))
+    print(f"SUMMARY|{CUR_SEASON} 已赛场次：" + "，".join(cur_total))
 
 
 def write_meta_js():

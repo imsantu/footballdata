@@ -18,14 +18,18 @@ goals 与 draws 结构不同：
 pages 只首屏加载 shell.js + 2026-27.js，其余季懒加载，
 首屏 JS 体积从 ~4.35MB 降到 ~数十 KB（队徽 / 联赛 logo 外置后浏览器按需拉取可见 PNG）。
 """
-import os, re, json, base64, unicodedata
+import os, re, sys, json, base64, unicodedata
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(ROOT, "assets/js", "goals-data.js")  # 仅手动回放旧单体时用
 
 # scope 对象里的「重数组」键：壳里用 stub 替代，chunk 再填真实数据
 HEAVY_KEYS = ("teams", "buckets")
-CURRENT_SEASON = "2026-27"
+# 唯一来源 = generator/season.py；优先用流水线统一的 FD_GENERATOR_DIR。
+_GEN = os.environ.get("FD_GENERATOR_DIR") or os.path.join(ROOT, "generator")
+if _GEN not in sys.path:
+    sys.path.insert(0, _GEN)
+from season import SEASON as CURRENT_SEASON  # noqa: E402
 
 # 次级联赛 logo 文件名加 "2" 后缀（en2/es2/...），与五大联赛的 en/es/... 区分。
 # 原因：两套数据集共享 code 命名空间（en=英超/英冠、es=西甲/西乙 等），
