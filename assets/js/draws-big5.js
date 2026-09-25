@@ -59,6 +59,18 @@ let curView = (_url0.view === 'overview' || _url0.view === 'big5' || DATA.season
 let showBig5 = curView === 'big5';
 if(curView === 'overview') showBig5 = false;
 if(curView !== 'overview' && curView !== 'big5' && DATA.seasonOrder.indexOf(curView) >= 0) currentSeason = curView;
+
+/* ---------------- 当季 chunk 提前预取 ----------------
+   页面已**不再**写死 `data/<group>/en/<season>.js`：那行会在赛季切换时要求改 4 个 HTML，
+   漏掉任何一个页面，它的默认联赛就加载不出数据（且不报错，只是空白）。
+   改为在这里、状态（联赛 + 赛季）一确定就立刻发起请求 —— 等执行到文件末尾的
+   renderAfterEnsure() 时它多半已在飞或已就绪，既不写死赛季、也不产生额外瀑布。
+   注：_chunkInflight / _chunkRenderToken 原本声明在文件末尾的懒加载段落，
+   必须提前到这里，否则本行调用会读到 undefined。 */
+var _chunkInflight = {};
+var _chunkRenderToken = 0;
+_loadChunk(curLeague + '/' + currentSeason + '.js', function(){});
+
 // 赛季窗口：5 = 近五赛季；3 = 近三赛季。URL 可直接恢复当前筛选状态。
 let SEASON_WIN = (_url0.win === '3' ? 3 : 5);
 function syncDrawUrl(replace){
@@ -1124,9 +1136,9 @@ function renderCrumb(){
 }
 
 // ---------- 按季 / 跨季 chunk 懒加载（Phase 1 PoC）----------
-// 首屏只加载 shell.js + 2026-27.js；其余赛季、cross.js 按需/空闲时再取。
-var _chunkInflight = {};
-var _chunkRenderToken = 0;
+// 首屏只加载 shell.js + 当季 chunk（当季由文件顶部按 seasonOrder[0] 提前预取，
+// 页面 HTML 不再写死赛季）；其余赛季、cross.js 按需/空闲时再取。
+// （_chunkInflight / _chunkRenderToken 已在文件顶部随预取一起声明）
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/draws-big5/'; }
 function isChunkLoaded(name){
   if(name === 'cross.js'){ var L0 = LG() || DATA.leagues[0]; return !!(L0 && L0.cross); }

@@ -39,7 +39,11 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      导致页脚「本页更新时间」永远「晚一次访问」——先返回旧缓存、后台才更新。用户在不同时间
 //      访问不同页面，就会看到不同日期（如平局页比进球数页旧一天），看起来像「没更新」。
 //      meta.js 只有几十字节，每次拉取成本可忽略，故改为有网必取最新。
-var CACHE = 'fds-shell-v15';
+// v16：四个页面的 HTML 不再写死当季 chunk 路径（原先各有一行 `data/<group>/en/2026-27.js`，
+//      赛季一换就要改 4 个文件，漏一个默认联赛就空白）。改由逻辑 JS 按 shell.js 的
+//      seasonOrder[0] 在启动时预取；同时删除了完全重复的 assets/img/goals-crests/ 目录
+//      （队徽统一到 assets/img/crests/）。页面 HTML 与逻辑 JS 都属外壳 → +1 强制换新。
+var CACHE = 'fds-shell-v16';
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;

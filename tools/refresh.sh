@@ -166,7 +166,7 @@ else
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
                      'assets/js/data/fixtures' \
-                     'assets/img/crests' 'assets/img/goals-crests' 'assets/img/leaguelogos'; then
+                     'assets/img/crests' 'assets/img/leaguelogos'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue
         fi

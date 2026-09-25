@@ -67,6 +67,9 @@ const pickTeam = (t) => ({
   formSeq: t.formSeq, formMatches: t.formMatches,
   formDetail: t.formDetail || [],
   promo: !!t.promo, releg: !!t.releg,
+  // 队名红/绿（与 web 版 draws-champ.js 一致）：fromTop=从上一级降入（降班马，标红）；
+  // promo=从下一级升入（升班马，标绿）。仅次级联赛可能出现 fromTop，顶级联赛恒为 false。
+  fromTop: !!t.fromTop,
 });
 const pickSeason = (s) => ({
   season: s.season, totalMatches: s.totalMatches, totalDraws: s.totalDraws,
@@ -235,9 +238,10 @@ for (const [name, uri] of Object.entries(D.crestByTeam || {})) {
   const m = /\/crests\/(.+)\.png$/.exec(uri);
   if (m) crestByName[name] = m[1];
 }
-// 进球数数据集的队徽（goals-crests，与 crests 同 slug），补齐平局数据里没有的队
+// 进球数数据集的队徽（现与 draws 共用 assets/img/crests/；旧数据可能仍是 goals-crests，
+// 故正则同时接受两种目录，避免历史 chunk 解析不到 slug）
 for (const [name, uri] of Object.entries(APP.goals._crests || {})) {
-  const m = /\/goals-crests\/(.+)\.png$/.exec(uri);
+  const m = /\/(?:goals-)?crests\/(.+)\.png$/.exec(uri);
   if (m && !crestByName[name]) crestByName[name] = m[1];
 }
 // 次级联赛队徽（英冠/西乙/德乙/意乙/法乙），与五大联赛同 slug 体系

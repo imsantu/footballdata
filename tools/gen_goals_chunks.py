@@ -13,7 +13,7 @@ goals 与 draws 结构不同：
      没有 draws 的 seasons/cross/cross3
    - 队徽键名是 crests（不是 crestByTeam），联赛 logo 也走 assets/img/leaguelogos/<code>.png
      （与 draws 同一份外置 PNG，体积小、首屏快，避免壳里内嵌 data URI）
-   - 队徽外置到 assets/img/goals-crests/
+   - 队徽外置到 assets/img/crests/（与 draws 共用同一份，不再单独建 goals-crests）
 
 pages 只首屏加载 shell.js + 2026-27.js，其余季懒加载，
 首屏 JS 体积从 ~4.35MB 降到 ~数十 KB（队徽 / 联赛 logo 外置后浏览器按需拉取可见 PNG）。
@@ -40,6 +40,12 @@ def slugify(name):
 
 
 def decode_uri_to_file(uri, out_dir, slug):
+    """data:image/...;base64,xxxx -> 写出文件，返回路径。
+
+    与 draws 共用 assets/img/crests/：**内容相同则复用既有文件**，不覆盖、不产生副本。
+    这一点很重要 —— 该目录被 draws-big5 / draws-champ / goals / goals-champ 四套数据共用，
+    若无条件覆盖，goals 侧一张略有差异的同名图就会悄悄改掉平局页的队徽。
+    """
     if not uri.startswith("data:"):
         return uri
     mm = re.match(r"^data:image/(\w+);base64,(.+)$", uri, re.S)
@@ -50,6 +56,16 @@ def decode_uri_to_file(uri, out_dir, slug):
         ext = "jpg"
     raw = base64.b64decode(mm.group(2))
     path = os.path.join(out_dir, slug + "." + ext)
+    if os.path.exists(path):
+        try:
+            if open(path, "rb").read() == raw:
+                return path
+        except OSError:
+            pass
+    n = 2
+    while os.path.exists(path):
+        path = os.path.join(out_dir, slug + str(n) + "." + ext)
+        n += 1
     with open(path, "wb") as f:
         f.write(raw)
     return path
@@ -70,8 +86,11 @@ def scope_stub(sc):
 def generate(obj, only_current=True, group="goals"):
     """把内存里的 goals 数据对象拆成按联赛+赛季的 chunk。
 
-    group="goals"      —— 五大联赛进球数（DATA_DIR=assets/js/data/goals，队徽=goals-crests，logo 无后缀）
-    group="goals-champ"—— 次级联赛进球数（DATA_DIR=assets/js/data/goals-champ，队徽=goals-champ-crests，logo 加 2 后缀）
+    group="goals"      —— 五大联赛进球数（DATA_DIR=assets/js/data/goals，logo 无后缀）
+    group="goals-champ"—— 次级联赛进球数（DATA_DIR=assets/js/data/goals-champ，logo 加 2 后缀）
+
+    队徽两组合用 assets/img/crests/（与 draws 也是同一份）：四套数据集的 slugify 规则
+    完全一致，同名即同图，共用后省掉一份 2.1MB 的完全重复目录。
 
     only_current=True 时只写 CURRENT_SEASON（2026-27）的 chunk，历史赛季的 chunk
     保持不动（已在 git 中冻结，日常同步只动当前进行中的赛季）；False 用于新赛季
@@ -81,8 +100,8 @@ def generate(obj, only_current=True, group="goals"):
     global LOGO_SUFFIX
     LOGO_SUFFIX = "2" if group == "goals-champ" else ""
     DATA_DIR = os.path.join(ROOT, "assets/js/data", group)
-    CREST_DIR = os.path.join(ROOT, "assets/img",
-                             "goals-crests" if group == "goals" else "goals-champ-crests")
+    # 队徽目录：四套数据集共用 assets/img/crests/（同名同图，不再按 group 分目录）
+    CREST_DIR = os.path.join(ROOT, "assets/img/crests")
     os.makedirs(DATA_DIR, exist_ok=True)
     os.makedirs(CREST_DIR, exist_ok=True)
 

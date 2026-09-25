@@ -100,7 +100,7 @@
 <!-- 单页 PC 版：按季 chunk + 弱网可重试；联赛/赛季由 goals-champ.js 同步到 URL -->
 <script defer src="../assets/js/view-url.js"></script>
 <script defer src="../assets/js/data/goals-champ/shell.js"></script>
-<script defer src="../assets/js/data/goals-champ/en/2026-27.js"></script>
+<!-- 当季 chunk 不再在此写死赛季：由 assets/js/goals-champ.js 按 shell.js 的 order[0] 预取 -->
 <script defer src="../assets/js/goals-champ.js"></script>
 </body>
 </html>

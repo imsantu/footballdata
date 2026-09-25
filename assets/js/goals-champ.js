@@ -18,6 +18,18 @@ let currentSeason = (function(){
   var lg = currentLeague === '__all__' ? DATA.leagues[0] : leagueOf(currentLeague);
   return _url0.season && lg && (lg.order || []).includes(_url0.season) ? _url0.season : ((lg.order || []).includes('2026-27') ? '2026-27' : defaultSeason(lg));
 })();
+
+/* ---------------- 当季 chunk 提前预取 ----------------
+   页面已**不再**写死 `data/<group>/en/<season>.js`：那行会在赛季切换时要求改 4 个 HTML，
+   漏掉任何一个页面，它的默认联赛就加载不出数据（且不报错，只是空白）。
+   这里在「联赛 + 赛季」一确定就立刻把 renderAfterEnsure() 将要用的 chunk 全部发起请求，
+   等执行到文件末尾时它们多半已在飞或已就绪 —— 既不写死赛季，也不比原来慢。
+   注：_chunkInflight / _chunkRenderToken 原本声明在文件末尾的懒加载段落，
+   必须提前到这里，否则本行调用会读到 undefined。 */
+var _chunkInflight = {};
+var _chunkRenderToken = 0;
+ensureChunks(neededChunks(), function(){});
+
 let teamSort = {key:'rank', dir:1};
 let teamGoalsShowAll = false;
 function toggleTeamGoals(){ teamGoalsShowAll = !teamGoalsShowAll; renderTeams(); }
@@ -705,8 +717,8 @@ function renderSeq23(){
 
 
 // ---------- goals 按季 chunk 懒加载（弱网/离线优先）----------
-var _chunkInflight = {};
-var _chunkRenderToken = 0;
+// 首屏所需 chunk 已由文件顶部提前预取（页面 HTML 不再写死赛季）。
+// （_chunkInflight / _chunkRenderToken 已在文件顶部随预取一起声明）
 function _dataDir(){ return (window.SITE_ROOT || '') + 'assets/js/data/goals-champ/'; }
 function isChunkLoaded(name){
   var m = /^([^/]+)\/(.+)\.js$/.exec(name);

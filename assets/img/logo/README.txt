@@ -1,47 +1,24 @@
-中奖 Logo — 多规格素材包
+中奖 Logo — 站点运行时只保留这 3 个文件
 ====================================
-设计：圆形红底 + 金色飘逸行书「中」+ 金环 + 金闪点（寓意“中奖了”）
-背景：PNG 均为透明底（alpha 通道），可直接叠加使用
+本目录只放**站点实际引用**的图标，避免把整套设计素材打进部署产物
+（GitHub Pages 会发布整个仓库，素材包会让每次部署多出 7.3MB 且毫无用处）。
 
-目录结构
+保留（被引用，勿删）
 ------------------------------------
-master-1024.png            主文件（已裁边居中，916×916，透明底）
+png/logo-32x32.png                   所有页面的 <link rel="icon">
+png/logo-64x64.png                   页头品牌 mark（assets/js/site.js）
+on-white/apple-touch-icon-180x180.png iOS 添加到主屏图标
 
-png/                       透明底 PNG，多分辨率
-  logo-1024x1024.png       网页主 logo / 高清
-  logo-512x512.png
-  logo-384x384.png
-  logo-256x256.png
-  logo-192x192.png         Android 主屏图标
-  logo-180x180.png
-  logo-152x152.png
-  logo-144x144.png
-  logo-128x128.png
-  logo-96x96.png
-  logo-64x64.png
-  logo-48x48.png
-  logo-32x32.png           favicon 常用尺寸
-  logo-16x16.png           favicon 最小尺寸
-
-ico/
-  favicon.ico              多分辨率图标（16/32/48/64，含透明）
-  favicon-32x32.png        备用 favicon PNG
-
-on-white/                  白底不透明版（用于浅色页面 / 打印）
-  apple-touch-icon-180x180.png   iOS 添加到主屏图标
-  logo-on-white-1024.png
-  logo-on-white-512.png
-
-on-dark/                   深底不透明版（用于深色页面）
-  logo-on-dark-1024.png
-  logo-on-dark-512.png
-
-使用建议
+已移出的完整素材包
 ------------------------------------
-- 网页 favicon：把 favicon.ico 放站点根目录，或引用 png/logo-32x32.png
-- App / PWA 图标：用 logo-192x192.png、logo-512x512.png
-- iOS 主屏：on-white/apple-touch-icon-180x180.png
-- 深色导航栏 / 深色主题：用 on-dark/ 版本，避免透明导致边缘发白
-- 印刷 / 物料：优先用 logo-1024x1024.png（透明底）
+原目录下的 logo-1024 / master-1024 / png 多分辨率（16~1024）/ on-white 大图 /
+on-dark / ico / README 说明，全部**未被站点引用**，已整体移到仓库外：
 
-注：本 Logo 为 AI 生成作品，用于网站品牌时如涉及商标注册，请自行确认可注册性与近似冲突。
+    ~/Documents/footballdatabackup/brand-kit-20260925/
+
+需要时（做 PWA 图标、印刷物料、深色主题 logo）从那里取。
+git 历史里也仍留有全部原文件，随时可 `git log -- assets/img/logo` 找回。
+
+注意
+------------------------------------
+本 Logo 为 AI 生成作品，用于网站品牌时如涉及商标注册，请自行确认可注册性与近似冲突。
