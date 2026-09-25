@@ -250,7 +250,14 @@ function bindBkToggle(){
       hand[id]();
       if(!showBuckets && BK_KEYS.indexOf(teamSort.key)>=0) teamSort = {key:'rank', dir:1};   // 队表收起：复位被隐藏列的排序
       if(!showBucketsTop && BK_KEYS.indexOf(topSort.key)>=0) topSort = {key:'total', dir:-1}; // 总榜同理
-      syncBkBtns(); renderTop(); renderTeams();
+      syncBkBtns();
+      // 总榜（#viewOverview 内）依赖跨赛季聚合分块 cross / cross3。单季视图下该分块是
+      // 低优先级预取（首屏约 8 秒后才拉），此刻 CR() 为 undefined；若无条件调用
+      // renderTop()，会在 CR().teams 处抛错并连带跳过紧随其后的 renderTeams() ——
+      // 用户看到的现象是「按钮文案变成『收起比分明细』、表格却纹丝不动」。
+      // 故先判数据是否就绪；未就绪时只重绘队表（本按钮在单季视图下的唯一可见效果）。
+      if(CR()) renderTop();
+      renderTeams();
     };
   });
 }

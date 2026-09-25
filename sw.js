@@ -47,7 +47,9 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 //      对齐 4 个文件，漏一处不报错、只静默出错）。改为从已加载的 shell.js 推导
 //      （draws 用 seasonOrder[0]；goals 用 leagues[0].order[0]）；Python 侧同步收敛到
 //      generator/season.py 一处。逻辑 JS 属外壳 → +1 强制换新。
-var CACHE = 'fds-shell-v17';
+// v18：修复「展开比分明细」按钮在单季视图下点了没反应（renderTop() 依赖的 cross 分块
+//      8 秒后才预取，此前 CR() 为 undefined → 抛错并连带跳过 renderTeams()）。
+var CACHE = 'fds-shell-v18';
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;
