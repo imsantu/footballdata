@@ -27,6 +27,8 @@
  */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
+const https = require('https');
 
 // 本脚本随 football-data-site（web 仓库）走 CI：集合 jsonl 在同目录 cloud-import/
 const WEAPP = __dirname;
@@ -84,11 +86,76 @@ const isAuthErr = (e) => /AuthFailure|Signature|Credential|Unauthorize/i.test(er
 // ① TCB_ENV 值不对；② 密钥不是「小程序绑定腾讯云账号」的密钥 —— 微信云开发环境
 //    属于小程序对应的腾讯云账号，拿别的账号（哪怕是自己的另一个腾讯云账号）的
 //    密钥访问，API 层面就报 Env Not Exists，而不是权限错误。
+// ⚠️ 常见误会：GitHub secrets 的编辑框永远显示空白（不回显是设计如此），
+//    不代表值被清除了 —— 每次运行用的都是保存的值，报错恰恰证明有值且值不对。
 const ENV_FAIL_HELP =
   '腾讯云在「密钥所属账号」下找不到环境 ' + (process.env.TCB_ENV || '') + '。请检查：' +
   '① GitHub 仓库 Settings → Secrets and variables → Actions 里 TCB_ENV 的值是否为完整环境 ID（无空格/换行/拼错）；' +
   '② SecretId/SecretKey 是否来自小程序绑定主体的腾讯云账号（用该主体的微信扫码登录 console.cloud.tencent.com → 访问管理 → API 密钥管理），' +
   '其他账号的密钥会报 Env Not Exists；CAM 子用户还需授权 QcloudTCBFullAccess。';
+
+// ---- 诊断：列出「这把密钥所属账号」下全部云开发环境（TC3 签名直调 tcb 云 API，无新依赖）----
+// Env Not Exists 只看报错分不清是①还是②。把该账号可见的环境列出来，一次运行即可定位：
+// 列表为空 → 密钥账号不对；列表非空但没有目标环境 → 同样是账号不对；有 → TCB_ENV 抄它的写法。
+function tcbApi(action, payload) {
+  const host = 'tcb.tencentcloudapi.com';
+  const service = 'tcb';
+  const version = '2018-06-08';
+  const ts = Math.floor(Date.now() / 1000);
+  const date = new Date(ts * 1000).toISOString().slice(0, 10);      // UTC 日期（签名用）
+  const body = JSON.stringify(payload || {});
+  const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
+  const canonical =
+    'POST\n/\n\n' +
+    'content-type:application/json; charset=utf-8\nhost:' + host + '\n' +
+    'x-tc-action:' + action.toLowerCase() + '\n\n' +
+    'content-type;host;x-tc-action\n' + sha(body);
+  const toSign =
+    'TC3-HMAC-SHA256\n' + ts + '\n' + date + '/' + service + '/tc3_request\n' + sha(canonical);
+  const hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();
+  const sig = hmac(hmac(hmac('TC3' + SECRET_KEY, date), service), 'tc3_request').toString('hex');
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      host, method: 'POST', path: '/',
+      headers: {
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-TC-Action': action, 'X-TC-Version': version, 'X-TC-Timestamp': ts,
+        Authorization: 'TC3-HMAC-SHA256 Credential=' + SECRET_ID + '/' + date + '/' + service +
+          '/tc3_request, SignedHeaders=content-type;host;x-tc-action, Signature=' + sig
+      }
+    }, (res) => {
+      let buf = '';
+      res.on('data', (c) => (buf += c));
+      res.on('end', () => {
+        try {
+          const j = JSON.parse(buf);
+          if (j.Response && j.Response.Error) {
+            reject(new Error(j.Response.Error.Code + ' ' + j.Response.Error.Message));
+          } else resolve(j.Response);
+        } catch (e) { reject(new Error('响应解析失败：' + buf.slice(0, 160))); }
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(10000, () => req.destroy(new Error('请求超时')));
+    req.write(body);
+    req.end();
+  });
+}
+
+async function diagnoseEnvAccount() {
+  try {
+    const r = await tcbApi('DescribeEnvironments', { Limit: 20 });
+    const list = (r.EnvList || []).map((e) => e.EnvId + (e.Alias ? '（' + e.Alias + '）' : ''));
+    if (!list.length) {
+      return '诊断：这把 SecretId/SecretKey 所属的腾讯云账号下【一个云开发环境都没有】→ 密钥不是小程序绑定主体的账号。' +
+        '用小程序主体的微信扫码登录 console.cloud.tencent.com 重新建 API 密钥。';
+    }
+    return '诊断：这把密钥可见的环境有【' + list.join('、') + '】。' +
+      '若其中没有小程序的环境，说明密钥账号不对；若有，就把 TCB_ENV 改成上面列出的环境 ID 原文。';
+  } catch (e) {
+    return '诊断未能列出环境（' + ((e && e.message) || e) + '）——若含 AuthFailure 字样，说明密钥本身无效或不是腾讯云账号的密钥。';
+  }
+}
 
 function readDocs(name) {
   const jsonl = path.join(CLOUD_DIR, name + '.jsonl');
@@ -139,9 +206,12 @@ async function main() {
     console.log('✅ 预检通过：密钥可访问环境 ' + ENV);
   } catch (e) {
     if (isEnvErr(e)) {
+      // 环境不存在 → 顺手列出这把密钥可见的环境，直接告诉用户差在哪（值不对 or 账号不对）
+      const diag = await diagnoseEnvAccount();
       console.error('❌ 预检失败：' + ENV_FAIL_HELP);
+      console.error('   ' + diag);
       console.error('   原始错误：' + ((e && e.message) || e) + ' · code=' + ((e && e.code) || '-'));
-      annotate('error', '写库失败（预检）', ENV_FAIL_HELP + ' · 原始错误：' + ((e && e.message) || e));
+      annotate('error', '写库失败（预检）', ENV_FAIL_HELP + ' ' + diag + ' · 原始错误：' + ((e && e.message) || e));
       process.exit(1);
     }
     if (isAuthErr(e)) {
