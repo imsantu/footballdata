@@ -71,9 +71,11 @@ function loadEnvFile() {
 }
 loadEnvFile();
 
-const ENV = process.env.TCB_ENV || process.env.WEAPP_CLOUD_ENV;
-const SECRET_ID = process.env.TENCENTCLOUD_SECRET_ID;
-const SECRET_KEY = process.env.TENCENTCLOUD_SECRET_KEY;
+// ⚠️ 一律 trim：GitHub secret 输入框粘贴时极易带上尾随空格/换行，肉眼看不出来，
+//    但腾讯云那边就是「找不到这个环境」。这是 INVALID_ENV 最隐蔽的成因之一。
+const ENV = (process.env.TCB_ENV || process.env.WEAPP_CLOUD_ENV || '').trim();
+const SECRET_ID = (process.env.TENCENTCLOUD_SECRET_ID || '').trim();
+const SECRET_KEY = (process.env.TENCENTCLOUD_SECRET_KEY || '').trim();
 
 // ---- 错误分类：环境级 / 密钥级（配合下方预检，快速失败） ----
 function errText(e) {
@@ -88,11 +90,14 @@ const isAuthErr = (e) => /AuthFailure|Signature|Credential|Unauthorize/i.test(er
 //    密钥访问，API 层面就报 Env Not Exists，而不是权限错误。
 // ⚠️ 常见误会：GitHub secrets 的编辑框永远显示空白（不回显是设计如此），
 //    不代表值被清除了 —— 每次运行用的都是保存的值，报错恰恰证明有值且值不对。
+// 注：这里不再回显 TCB_ENV 原文（会被 GitHub 打码成 ***，反而看不出问题），改用「长度+指纹」，
+// 两次运行一比就知道值有没有变过。
 const ENV_FAIL_HELP =
-  '腾讯云在「密钥所属账号」下找不到环境 ' + (process.env.TCB_ENV || '') + '。请检查：' +
-  '① GitHub 仓库 Settings → Secrets and variables → Actions 里 TCB_ENV 的值是否为完整环境 ID（无空格/换行/拼错）；' +
+  '腾讯云在「密钥所属账号」下找不到环境（' + envFingerprint() + '）。请检查：' +
+  '① GitHub 仓库 Settings → Secrets and variables → Actions 里 TCB_ENV 的值是否为完整环境 ID（粘贴时别带空格/换行）；' +
   '② SecretId/SecretKey 是否来自小程序绑定主体的腾讯云账号（用该主体的微信扫码登录 console.cloud.tencent.com → 访问管理 → API 密钥管理），' +
-  '其他账号的密钥会报 Env Not Exists；CAM 子用户还需授权 QcloudTCBFullAccess。';
+  '其他账号的密钥会报 Env Not Exists；CAM 子用户还需授权 QcloudTCBFullAccess。' +
+  '③ 若指纹与上次成功运行一致 → 配置没变，属腾讯云侧间歇性故障（见下方重试记录）。';
 
 // ---- 诊断：列出「这把密钥所属账号」下全部云开发环境（TC3 签名直调 tcb 云 API，无新依赖）----
 // Env Not Exists 只看报错分不清是①还是②。把该账号可见的环境列出来，一次运行即可定位：
@@ -153,7 +158,9 @@ function envFingerprint() {
 
 async function diagnoseEnvAccount() {
   try {
-    const r = await tcbApi('DescribeEnvironments', { Limit: 20 });
+    // ⚠️ Action 名必须是 DescribeEnvs。曾写成 DescribeEnvironments → 腾讯云返回
+    //    InvalidAction（Action 校验在鉴权之前，用假密钥即可探测出来）。
+    const r = await tcbApi('DescribeEnvs', { Limit: 20 });
     const list = (r.EnvList || []).map((e) => e.EnvId + (e.Alias ? '（' + e.Alias + '）' : ''));
     if (!list.length) {
       return '诊断：这把 SecretId/SecretKey 所属的腾讯云账号下【一个云开发环境都没有】→ 密钥不是小程序绑定主体的账号。' +
@@ -163,6 +170,24 @@ async function diagnoseEnvAccount() {
       '若其中没有小程序的环境，说明密钥账号不对；若有，就把 TCB_ENV 改成上面列出的环境 ID 原文。';
   } catch (e) {
     return '诊断未能列出环境（' + ((e && e.message) || e) + '）——若含 AuthFailure 字样，说明密钥本身无效或不是腾讯云账号的密钥。';
+  }
+}
+
+// 问腾讯云「这把密钥能看见哪些环境」，挑出与目标环境匹配的那个并返回它的 EnvId **原文**。
+// 用途：TCB_ENV 若因大小写、别名、粘贴残留空格/不可见字符而对不上，这里能自动纠正成服务端认的写法。
+// 找不到匹配返回 ''：账号下只有一个环境时就认它，多个且都不匹配则不敢乱猜（交给 diagnoseEnvAccount 说明）。
+async function resolveRealEnvId() {
+  try {
+    const r = await tcbApi('DescribeEnvs', { Limit: 20 });
+    const list = r.EnvList || [];
+    if (!list.length) return '';
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    const hit = list.find((e) => norm(e.EnvId) === norm(ENV))
+      || list.find((e) => norm(e.Alias) === norm(ENV));
+    if (hit) return hit.EnvId;
+    return list.length === 1 ? list[0].EnvId : '';
+  } catch (e) {
+    return '';
   }
 }
 
@@ -204,43 +229,96 @@ async function main() {
     process.exit(1);
   }
 
-  const app = tcb.init({ secretId: SECRET_ID, secretKey: SECRET_KEY, env: ENV });
-  const db = app.database();
+  // SDK 在 init() 时用密钥换取访问凭证；那一次换取如果抖动/拿到错误上下文，
+  // 这个实例之后的所有请求都会一路报 INVALID_ENV，表现和「环境真的不存在」一模一样。
+  // 所以重试必须**重建实例**，光重发请求没用。
+  // 实测依据（2026-09-26）：23:46 手动跑 6 个集合全败，18 分钟后 00:04 同一份配置全成 —— 只能是可自愈的抖动。
+  let activeEnv = ENV;
+  const initApp = (envId) => tcb.init({ secretId: SECRET_ID, secretKey: SECRET_KEY, env: envId }).database();
+  let db = initApp(activeEnv);
   // 先打指纹：不管后面成功/失败/超时，日志里都能看到这次用的是哪个 TCB_ENV（真实值会被 GitHub 打码）
   console.log('→ 本次写库目标环境：' + envFingerprint());
 
-  // ---- 写库前预检：先发一次最轻量的读请求，验证「密钥 ↔ 环境」配对是否可用 ----
-  // 过去 INVALID_ENV 会拖着 6 个集合几百条重复错误跑完全程，日志不可读也没法定位；
-  // 预检失败 → 第一秒就停，并给出可操作结论。
-  try {
-    await db.collection('meta').limit(1).get();
-    console.log('✅ 预检通过：密钥可访问环境（' + envFingerprint() + '）');
-  } catch (e) {
-    if (isEnvErr(e)) {
-      // 环境不存在 → 顺手列出这把密钥可见的环境，直接告诉用户差在哪（值不对 or 账号不对）
-      const fp = '本次使用的 TCB_ENV：' + envFingerprint() + '。' +
-        '把它和上一次成功运行的指纹对比：一致 → 配置没变，是腾讯云侧问题（环境停服/被释放/欠费隔离，' +
-        '去控制台看环境状态与费用中心）；不一致 → secret 的值确实被换过。';
-      const diag = fp + ' ' + (await diagnoseEnvAccount());
-      console.error('❌ 预检失败：' + ENV_FAIL_HELP);
-      console.error('   ' + diag);
-      console.error('   原始错误：' + ((e && e.message) || e) + ' · code=' + ((e && e.code) || '-'));
-      annotate('error', '写库失败（预检）', ENV_FAIL_HELP + ' ' + diag + ' · 原始错误：' + ((e && e.message) || e));
-      process.exit(1);
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const probe = () => db.collection('meta').limit(1).get();
+  const BACKOFF = [0, 3000, 8000, 15000];   // 抖动型故障基本 1~2 次内自愈，最多等 ~26s
+
+  // 一轮预检 = 依次退避重试，每次都重建 SDK 实例。返回 '' 通过，否则返回错误说明。
+  async function probeRound(tag) {
+    for (let i = 0; i < BACKOFF.length; i++) {
+      if (BACKOFF[i]) await sleep(BACKOFF[i]);
+      try {
+        await probe();
+        console.log(`✅ 预检通过（${tag}第 ${i + 1} 次）：密钥可访问环境 ${envFingerprint()}`);
+        return '';
+      } catch (e) {
+        if (isEnvErr(e)) {
+          console.log(`   预检第 ${i + 1} 次失败：${errText(e)} → 重建 SDK 实例重试`);
+          db = initApp(activeEnv);
+          continue;
+        }
+        if (isAuthErr(e)) {
+          return '密钥无效或被拒（' + errText(e) + '）。请检查 SecretId/SecretKey 是否正确、是否已停用。';
+        }
+        // 其他错误（如集合暂时不存在）说明「密钥 + 环境」配对没问题，放行走正常写库流程
+        console.log('ℹ️ 预检读 meta 未通过但非环境/密钥问题（' + errText(e) + '），继续写库。');
+        return '';
+      }
     }
-    if (isAuthErr(e)) {
-      const m = '密钥无效或被拒（' + ((e && e.message) || e) + '）。请检查 SecretId/SecretKey 是否正确、是否已停用。';
-      console.error('❌ 预检失败：' + m);
-      annotate('error', '写库失败（预检）', m);
-      process.exit(1);
+    return 'ENV_NOT_EXISTS';
+  }
+
+  let probeErr = await probeRound('首轮');
+  let corrected = false;
+  if (probeErr === 'ENV_NOT_EXISTS') {
+    // 退避重试都没过 → 问腾讯云这把密钥到底能看见哪些环境，拿到真实 EnvId 原文后自动纠正
+    // （能修掉大小写/别名/粘贴残留不可见字符这类「看着一样其实不一样」的问题）。
+    const fixed = await resolveRealEnvId();
+    if (fixed && fixed !== activeEnv) {
+      console.log(`   ↻ 按腾讯云返回的真实环境 ID 纠正：${activeEnv} → ${fixed}`);
+      activeEnv = fixed;
+      db = initApp(activeEnv);
+      probeErr = await probeRound('纠正后');
+      corrected = true;
     }
-    // 其他错误（如集合暂时不存在）说明「密钥 + 环境」配对没问题，放行走正常写库流程
-    console.log('ℹ️ 预检读 meta 未通过但非环境/密钥问题（' + ((e && e.message) || e) + '），继续写库。');
+  }
+  if (probeErr) {
+    const head = probeErr === 'ENV_NOT_EXISTS' ? ENV_FAIL_HELP : probeErr;
+    const diag = '本次使用的 TCB_ENV：' + envFingerprint() + '（已尝试自动纠正：' + (corrected ? '是，仍失败' : '否') + '）。' +
+      '把它和上一次成功运行的指纹对比：一致 → 配置没变，属腾讯云侧间歇性故障；不一致 → secret 值被换过。' +
+      ' ' + (await diagnoseEnvAccount());
+    console.error('❌ 预检失败：' + head);
+    console.error('   ' + diag);
+    annotate('error', '写库失败（预检）', head + ' ' + diag);
+    process.exit(1);
   }
 
   const t0 = Date.now();
   const report = [];
   const failed = [];
+
+  // 单个集合的批量写入。抽成函数是为了让「环境级错误」能重建实例后**整体重跑一次** ——
+  // 抖动时半路断在某一批上，只重发那几行很容易留下残缺数据，整体重跑靠 doc().set() 幂等无副作用。
+  async function writeDocs(name, docs) {
+    const BATCH = 20;
+    let done = 0;
+    let curId = '';
+    try {
+      for (let i = 0; i < docs.length; i += BATCH) {
+        const slice = docs.slice(i, i + BATCH);
+        await Promise.all(slice.map((d) => {
+          const { _id, ...rest } = d;
+          curId = _id;
+          return db.collection(name).doc(_id).set(rest);
+        }));
+        done += slice.length;
+        process.stdout.write(`   ${done}/${docs.length}\r`);
+      }
+      return { ok: true, done, curId, e: null };
+    } catch (e) {
+      return { ok: false, done, curId, e };
+    }
+  }
 
   for (const name of targets) {
     // 集合不存在会让整次写库失败（2026-09-24 的 fixture_seasons 即此因）——
@@ -262,32 +340,28 @@ async function main() {
       continue;
     }
     console.log(`→ ${name}（${docs.length} 条）`);
-    const BATCH = 20;
-    let done = 0;
-    let curId = '';
-    try {
-      for (let i = 0; i < docs.length; i += BATCH) {
-        const slice = docs.slice(i, i + BATCH);
-        await Promise.all(slice.map((d) => {
-          const { _id, ...rest } = d;
-          curId = _id;
-          return db.collection(name).doc(_id).set(rest);
-        }));
-        done += slice.length;
-        process.stdout.write(`   ${done}/${docs.length}\r`);
-      }
+    let r = await writeDocs(name, docs);
+    if (!r.ok && isEnvErr(r.e)) {
+      // 抖动型 INVALID_ENV：重建 SDK 实例 + 退避后整体重跑一次，仍失败才中止
+      await sleep(6000);
+      db = initApp(activeEnv);
+      console.log(`   ↻ ${name} 遇环境级错误，已重建实例，重试…`);
+      r = await writeDocs(name, docs);
+    }
+    if (r.ok) {
       console.log(`   ✅ ${name} 写入完成（${docs.length} 条）          `);
       report.push(name + '=' + docs.length);
-    } catch (e) {
+    } else {
       // 按集合隔离失败：一个集合失败不拖垮其他集合，最后统一报非 0 退出
-      const detail = `集合 ${name} 写至第 ${done + 1} 条（_id=${curId}）失败：` + ((e && e.message) || e)
+      const e = r.e;
+      const detail = `集合 ${name} 写至第 ${r.done + 1} 条（_id=${r.curId}）失败：` + ((e && e.message) || e)
         + (e && e.code ? ` · code=${e.code}` : '')
         + (e && e.errMsg ? ` · errMsg=${e.errMsg}` : '')
         + (e && e.requestId ? ` · requestId=${e.requestId}` : '');
       console.error(`   ❌ ${detail}`);
       // 环境级错误（Env Not Exists 等）对所有集合都必然失败，继续循环只会刷屏 —— 立即中止
       if (isEnvErr(e)) {
-        console.error('   环境级错误，中止后续所有集合。' + ENV_FAIL_HELP);
+        console.error('   重试后仍为环境级错误，中止后续所有集合。' + ENV_FAIL_HELP);
         annotate('error', '写库失败（环境不可用）', ENV_FAIL_HELP);
         process.exit(1);
       }
