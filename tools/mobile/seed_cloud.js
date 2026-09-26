@@ -142,6 +142,15 @@ function tcbApi(action, payload) {
   });
 }
 
+// 环境 ID 的「指纹」：长度 + sha256 前 8 位。
+// 为什么需要：secret 的真实值在 GitHub 日志里会被打码成 ***，看不出两次运行用的是不是同一个值。
+// 有了指纹就能直接比对：指纹一致却一成一败 → 不是配置变了，是腾讯云侧状态变了
+// （环境停服/被释放/欠费隔离）；指纹不一致 → 说明 secret 的值确实被换过。
+function envFingerprint() {
+  if (!ENV) return '（空）';
+  return '长度 ' + ENV.length + ' · 指纹 ' + crypto.createHash('sha256').update(ENV).digest('hex').slice(0, 8);
+}
+
 async function diagnoseEnvAccount() {
   try {
     const r = await tcbApi('DescribeEnvironments', { Limit: 20 });
@@ -197,17 +206,22 @@ async function main() {
 
   const app = tcb.init({ secretId: SECRET_ID, secretKey: SECRET_KEY, env: ENV });
   const db = app.database();
+  // 先打指纹：不管后面成功/失败/超时，日志里都能看到这次用的是哪个 TCB_ENV（真实值会被 GitHub 打码）
+  console.log('→ 本次写库目标环境：' + envFingerprint());
 
   // ---- 写库前预检：先发一次最轻量的读请求，验证「密钥 ↔ 环境」配对是否可用 ----
   // 过去 INVALID_ENV 会拖着 6 个集合几百条重复错误跑完全程，日志不可读也没法定位；
   // 预检失败 → 第一秒就停，并给出可操作结论。
   try {
     await db.collection('meta').limit(1).get();
-    console.log('✅ 预检通过：密钥可访问环境 ' + ENV);
+    console.log('✅ 预检通过：密钥可访问环境（' + envFingerprint() + '）');
   } catch (e) {
     if (isEnvErr(e)) {
       // 环境不存在 → 顺手列出这把密钥可见的环境，直接告诉用户差在哪（值不对 or 账号不对）
-      const diag = await diagnoseEnvAccount();
+      const fp = '本次使用的 TCB_ENV：' + envFingerprint() + '。' +
+        '把它和上一次成功运行的指纹对比：一致 → 配置没变，是腾讯云侧问题（环境停服/被释放/欠费隔离，' +
+        '去控制台看环境状态与费用中心）；不一致 → secret 的值确实被换过。';
+      const diag = fp + ' ' + (await diagnoseEnvAccount());
       console.error('❌ 预检失败：' + ENV_FAIL_HELP);
       console.error('   ' + diag);
       console.error('   原始错误：' + ((e && e.message) || e) + ' · code=' + ((e && e.code) || '-'));
