@@ -51,30 +51,39 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
         run: bash tools/refresh.sh
 
-      # ── 小程序数据同步 ──────────────────────────────────────────────
-      # 用刚刷新并提交的最新站点数据，生成移动端集合并写进微信云开发数据库，
-      # 让小程序与 web 版共用同一份自动更新数据，全程无需任何手动操作。
-      # 未配置云端密钥（secrets.TENCENTCLOUD_SECRET_ID 为空）时只跑「生成+导出」做体检，
-      # 不写库，站点更新不受影响。
-      - name: 安装云开发服务端 SDK（小程序写库用）
-        working-directory: tools/mobile
-        run: npm install
-
+      # ── 小程序数据包（供云函数每日拉取）────────────────────────────────
+      # ⚠️ 这里**不再直接写云数据库**（2026-09-26 改）。写库改由小程序侧的 syncDaily
+      # 云函数完成 —— 云函数用环境内置身份（cloud.DYNAMIC_CURRENT_ENV），不需要任何密钥。
+      #
+      # 改成这条链路的原因：原先「Actions 用腾讯云密钥直连写库」会间歇性报
+      # [100003] Env Not Exists（实测同一份配置相隔 18 分钟、同一条手动路径一败一成，
+      # 属服务端抖动，不是配置问题，无法根治）。拆成两段后各司其职：
+      #   本工作流：抓数 → 算好统计 → 打包成一个 JSON → 提交（Pages 随后自动部署）
+      #   云函数  ：每天下载这个 JSON → 写进云数据库
+      # 统计计算仍只在这里做一次，小程序与 web 端数据逐字段一致。
       - name: 生成移动端数据（读取本站最新数据）
         working-directory: tools/mobile
         run: node gen_app_data.js
 
-      - name: 导出云开发集合
+      - name: 导出并打包小程序数据包
         working-directory: tools/mobile
         env:
           DEV_OPENIDS: ${{ secrets.DEV_OPENIDS }}
-        run: node export_data.js
+        run: |
+          node export_data.js
+          node build_bundle.js
 
-      - name: 写入云数据库（未配密钥时脚本自行跳过，保持绿灯）
-        working-directory: tools/mobile
-        env:
-          TCB_ENV: ${{ secrets.TCB_ENV }}
-          TENCENTCLOUD_SECRET_ID: ${{ secrets.TENCENTCLOUD_SECRET_ID }}
-          TENCENTCLOUD_SECRET_KEY: ${{ secrets.TENCENTCLOUD_SECRET_KEY }}
-          DEV_OPENIDS: ${{ secrets.DEV_OPENIDS }}
-        run: node seed_cloud.js
+      - name: 提交小程序数据包（云函数从此拉取）
+        run: |
+          set -uo pipefail
+          git config user.email "bot@footballdata.local"
+          git config user.name "Football Data Bot"
+          git add assets/js/data/mobile/app-data.json
+          if git diff --cached --quiet; then
+            echo "小程序数据包无变化，跳过提交"
+          else
+            git commit -q -m "chore(mobile): 更新小程序数据包 app-data.json"
+            git pull --rebase origin main
+            git push origin HEAD
+            echo "::notice title=小程序数据包已更新::$(git log -1 --format='%h')"
+          fi
