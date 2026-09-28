@@ -21,6 +21,9 @@
 var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+$/, '');
 
 // 外壳缓存版本：任何外壳文件（site.js / css / 页面 HTML / 逻辑 JS）改动后 +1
+// ⚠️ 以下是**历史条目**：条目里写的文件名是**当时**的名字。已被合并/移除的，条目本身
+//    通常会写明（如 v19 / v20）；唯一没写进条目的是 h5-shell.js / *-mb.js / *-mb.css /
+//    landscape.js —— 那套 H5 移动外壳已随「手机也强制电脑版」于 2026-09-20 整体移除。
 // v5：数据 chunk 进一步拆为 assets/js/data/<group>/<league>/<season>.js，弱网下单次只取一个联赛；
 //     Cache Storage 持久保留已成功加载的 chunk，切换时优先复用本地缓存；同时弱网失败不再强行渲染。
 // v4：次级联赛 logo 改独立文件名（en2/es2/...，与五大联赛的 en/es/... 区分）+ 推上线清除单体大文件，
@@ -56,8 +59,8 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 // v20：进球数页的两份逻辑 JS 合并为 goals.js（差异走页面声明的 window.GOALS_CFG），
 //      样式 goals-pc.css 改名 goals.css（它本来就是两页共用，名字里的 pc 是历史遗留）。
 //      旧文件名 goals-pc.js / goals-champ.js / goals-pc.css 已删除 → +1。
-var CACHE = 'fds-shell-v23';
-// shell-hash: f40d5c9fe05cd2e21739eefec5dcea894e5be0d815ac5e4e195ff6b3c20f32c4（由 tools/bump_sw.py 维护：外壳文件合并 sha256；改了外壳它就把 CACHE +1）
+var CACHE = 'fds-shell-v25';
+// shell-hash: 74a8c3e5eaeadc7fe9a96d65395365eb29478c8dfa0a75cb7c9df6eb413c1726（由 tools/bump_sw.py 维护：外壳文件合并 sha256；改了外壳它就把 CACHE +1）
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;

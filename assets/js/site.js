@@ -22,12 +22,13 @@
 
   // 站点导航与首页卡片共用同一份配置，唯一真相源是 assets/js/manifest.js（P2-② 之前
   // 是写在本文件里的 SITE_NAV，与各页面内联的 DRAWS_CFG/GOALS_CFG 各写一遍）。
-  // 这里只做派生：必须先挂到 window 再做桌面/移动分叉，否则首页 4 张入口卡片
-  // （#homeCards）会因为 SITE_NAV 未定义而消失，只剩标题。
+  // 这里只做派生：必须先挂到 window，否则首页 4 张入口卡片（#homeCards）会因为
+  // SITE_NAV 未定义而消失，只剩标题。
   //
-  // 移动端（<820px）：站点外壳整体让位给 H5 移动外壳（assets/js/h5-shell.js）；
-  // 桌面顶栏、三态主题、下拉菜单在手机上都是多余且会打架的东西，直接不建。
-  // 页面脚本仍会照常渲染数据，只是顶栏交给移动端自己的 AppBar + 底部 tab。
+  // 手机端没有独立骨架：全站统一「手机上也强制电脑版」，桌面外壳在任何宽度都会构建
+  // （窄屏只额外钉浅色主题 + theme-color，见下方）。历史上曾有过一套 H5 移动外壳
+  // （assets/js/h5-shell.js + *-mb.js / *-mb.css + landscape.js），2026-09-20 随该决策
+  // 整体移除 —— **不要照旧注释或旧资料把它加回来**（移动端由小程序承载）。
 
   if (typeof window.FD_NAV !== 'function') {
     throw new Error('site.js：assets/js/manifest.js 必须排在 site.js 之前同步加载（导航与首页卡片由它生成）');
@@ -41,8 +42,9 @@
   window.SITE_NAV = SITE_NAV;
   window.SITE_PAGE_URL = function (f) { return (window.SITE_ROOT || '') + 'pages/' + f; };
 
-  // 已统一改为「手机上也强制电脑版」：不再因窄屏提前 return，桌面外壳在任何宽度都会构建。
-  // 原来的 H5 移动外壳（h5-shell.js）已移除，窄屏若提前 return 会让页面整体空白。
+  // 窄屏只做浅色兜底，**不 return**：桌面外壳在任意宽度都必须构建。
+  // （H5 移动外壳已于 2026-09-20 移除；当年在这里提前 return 导致手机整页空白，
+  //   用户手动开电脑模式才能看 —— 这是实际发生过的线上事故，别再走回头路。）
   try {
     if (window.matchMedia && !window.matchMedia('(min-width:820px)').matches) {
       var r = document.documentElement;
