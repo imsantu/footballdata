@@ -476,6 +476,7 @@ def main():
     os.makedirs(BASELINE, exist_ok=True)
     planned = []          # (job, new, changed)
     drift_jobs = []       # 站点落后于本次生成的组（用于打一条 GHA 注解）
+    nobase = []           # 读不到审计基线的组（= 本次不做倒退校验，用于打一条 GHA 注解）
     print("=== 体检阶段（此时尚未写入任何文件）===")
 
     # 进数球数据需要平局报告（五大联赛）来回填官方轮次 / 主客场
@@ -525,15 +526,8 @@ def main():
         old = load_audit(audit_path(job))
         if old is None:
             print(f"  {name}: [首跑] 无历史基线，建立审计基线（本次不比较）")
-            # ⚠️ 必须显式告警，不能静默。基线缺失 = 这个数据组**本次不做任何倒退校验、
-            # 无条件写入** —— 静默的「首跑」是最危险的形态：日志看起来一切正常，实际上
-            # 任何退化数据（上游残缺、抓取不全）都会被直接写上线。云端全新 checkout 若
-            # 基线没入库就会命中这里（见模块 docstring），所以这条注解是云端唯一的可见信号。
-            # 立刻打（不等循环结束）：后面任一组 health_check die 掉也仍能读到本注解。
-            # 正文单行（GHA 注解要求），title 与正文都写清后果与处置。
-            print(f"::warning title=无审计基线（本次跳过全部体检）::"
-                  f"{name} 读不到 {os.path.relpath(audit_path(job), SITE)} → 本次不做任何"
-                  f"倒退校验、无条件写入；请确认基线已随 git 提交")
+            # 收集起来，循环结束后聚合成**一条** ::warning（理由见下方 nobase 处注释）。
+            nobase.append(name)
             planned.append((job, new, True))
             continue
         health_check(new, old, job)
@@ -569,6 +563,18 @@ def main():
             print(f"  {name}: 有更新")
         else:
             print(f"  {name}: 无变化")
+
+    # ⚠️ 基线缺失告警：**聚合成一条**，不要按组各打一条。
+    # 为什么：daily.yml 把整个 refresh.sh 跑在**一个 step** 里，而 GHA 注解有「每 step
+    # 每级别 10 条」的上限 —— fixtures 那步在 10 个联赛全失败时会先占满 10 条 ::warning，
+    # 这里若再逐组打 4 条就会被截断（恰好把最需要看见的那条丢掉）。
+    # 放在循环之后（而不是首跑分支里）：基线缺失本身不会导致 die（首跑分支跳过体检），
+    # 所以循环一定能走完；这样只需 1 条预算，也不影响可读性。
+    if nobase:
+        print("::warning title=无审计基线（本次跳过全部体检）::"
+              + "；".join(nobase)[:700]
+              + " —— 读不到 tools/baseline/ 的基线，这些组本次不做任何倒退校验、"
+                "数据将被无条件写入；请确认基线已随 git 提交且 refresh.sh 的 git add 含 'tools/baseline'")
 
     if not any(c for _, _, c in planned):
         print("\n=== 三份数据均无变化，跳过写入 ===")
