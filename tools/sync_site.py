@@ -24,9 +24,14 @@
   * 不再产出单体 *-data.js（既占 ~13MB、又冗余于已拆分的 chunk）。抽取并 enrich
     后的数据对象只在内存里传给两个拆分器（gen_goals_chunks / gen_draws_big5_chunks），
     由它们直接写出 assets/js/data/<group>/<league>/<season>.js。
-  * 健康校验的「旧基线」改存为 git 忽略的 tools/.cache/<group>-audit.json
-    （仅记录结构摘要：顶层键 / 联赛数 / 各联赛赛季键 / 各赛季场次 / 数据哈希 / meta），
-    体积仅 KB 级，不是那 4MB 单体。
+  * 健康校验的「旧基线」存为 tools/baseline/<group>-audit.json（仅记录结构摘要：顶层键 /
+    联赛数 / 各联赛赛季键 / 各赛季场次 / 数据哈希 / meta），体积仅 KB 级，不是那 4MB 单体。
+    ⚠️ **必须随 git 提交**（曾经放在 git 忽略的 tools/.cache/ 下，后果见下）。
+  * ⚠️ 基线为什么必须在 git 里：云端 GHA 每次都是**全新 checkout**。基线不入库 → 每次都读不到
+    → 每次都走「[首跑] 无历史基线」分支 → **跳过全部体检、无条件写入** ⇒ **云端零倒退保护**，
+    任何退化数据都会被直接写上线。而云端恰恰是最需要保护的地方（无人值守、每天自动上线）。
+    故基线目录必须同时加进 refresh.sh 的显式 `git add` 清单，否则云端永不提交它 → 基线冻结在
+    播种值、保护随时间退化。同一坑在 tools/bump_sw.py（sw.js 的 shell-hash 基线）已踩过一次。
   * 日常只重写当前进行中的赛季（2026-27）的 chunk；历史赛季 chunk 已在 git 冻结，
     不再触碰。新赛季开局或结构性调整时设环境变量 FD_FULL_REGEN=1 走全量重建。
 """
@@ -282,8 +287,11 @@ def verify_goals_standings(goals):
                     f"赛果=({c[0]},{c[1]},总进球{goals_map.get(name)}) —— 积分榜未随赛果刷新，已中止上线")
 
 
-# ── 审计基线（替代原单体作为健康校验的「旧」参照；git 忽略，仅本地） ──
-CACHE = os.path.join(AUTO, ".cache")
+# ── 审计基线（替代原单体作为健康校验的「旧」参照）──
+# ⚠️ 路径**必须是被 git 跟踪的目录**：云端全新 checkout 若读不到基线 → 走「首跑」→
+# 跳过全部体检、无条件写入 ⇒ 云端零倒退保护（详见模块 docstring）。
+# 也**不要**放回 tools/.cache/（.gitignore 第 13 行忽略了它）。
+BASELINE = os.path.join(AUTO, "baseline")
 
 
 def inject_promotion(goals, draws):
@@ -352,7 +360,7 @@ def inject_promotion(goals, draws):
 
 
 def audit_path(job):
-    return os.path.join(CACHE, job["group"] + "-audit.json")
+    return os.path.join(BASELINE, job["group"] + "-audit.json")
 
 
 def load_audit(path):
@@ -465,7 +473,7 @@ def health_check(new, old, job):
 
 
 def main():
-    os.makedirs(CACHE, exist_ok=True)
+    os.makedirs(BASELINE, exist_ok=True)
     planned = []          # (job, new, changed)
     drift_jobs = []       # 站点落后于本次生成的组（用于打一条 GHA 注解）
     print("=== 体检阶段（此时尚未写入任何文件）===")
@@ -517,6 +525,15 @@ def main():
         old = load_audit(audit_path(job))
         if old is None:
             print(f"  {name}: [首跑] 无历史基线，建立审计基线（本次不比较）")
+            # ⚠️ 必须显式告警，不能静默。基线缺失 = 这个数据组**本次不做任何倒退校验、
+            # 无条件写入** —— 静默的「首跑」是最危险的形态：日志看起来一切正常，实际上
+            # 任何退化数据（上游残缺、抓取不全）都会被直接写上线。云端全新 checkout 若
+            # 基线没入库就会命中这里（见模块 docstring），所以这条注解是云端唯一的可见信号。
+            # 立刻打（不等循环结束）：后面任一组 health_check die 掉也仍能读到本注解。
+            # 正文单行（GHA 注解要求），title 与正文都写清后果与处置。
+            print(f"::warning title=无审计基线（本次跳过全部体检）::"
+                  f"{name} 读不到 {os.path.relpath(audit_path(job), SITE)} → 本次不做任何"
+                  f"倒退校验、无条件写入；请确认基线已随 git 提交")
             planned.append((job, new, True))
             continue
         health_check(new, old, job)

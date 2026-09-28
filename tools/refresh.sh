@@ -191,10 +191,14 @@ else
         case "$WS" in
             "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html generator/football_champ_goals.html 2>/dev/null || true ;;
         esac
+        # ⚠️ 'tools/baseline' 必须在这里：审计基线是 sync_site.py 做「场次倒退 / 历史赛季
+        # 一字不变」等体检的参照物。不提交它 → 云端下次仍是全新 checkout、仍读不到基线
+        # → 又走「首跑」跳过全部体检 ⇒ 云端永远没有倒退保护（2026-09-29 修）。
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
                      'assets/js/data/fixtures' \
                      'assets/img/crests' 'assets/img/leaguelogos' \
+                     'tools/baseline' \
                      'sw.js'; then
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue
