@@ -12,6 +12,11 @@
       2. 联赛数量、赛季（scope）键集合必须一致
       3. 历史赛季（非 2026-27）的场次必须一字不变 —— 防止误伤已完成赛季
       4. 2026-27 的场次只能增加不能减少 —— 进行中的赛季只会越赛越多
+  * 另有一道「站点侧现状」校验（**不中止，只决定是否重写**）：当前赛季每个联赛的站点
+    chunk 里的 totalMatches 若**落后于**本次生成，就强制重写该组。原先判「有没有变化」
+    只比审计基线的 hash、不比站点文件 —— 基线一旦与站点脱节（本机曾实测：站点被
+    reset 回旧版而 .cache 基线仍是新版），陈旧站点就**永远不被重写**，下游再从陈旧数据
+    派生并撞上上面的第 4 条体检。详见 site_chunk_total 的注释。
   * 序列化统一用紧凑风格（separators=(",", ":")），缩小首屏下载体积；
     draws 文件首次重写会整文件变化（一次性大 diff），之后增量 diff 很小。
 
@@ -359,6 +364,34 @@ def load_audit(path):
         return None
 
 
+# ── 站点侧现状（判断「站点是否与本次生成脱节」）─────────────────────────────
+# 为什么需要：判「有没有变化」的原始判据是 `content_hash(new) != 基线.hash` —— **只比基线、
+# 不比站点文件**。而基线在 .gitignore 里（云端每次全新 checkout 都没有），本机还可能
+# 「领先于站点」（某次运行写好了站点但 push 失败、站点随后被 reset 回旧版）。
+# 于是「新数据 == 基线」被判成「无变化」→ 站点那份**陈旧数据永远不被重写**，下游还会从
+# 陈旧数据派生并撞上「场次倒退」体检。2026-09-29 实测：西乙站点 71 场、基线 76 场 →
+# 死锁，整条流水线中止。这里直接拿站点文件当参照，站点落后就强制重写（自愈）。
+SITE_TOTAL_RE = re.compile(r'"totalMatches"\s*:\s*(\d+)')
+
+
+def site_chunk_total(job, code, season):
+    """读站点现有 chunk 的 totalMatches；文件不存在 / 解析不出数字 → None。
+
+    只取当前赛季的 chunk（日常只重写它；历史 chunk 已冻结在 git，另有历史赛季一致性
+    体检兜底）。返回 None 一律视为「站点缺这份数据」。
+    """
+    p = os.path.join(SITE, "assets", "js", "data", job["group"], code, f"{season}.js")
+    try:
+        s = open(p, encoding="utf-8", errors="replace").read()
+    except Exception:
+        return None
+    m = SITE_TOTAL_RE.search(s)
+    try:
+        return int(m.group(1)) if m else None
+    except Exception:
+        return None
+
+
 def content_hash(obj):
     """整份数据的稳定哈希（忽略易变的 meta），用于「内容是否变化」的快速判定。"""
     o = dict(obj)
@@ -434,6 +467,7 @@ def health_check(new, old, job):
 def main():
     os.makedirs(CACHE, exist_ok=True)
     planned = []          # (job, new, changed)
+    drift_jobs = []       # 站点落后于本次生成的组（用于打一条 GHA 注解）
     print("=== 体检阶段（此时尚未写入任何文件）===")
 
     # 进数球数据需要平局报告（五大联赛）来回填官方轮次 / 主客场
@@ -492,8 +526,29 @@ def main():
             m.update(new.get("meta") or {})
             new["meta"] = m
         is_changed = content_hash(new) != old.get("hash")
+        # 站点侧现状 vs 本次生成：**站点落后就必须重写**，不能只看基线 hash（见 site_chunk_total 注释）。
+        # 只在「站点 < 本次」时强制重写 —— 站点比本次还新说明本机生成落后于云端，
+        # 那种情况该由上面的 health_check 拦下，不该靠这里把更新的数据覆盖掉。
+        drift = []
+        skey = "seasons" if job["kind"] == "draws" else "scopes"
+        for lg in new.get("leagues", []):
+            code = lg.get("code")
+            sd = (lg.get(skey) or {}).get(CUR_SEASON)
+            want = (sd or {}).get("totalMatches")
+            if want is None:
+                continue
+            got = site_chunk_total(job, code, CUR_SEASON)
+            if got is None or got < want:
+                drift.append(f"{code}: 站点={got if got is not None else '缺文件'} 本次={want}")
+        if drift:
+            is_changed = True
+            drift_jobs.append(f"{name}: " + "；".join(drift[:4])
+                              + (" …" if len(drift) > 4 else ""))
         planned.append((job, new, is_changed))
-        if is_changed:
+        if drift:
+            print(f"  {name}: ⚠️ 站点数据落后于本次生成 → 强制重写（{'；'.join(drift[:4])}"
+                  f"{' …' if len(drift) > 4 else ''}）")
+        elif is_changed:
             print(f"  {name}: 有更新")
         else:
             print(f"  {name}: 无变化")
@@ -516,6 +571,13 @@ def main():
             gen_goals_chunks.generate(new, only_current=only_current, group=job["group"])
         else:
             gen_draws_big5_chunks.run(job["group"], obj=new, only_current=only_current)
+
+    # 「站点落后」= 本该判「无变化」却被强制重写 —— 值得在云端可见（GHA 注解是匿名环境下
+    # 唯一可读的通道，正文单行）。**放在写入之后**：这样「已强制重写」才是既成事实，
+    # 也避免体检中途 die 时留下一条与实际不符的注解。
+    if drift_jobs:
+        print("::notice title=站点数据落后于本次生成（已强制重写）::"
+              + "；".join(drift_jobs)[:900])
 
     # 更新审计基线（所有数据集；未变化的 hash 不变，重写无副作用）
     for job, new, _ in planned:
