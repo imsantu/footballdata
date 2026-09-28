@@ -320,6 +320,10 @@ TITAN_CN_ALIAS = {
     "奥斯纳布鲁克": "奥斯纳布吕克", "德累斯顿": "德累斯顿迪纳摩", "比勒菲尔德": "比勒费尔德",
     "荷尔斯泰因": "荷尔斯泰因基尔",
     "埃登斯": "埃登塞", "安道尔FC": "安道尔", "皇家奥维耶多": "奥维耶多",
+    # 西乙 Castilla-La Mancha 球队：titan007 自 2026-09-28 前后改用「卡斯迪隆」，
+    # cn_map / 队徽表沿用「卡斯特利翁」。漏了这条会让西乙 6 场赛果 + 42 场赛程
+    # 被判为「未映射」而静默跳过 → 场次倒退 → sync_site.py 体检失败 → 全站当天不更新。
+    "卡斯迪隆": "卡斯特利翁",
     "凯勒雷斯": "卡拉雷塞", "卡坦萨罗": "卡坦扎罗", "史泰比亚": "斯塔比亚",
     "阿维利诺": "阿韦利诺", "阿雷佐": "阿雷索",
     "USL敦刻尔克": "敦刻尔克", "阿纳西": "阿讷西",
@@ -739,6 +743,28 @@ def main():
 
         out = {"name": f"{cn} {SEASON}", "roundSource": round_src, "matches": recs}
         dst = os.path.join(D, f"{lg}.{div}.2026-27.json")
+
+        # ── 场次倒退护栏（本联赛级、非致命）──
+        # 为什么需要：titan007 会不定期改队名写法（2026-09-28 前后把西乙「卡斯特利翁」
+        # 改成「卡斯迪隆」）。未映射的场次被静默跳过 → 本联赛场次反而比已有数据少。
+        # 若照写，下游 sync_site.py 的「场次倒退」体检会判定失败并 exit 1，**全站当天
+        # 不更新**（连其它 9 个正常联赛一起陪葬）。这里改为：只保留本联赛旧文件 +
+        # 打 ::warning（与 fixtures 的既定设计一致），其余联赛照常更新。
+        # 换季全量重建（FD_FULL_REGEN=1）时跳过护栏，否则新赛季永远覆盖不掉上赛季。
+        if not os.environ.get("FD_FULL_REGEN") and os.path.exists(dst):
+            try:
+                old_m = json.load(open(dst, encoding="utf-8")).get("matches") or []
+            except Exception:
+                old_m = []
+            if old_m and len(recs) < len(old_m):
+                print(f"[{cn} {code}] [WARN] {lg}.{div} 新抓取 {len(recs)} 场 < 已有 {len(old_m)} 场"
+                      f"（疑似上游队名写法变化 / 抓取不全），保留旧数据不改写")
+                print(f"::warning title=赛果数据:: {cn} {lg}.{div} 新抓取 {len(recs)} 场"
+                      f"少于已有 {len(old_m)} 场，已保留旧数据（疑上游队名未映射，请补 TITAN_CN_ALIAS）")
+                all_teams[(lg, div)] = ({r["team1"] for r in old_m}
+                                        | {r["team2"] for r in old_m})
+                continue
+
         json.dump(out, open(dst, "w", encoding="utf-8"), ensure_ascii=False, indent=1)
 
         teams = {r["team1"] for r in recs} | {r["team2"] for r in recs}

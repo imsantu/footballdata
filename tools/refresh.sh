@@ -150,6 +150,8 @@ step "更新：进球数·次级联赛" "$PY" "$SITE/generator/build_champ_goals
 step "同步数据到站点（补：进球数·次级联赛）" "$PY" "$AUTO/sync_site.py"
 
 # 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
+#    ⚠️ 「没有需要提交的改动」不再等同于「成功」：只有**确认远端已包含本地 HEAD**
+#       才算推送成功，否则必须继续尝试 push（见下方「推送」段）。
 SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"
 echo
 echo "──────── git 提交与推送 ────────"
@@ -197,48 +199,54 @@ else
             echo "[WARN] git add 失败（第 $attempt 次，疑似锁冲突），清锁后重试"
             rm -f .git/index.lock; sleep 3; continue
         fi
+        # ── 提交 ──
         if git diff --cached --quiet; then
-            echo "[SKIP] 没有需要提交的改动"
-            pushed=1; break
+            echo "[INFO] 没有需要提交的改动（工作区与 HEAD 一致）"
+        else
+            MSG="chore(data): 同步 $SEASON 赛果 $(date '+%F') [skip ci]"
+            [ -n "$SUMMARY" ] && MSG="$(printf '%s\n\n%s' "$MSG" "$SUMMARY")"
+            if git commit -q -F - <<< "$MSG"; then
+                echo "[OK] 已提交：$(git log -1 --format='%h %s')"
+            else
+                echo "[WARN] git commit 失败（第 $attempt 次），清锁后重试"
+                rm -f .git/index.lock; sleep 3; continue
+            fi
         fi
-        MSG="chore(data): 同步 $SEASON 赛果 $(date '+%F') [skip ci]"
-        [ -n "$SUMMARY" ] && MSG="$(printf '%s\n\n%s' "$MSG" "$SUMMARY")"
-        if git commit -q -F - <<< "$MSG"; then
-            echo "[OK] 已提交：$(git log -1 --format='%h %s')"
-            if git remote get-url origin >/dev/null 2>&1; then
-                # 推送前先把远端新提交 rebase 进来。
-                # 为什么需要：本机手动推送与云端定时任务会互相踩 —— 不拉取就直接 push 会被
-                # non-fast-forward 拒绝，重试 3 次也一样失败，结果是**当天数据静默不上线**
-                # （2026-09-26 本机推送时踩到过反向的同一种冲突，靠手动 rebase 才推上去）。
-                # 只在「确实落后于远端」时才 rebase；rebase 失败就 abort 并保持原行为
-                # （直接 push），**绝不把仓库留在 rebase 中间态**。
-                br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
-                if git fetch -q origin 2>/dev/null && git rev-parse --verify -q "origin/$br" >/dev/null; then
-                    if [ "$(git rev-list --count HEAD.."origin/$br" 2>/dev/null || echo 0)" != "0" ]; then
-                        echo "[INFO] 本地落后 origin/${br}，先 rebase 再推送"
-                        if git rebase "origin/$br" >/dev/null 2>&1; then
-                            echo "[OK] rebase 完成"
-                        else
-                            git rebase --abort >/dev/null 2>&1 || true
-                            echo "[WARN] rebase 失败（疑似冲突），已 abort，改为直接 push"
-                        fi
+        # ── 推送 ──
+        # ⚠️ 必须放在「提交」之外，**本轮没有新提交也要走一遍**。
+        # 为什么：上一轮 push 失败时提交已经落在本地，下一轮 staging 就是空的；旧代码在这里
+        # 直接 `pushed=1; break` 收工，把整条流水线报成成功并照常写 .lastrun —— 当天数据
+        # 静默不上线（2026-09-28 真实事故：本地抓到新数据、rebase 冲突、push 被拒，
+        # 第 2 轮走到这个分支 → 报「成功」→ 线上数据停在 9-27，用户次日才发现）。
+        if git remote get-url origin >/dev/null 2>&1; then
+            # 推送前先把远端新提交 rebase 进来。
+            # 为什么需要：本机手动推送与云端定时任务会互相踩 —— 不拉取就直接 push 会被
+            # non-fast-forward 拒绝，重试 3 次也一样失败，结果是**当天数据静默不上线**
+            # （2026-09-26 本机推送时踩到过反向的同一种冲突，靠手动 rebase 才推上去）。
+            # 只在「确实落后于远端」时才 rebase；rebase 失败就 abort 并保持原行为
+            # （直接 push），**绝不把仓库留在 rebase 中间态**。
+            br="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo main)"
+            if git fetch -q origin 2>/dev/null && git rev-parse --verify -q "origin/$br" >/dev/null; then
+                if [ "$(git rev-list --count HEAD.."origin/$br" 2>/dev/null || echo 0)" != "0" ]; then
+                    echo "[INFO] 本地落后 origin/${br}，先 rebase 再推送"
+                    if git rebase "origin/$br" >/dev/null 2>&1; then
+                        echo "[OK] rebase 完成"
+                    else
+                        git rebase --abort >/dev/null 2>&1 || true
+                        echo "[WARN] rebase 失败（疑似冲突），已 abort，改为直接 push"
                     fi
                 fi
-                if git push origin HEAD 2>&1; then
-                    echo "[OK] 已推送到 origin"
-                    notify "足球数据已更新" "${SUMMARY:-数据已同步}"
-                    pushed=1; break
-                else
-                    echo "[WARN] git push 失败（第 $attempt 次），清锁后重试"
-                    rm -f .git/index.lock; sleep 3
-                fi
-            else
-                echo "[SKIP] 未配置 origin 远程仓库，仅提交到本地"
+            fi
+            if git push origin HEAD 2>&1; then
+                echo "[OK] 已推送到 origin"
+                notify "足球数据已更新" "${SUMMARY:-数据已同步}"
                 pushed=1; break
             fi
-        else
-            echo "[WARN] git commit 失败（第 $attempt 次），清锁后重试"
+            echo "[WARN] git push 失败（第 $attempt 次），清锁后重试"
             rm -f .git/index.lock; sleep 3
+        else
+            echo "[SKIP] 未配置 origin 远程仓库，仅提交到本地"
+            pushed=1; break
         fi
     done
     if [ "$pushed" -ne 1 ]; then
