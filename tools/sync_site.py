@@ -118,6 +118,12 @@ def die(msg):
     sys.exit(1)
 
 
+class SkipJob(Exception):
+    """体检发现「数据源瞬时退化」（场次倒退 / 历史赛季被改）时不中止流水线，
+    交由 main() 跳过该组写入、保留旧数据、继续其余组。"""
+    pass
+
+
 def extract(path, marker):
     """从报告 HTML 里取出 marker 后面的那个 JSON 对象。"""
     s = open(path, encoding="utf-8").read()
@@ -466,10 +472,15 @@ def health_check(new, old, job):
             die(f"{job['name']} / {code} {season}: 数据缺失")
         if season == CUR_SEASON:
             if n < o:
-                die(f"{job['name']} / {code} {season}: 场次倒退 {o} -> {n}")
+                # 场次倒退：通常是数据源瞬时抖动（云端抓取不全）导致本次场次比基线少。
+                # 降级处理——保留旧数据、跳过该组写入，不中止整条流水线
+                # （硬 die 会让一次抖动把每日更新全挂掉）。基线保持旧值，待数据源
+                # 恢复后自动续更，且退化组不更新基线，避免把「倒退」固化成新基准。
+                raise SkipJob(f"{job['name']} / {code} {season}: 场次倒退 {o} -> {n}（保留旧数据，跳过写入）")
         else:
             if n != o:
-                die(f"{job['name']} / {code} {season}: 历史赛季被改动 {o} -> {n}（禁止）")
+                # 历史赛季被改动：多半是数据源对过往赛季的回补/修正，同样降级保留旧数据
+                raise SkipJob(f"{job['name']} / {code} {season}: 历史赛季被改动 {o} -> {n}（保留旧数据，跳过写入）")
 
 
 def main():
@@ -477,6 +488,7 @@ def main():
     planned = []          # (job, new, changed)
     drift_jobs = []       # 站点落后于本次生成的组（用于打一条 GHA 注解）
     nobase = []           # 读不到审计基线的组（= 本次不做倒退校验，用于打一条 GHA 注解）
+    skipped = set()       # 体检退化（场次倒退/历史赛季被改）被跳过的组：保留旧数据、不更新基线
     print("=== 体检阶段（此时尚未写入任何文件）===")
 
     # 进数球数据需要平局报告（五大联赛）来回填官方轮次 / 主客场
@@ -530,7 +542,13 @@ def main():
             nobase.append(name)
             planned.append((job, new, True))
             continue
-        health_check(new, old, job)
+        try:
+            health_check(new, old, job)
+        except SkipJob as e:
+            print(f"::warning title=体检降级·跳过该组写入（保留旧数据）::{e}")
+            skipped.add(job["name"])
+            planned.append((job, new, False))   # is_changed=False → 不写、不更新基线
+            continue
         # meta 合并：把站点侧 meta 接过来，避免被误判为「顶层键变化」
         if isinstance(new.get("meta"), dict) and isinstance(old.get("meta"), dict):
             m = dict(old["meta"])
@@ -603,7 +621,10 @@ def main():
               + "；".join(drift_jobs)[:900])
 
     # 更新审计基线（所有数据集；未变化的 hash 不变，重写无副作用）
+    # 退化组跳过：保持旧基线，避免把「场次倒退」固化成新基准
     for job, new, _ in planned:
+        if job["name"] in skipped:
+            continue
         save_audit(audit_path(job), new, job["kind"])
 
     # 额外产出 assets/js/meta.js：给「更多」页显示「本页更新」时间戳用。
