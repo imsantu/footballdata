@@ -402,7 +402,7 @@ def fetch_titan_season(code):
     for _ in range(3):
         try:
             subprocess.run(
-                ["curl", "-sSL", "--retry", "1", "--max-time", "35", "-A",
+                ["curl", "-4", "-sSL", "--compressed", "--retry", "1", "--max-time", "35", "-A",
                  "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
                  "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
                  "-H", "Referer: https://zq.titan007.com/", "-o", p, url],

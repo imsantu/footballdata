@@ -40,6 +40,7 @@ if HERE not in sys.path:
 
 from build_2026_27 import (  # noqa: E402
     ESPN_MAP, LEAGUES, TITAN_CN_ALIAS, TITAN_LEAGUES, TITAN_SEASON, TITAN_URL,
+    fetch_espn,
 )
 from season import SEASON as CUR_SEASON  # noqa: E402  （赛季唯一来源）
 
@@ -107,21 +108,29 @@ def fetch_file(code, sc, sub):
     url = TITAN_URL.format(season=TITAN_SEASON, SclassID=sc,
                            sub=("_" + str(sub)) if sub else "")
     tmp = p + ".part"
+    last_err = ""
     for _ in range(3):
         try:
-            subprocess.run(["curl", "-sSL", "--retry", "1", "--max-time", "35",
-                            "-A", UA, "-H", "Referer: https://zq.titan007.com/",
-                            "-o", tmp, url], check=True, capture_output=True)
-        except Exception:
-            pass
+            r = subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "1",
+                                "--max-time", "35", "-A", UA,
+                                "-H", "Referer: https://zq.titan007.com/",
+                                "-o", tmp, "-w", "HTTP:%{http_code}", url],
+                               capture_output=True, text=True)
+            last_err = (r.stderr or "").strip().splitlines()[-1] if r.stderr else ""
+            code = r.stdout.strip().split("HTTP:")[-1] if r.stdout else ""
+        except Exception as e:
+            last_err = str(e)
+            code = ""
         try:
             head = open(tmp, encoding="utf-8", errors="replace").read(200)
         except Exception:
             head = ""
-        if head and "<!DOCTYPE" not in head and "<html" not in head:
+        if head and "<!DOCTYPE" not in head and "<html" not in head \
+                and os.path.getsize(tmp) > 200:
             os.replace(tmp, p)
             return p, "net"
         time.sleep(1)
+    print(f"  [titan007] {code} {url} 抓取失败（{last_err or '空响应/封禁页'}）")
     return None, None
 
 
@@ -262,6 +271,62 @@ def write_shell(leagues):
         f.write("window.DATA = " + js_dump(obj) + ";\n")
 
 
+def espn_enrich_fixtures(code, lcode, path):
+    """titan007 抓不到时的兜底：用 ESPN 已完赛结果回填盘上「上一版赛程」的 FT/比分，
+    保留 titan007 给出的完整赛程与轮次（ESPN 不提供完整赛季赛程，只补赛果）。
+    返回 True=已写盘（有更新），False=无变化/失败（调用方保留旧 chunk 不动）。"""
+    old = read_old_chunk(path)
+    if not old or not old.get("matches"):
+        return False
+    try:
+        events = fetch_espn(code)
+    except Exception as e:
+        print(f"  [titan007] ESPN 兜底抓取异常：{e}")
+        return False
+    if not events:
+        return False
+    mp = ESPN_MAP.get(code, {})
+    res = {}
+    for e in events:
+        comp = (e.get("competitions") or [{}])[0]
+        st = (e.get("status") or {}).get("type") or {}
+        if st.get("detail") != "FT" and st.get("state") != "post":
+            continue
+        comps = comp.get("competitors") or []
+        if len(comps) != 2:
+            continue
+        hn = an = None
+        hs = as_ = None
+        for c in comps:
+            dn = (c.get("team") or {}).get("displayName", "")
+            if c.get("homeAway") == "home":
+                hn, hs = dn, c.get("score")
+            elif c.get("homeAway") == "away":
+                an, as_ = dn, c.get("score")
+        if hn not in mp or an not in mp:
+            continue
+        try:
+            h, a = int(hs), int(as_)
+        except Exception:
+            continue
+        res[(mp[hn], mp[an])] = f"{h}-{a}"
+    if not res:
+        return False
+    updated = 0
+    for m in old["matches"]:
+        # m = [round, kickoff, home, away, state, score]
+        key = (m[2], m[3])
+        if key in res and m[4] != "FT":
+            m[4], m[5] = "FT", res[key]
+            updated += 1
+    if updated == 0:
+        return False
+    old["updated"] = time.strftime("%Y-%m-%d %H:%M")
+    write_chunk(lcode, old)
+    print(f"  [+] {lcode} ESPN 兜底回填 {updated} 场赛果（保留 titan007 原赛程轮次）")
+    return True
+
+
 def main():
     if "/Desktop/" in OUT_DIR or OUT_DIR.endswith("/Desktop"):
         print("[FAIL] 输出目录位于桌面，已中止")
@@ -295,8 +360,13 @@ def main():
 
         src_file, how = fetch_file(code, sc, sub)
         if not src_file:
+            # titan007 抓不到 → 尝试 ESPN 兜底回填赛果（保留完整赛程）
+            if espn_enrich_fixtures(code, lcode, path):
+                changed.append(cn_short)
+                leagues_out.append(meta)
+                continue
             failed.append(f"{cn_short}({code}) 抓取失败")
-            warn(f"{cn_short}({code}) titan007 抓取失败，保留旧赛程数据")
+            warn(f"{cn_short}({code}) titan007 抓取失败且 ESPN 兜底无更新，保留旧赛程数据")
             leagues_out.append(meta)
             continue
 
@@ -333,6 +403,10 @@ def main():
         if unmapped:
             warn(f"{cn_short} 有未映射队名 {sorted(unmapped)}，相关场次已跳过")
         if not matches:
+            if espn_enrich_fixtures(code, lcode, path):
+                changed.append(cn_short)
+                leagues_out.append(meta)
+                continue
             failed.append(f"{cn_short}({code}) 无可用场次")
             warn(f"{cn_short}({code}) 无可用场次，保留旧赛程数据")
             leagues_out.append(meta)
