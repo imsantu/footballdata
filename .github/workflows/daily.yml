@@ -4,12 +4,25 @@ name: 每日数据更新
 # 抽取数据同步进站点，并回推仓库（GitHub Pages 随即重新部署）。
 on:
   schedule:
-    # 北京 05:55 ≈ UTC 21:55（前一日）。2026-09-30 由 06:00 前移 5 分钟。
-    # ⚠️ 实测 GitHub 的 schedule 调度器一贯**推迟 2~3.7 小时**才创建 run
+    # ── 主跑：北京 04:00（UTC 前一日 20:00）──────────────────────────────
+    # 需求：早上 8~9 点看站时数据已是当天最新 ⇒ **完成时刻必须 ≤ 08:00**；
+    #       同时不能早于 06:00（早于 6 点当天凌晨的比赛还没踢完，会漏赛果）。
+    # ⚠️ GitHub 的 schedule 调度器实测一贯**推迟 2~3.7 小时**才创建 run
     #    （2026-09-22~30 实测 1h58m~3h43m），远不止官方口径的「15~30 分钟」，
-    #    所以实际起跑通常落在 08:15~09:40。脚本内另有 0~30 分钟随机错峰，在其后再叠加。
-    #    ⇒ 「标称时刻」与「实际更新时刻」可以差 3 小时，这是常态、不是故障。
-    - cron: "55 21 * * *"
+    #    而且这段延迟发生在脚本启动**之前**，我们控制不了。
+    # 设标称 T、脚本内错峰窗口 S，完成时刻落在 [T+2h03m, T+3h48m+S]；代入两端约束：
+    #     T ≥ 6:00 − 2h03m = 3:57   且   T ≤ 8:00 − 3h48m − S = 4:12 − S
+    #    S=30min 时两者冲突（无解）→ 故 refresh.sh 的错峰窗口已收窄到 0~5 分钟，
+    #    取 T = 04:00 ⇒ 完成时刻 06:03~07:53，两端都有余量。
+    - cron: "0 20 * * *"
+
+    # ── 看门狗：北京 06:00（UTC 前一日 22:00）────────────────────────────
+    # 兜底「主跑被丢弃」：官方文档明确承认负载极高时排队任务会被 dropped
+    # （events-that-trigger-workflows#schedule）—— 那种情况下 run 根本不会被创建，
+    # 事后**无从察觉**（没有 run 就没有注解可读）。本 job 交给 tools/watchdog.sh
+    # 判断「今天是否已更新」，已更新则跳过；未更新则立即补跑（跳过错峰）。
+    # 实测起跑 08:00~09:45，与主跑（最晚 07:53 完成）不重叠。
+    - cron: "0 22 * * *"
   workflow_dispatch: {}   # 允许手动触发（Actions 页面 → Run workflow）
 
 permissions:
@@ -22,7 +35,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 90       # 定时任务含脚本内 0~60 分钟随机错峰等待 + 抓取/构建；手动触发无等待，更快完成
+    timeout-minutes: 45       # 含脚本内 0~5 分钟随机错峰 + 抓取/重建/体检/推送（实测约 5~6 分钟）；看门狗补跑无等待
     # 统一时区（整条 job 生效）。之前只有 refresh.sh 那一步设了 TZ，小程序三步没有 →
     # export_data.js 的 dataVersion / updatedAt 按 UTC 生成：北京 06:00 跑出来是
     # 前一天 22:00，客户端按日期显示就成了「1 天前」，看着像数据没更新。
@@ -45,15 +58,23 @@ jobs:
           git config user.email "bot@footballdata.local"
           git config user.name "Football Data Bot"
 
-      - name: 运行每日更新（refresh.sh 内含抓数→重建→体检→提交→推送）
+      - name: 运行每日更新（主跑无条件跑；看门狗先判断今天是否已更新）
         env:
           FD_SITE_DIR: ${{ github.workspace }}
           FD_GENERATOR_DIR: ${{ github.workspace }}/generator
           FD_PY: python3
           TZ: Asia/Shanghai
-          # 仅「定时(cron)」触发时 refresh.sh 才做随机错峰等待；手动 Run workflow 立即跑
+          # refresh.sh 仅在「= schedule」时做 0~5 分钟随机错峰；手动触发 / 看门狗补跑都立即跑
           GITHUB_EVENT_NAME: ${{ github.event_name }}
-        run: bash tools/refresh.sh
+          SCHEDULE: ${{ github.event.schedule }}
+        run: |
+          if [ "${SCHEDULE:-}" = "0 22 * * *" ]; then
+            echo "本次由【看门狗】触发（北京 06:00 标称）→ 先判断今天是否已更新"
+            bash tools/watchdog.sh
+          else
+            echo "本次由【主跑】触发 → 直接执行"
+            bash tools/refresh.sh
+          fi
 
       # ── 小程序数据：本工作流**完全不参与**（2026-09-26 定稿）────────────
       # 小程序的每日更新已整体搬到小程序自己的 syncDaily 云函数：
