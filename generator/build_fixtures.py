@@ -59,10 +59,39 @@ SCHEMA = {
 }
 
 
+# ── 告警聚合（GHA 注解配额保护）────────────────────────────────────────────
+# 本机日志**逐条**打印（保持可读），GHA 注解**最后聚合成一条**。
+# 为什么必须聚合：daily.yml 把整个 refresh.sh 跑在**一个 step** 里，而 GitHub Actions
+# 的注解配额是「每 step、每级别各 10 条」。以前这里按联赛逐条打 ::warning，光 fixtures
+# 一个脚本在 10 个联赛全失败时就能占满 10 条 warning 配额，把同一个 step 里后打的
+# **更要紧**的告警（sync_site.py 的「体检降级·跳过该组写入（保留旧数据）」）静默挤掉 ——
+# 2026-09-30 起云端连续 6 天抓不到 titan007、站点静默停更，正是被这样掩盖的
+# （证据链见 REFERENCE §N4）。聚合后只占 1 条预算。
+_WARNS = []
+
+
 def warn(msg):
-    """GHA 里显示为黄色注解，本机日志里也是醒目的 [WARN]。"""
-    print(f"::warning title=赛程数据::{msg}")
+    """记一条告警：本机立即打印，GHA 注解延后到 flush_warns() 聚合。"""
     print(f"  [WARN] {msg}")
+    _WARNS.append(msg)
+
+
+def flush_warns():
+    """把本轮收集到的告警聚合成**一条** ::warning（GHA 注解正文必须单行）。
+
+    语义是「排空」：打完就清空，重复调用是 no-op（否则同一批告警会被打两遍，
+    又白占一条配额 —— 正是本次要修的毛病）。
+    """
+    if not _WARNS:
+        return
+    body = "；".join(_WARNS)
+    n = len(_WARNS)
+    del _WARNS[:]
+    if n > 1:
+        body = f"共 {n} 条：{body}"
+    if len(body) > 1100:
+        body = body[:1100] + f"…（已截断，共 {n} 条，逐条见本步日志）"
+    print(f"::warning title=赛程数据::{body}")
 
 
 def js_dump(obj):
@@ -480,6 +509,8 @@ def main():
     if failed:
         print(f"  [WARN] 失败 {len(failed)} 个：{'；'.join(failed)}")
         print("  [WARN] 失败联赛保留旧赛程数据，本次不阻塞主流水线")
+    # 所有告警已收集完毕 → 聚合成一条 ::warning（见 warn/flush_warns 的注释）
+    flush_warns()
     print(f"════════ 赛程表构建完成 {time.strftime('%F %T')} ════════")
 
 

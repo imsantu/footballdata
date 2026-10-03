@@ -40,7 +40,8 @@
 
   // 暴露给首页复用（首页直接按这份配置渲染卡片，避免两处维护）
   window.SITE_NAV = SITE_NAV;
-  window.SITE_PAGE_URL = function (f) { return (window.SITE_ROOT || '') + 'pages/' + f; };
+  // 第二个参数 carryQuery 见下方 pageUrl：首页卡片用不到（它只传一个参数，行为不变）。
+  window.SITE_PAGE_URL = function (f, carryQuery) { return pageUrl(f, carryQuery); };
 
   // 窄屏只做浅色兜底，**不 return**：桌面外壳在任意宽度都必须构建。
   // （H5 移动外壳已于 2026-09-20 移除；当年在这里提前 return 导致手机整页空白，
@@ -66,7 +67,30 @@
     '<svg class="caret" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" ' +
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
 
-  function pageUrl(f) { return ROOT + 'pages/' + f; }
+  /* 切页 URL。
+     carryQuery=true 时把当前视图参数（?l=联赛&s=赛季&w=范围）一并带过去 —— 这些参数由
+     assets/js/view-url.js 写在地址栏里，代表「用户当前选的联赛 / 赛季 / 范围」。
+     不带查询串跳页会让目标页回落到它自己的默认联赛：在「次级联赛 · 西乙 平局」切到
+     「进球数统计」会掉回「五大联赛 · 英超 进球数」，用户得重选一遍（2026-10-04 用户反馈）。
+     只带 l/s/w：v（视图）是平局页专有语义（overview / big5 / 赛季名），进球页不认。
+     两个主题的联赛代码一致（en/es/de/it/fr），所以 l 可以跨主题沿用；目标页各自会校验，
+     非法值（如进球页独有的 __all__）会自行回落到默认联赛。 */
+  var CARRY_KEYS = ['l', 's', 'w'];
+  function pageUrl(f, carryQuery) {
+    var base = ROOT + 'pages/' + f;
+    if (!carryQuery) return base;
+    var q = '';
+    try {
+      var src = new URLSearchParams(location.search || '');
+      var keep = new URLSearchParams();
+      for (var n = 0; n < CARRY_KEYS.length; n++) {
+        var v = src.get(CARRY_KEYS[n]);
+        if (v) keep.set(CARRY_KEYS[n], v);
+      }
+      q = keep.toString();
+    } catch (e) { q = ''; }
+    return base + (q ? '?' + q : '');
+  }
   function esc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;'); }
 
   // ---- 当前页定位：靠文件名判断属于哪个主题 / 哪个层级 ----
@@ -181,15 +205,25 @@
             if (t.classList.contains('wait')) return;
             if (i === groupIdx) { closeAll(); return; }
             var gp = SITE_NAV[i];
-            var def = gp.items.filter(function (x) { return x.ready; })[0] || gp.items[0];
-            goPage(box, pageUrl(def.file));
+            /* 保持当前「联赛层级」：先在目标主题里找**同名层级**（五大联赛 / 次级联赛），
+               找不到再退回首個可用页。以前一律跳 gp.items[0]，于是在次级联赛页切主题
+               会掉回五大联赛（2026-10-04 用户反馈）。用 label 匹配而不是下标，这样
+               TOPICS 里 pages 的顺序变了也不会错配。 */
+            var wantLabel = group.items[itemIdx] && group.items[itemIdx].label;
+            var same = null;
+            for (var n2 = 0; n2 < gp.items.length; n2++) {
+              if (wantLabel && gp.items[n2].label === wantLabel) { same = gp.items[n2]; break; }
+            }
+            var def = (same && same.ready) ? same
+                    : (gp.items.filter(function (x) { return x.ready; })[0] || gp.items[0]);
+            goPage(box, pageUrl(def.file, true));
           } else if (kind === 'l') {
             var k = parseInt(t.getAttribute('data-i'), 10);
             if (t.classList.contains('wait')) return;
             var it = group.items[k];
             if (!it || !it.ready) return;
             if (it.file.toLowerCase() === cur) { closeAll(); return; }
-            goPage(box, pageUrl(it.file));
+            goPage(box, pageUrl(it.file, true));
           } else if (kind === 'w') {
             // 范围下拉：找到页面对应的 .wbtn，反向触发它的 click（页面逻辑由原按钮接管）
             var win = t.getAttribute('data-win');

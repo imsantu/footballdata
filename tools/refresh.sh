@@ -160,7 +160,14 @@ step "同步数据到站点（补：进球数·次级联赛）" "$PY" "$AUTO/syn
 # 6) 提交并推送（带锁重试；git add 失败视为锁冲突必须重试，绝不再静默 SKIP）
 #    ⚠️ 「没有需要提交的改动」不再等同于「成功」：只有**确认远端已包含本地 HEAD**
 #       才算推送成功，否则必须继续尝试 push（见下方「推送」段）。
-SUMMARY="$(grep -m1 '^SUMMARY|' "$LOG" | sed 's/^SUMMARY|//')"
+# ⚠️ 必须取**最后一条**（tail -1），不能取第一条（原为 grep -m1）。
+#   为什么：本脚本调了**两遍** sync_site.py（5) 主数据 → 5c) 补次级联赛进球数），
+#   每遍都会打一行 SUMMARY|。真改动常在第二遍（次级联赛进球数补丁），取第一条会把
+#   当天的提交信息 / 推送通知误报成「无变化」——2026-09-30 实测：注解写着「无变化」，
+#   而当天提交 9e812ed 实际改了 assets/js/data/goals-champ/es/2026-27.js。
+#   `|| true`：本脚本是 `set -uo pipefail`（注意**没有 -e**），grep 无匹配时退出码为 1
+#   会让整条管道非零；加兜底让 SUMMARY 退化为空串，绝不中断后续提交/推送。
+SUMMARY="$(grep '^SUMMARY|' "$LOG" 2>/dev/null | tail -1 | sed 's/^SUMMARY|//' || true)"
 echo
 echo "──────── git 提交与推送 ────────"
 cd "$SITE" || { echo "[FAIL] 站点目录不存在"; exit 1; }

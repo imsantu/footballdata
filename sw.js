@@ -59,8 +59,8 @@ var ROOT = (self.location.pathname || '/').replace(/\/sw\.js$/, '').replace(/\/+
 // v20：进球数页的两份逻辑 JS 合并为 goals.js（差异走页面声明的 window.GOALS_CFG），
 //      样式 goals-pc.css 改名 goals.css（它本来就是两页共用，名字里的 pc 是历史遗留）。
 //      旧文件名 goals-pc.js / goals-champ.js / goals-pc.css 已删除 → +1。
-var CACHE = 'fds-shell-v25';
-// shell-hash: 74a8c3e5eaeadc7fe9a96d65395365eb29478c8dfa0a75cb7c9df6eb413c1726（由 tools/bump_sw.py 维护：外壳文件合并 sha256；改了外壳它就把 CACHE +1）
+var CACHE = 'fds-shell-v26';
+// shell-hash: 8906bc7ed01d77e8520842cd0ba017f8eaa84ef22d36dbe42b7c6a849637194d（由 tools/bump_sw.py 维护：外壳文件合并 sha256；改了外壳它就把 CACHE +1）
 
 // meta.js 单独判定：体积仅几十字节，是页脚「本页更新时间」的唯一来源，必须 network-first。
 var META_RE = /(^|\/)meta\.js$/;

@@ -682,6 +682,15 @@ function renderTrend(){
     '<defs><linearGradient id="gg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#4a9eff"/><stop offset="1" stop-color="#00b894"/></linearGradient></defs>'+
     yt.join('')+rects+avgLine+xt.join('')+'<text x="'+padL+'" y="10" font-size="11" fill="var(--text-dim)">平局/轮</text></svg>';
   const tip=document.getElementById('avgTip');
+  /* 走势悬浮窗的队名兜底（2026-10-04 用户反馈「悬浮窗里信息都是英文的」）。
+     为什么需要：perRound[].draws[].h/a 是**原样来自数据**的队名，而队表（renderTeams）
+     用的是同一条记录里的 teams[].cn。两者本应都是中文，但 2026-09-29 西乙那次手工补丁
+     只把 teams[].cn 写成了中文、perRound 里留了英文（Cádiz CF / Real Oviedo …），
+     于是队表正常、走势悬浮窗露英文。这里用同一份 name → cn 映射把它译回来 ——
+     本来就是中文的名字不在映射里，`cnOf[v] || v` 会原样保留，对任何联赛都安全。 */
+  const cnOf={};
+  ((LG().seasons[currentSeason]||{}).teams||[]).forEach(t=>{ if(t.name) cnOf[t.name]=t.cn||t.name; });
+  const nm=v=>cnOf[v]||v;
   document.querySelectorAll('#trend rect.bar').forEach(r=>{
     r.addEventListener('mousemove',e=>{
       tip.style.display='block';
@@ -690,7 +699,7 @@ function renderTrend(){
         const ds=JSON.parse(decodeURIComponent(r.getAttribute('data-draws')||'[]'));
         if(ds&&ds.length){
           html+='<div class="tip-sep"></div>'+ds.map(x=>
-            '<div class="tip-draw"><span class="tm">'+x.h+'</span> <span class="sc">'+x.hs+'-'+x.as+'</span> <span class="tm">'+x.a+'</span></div>').join('');
+            '<div class="tip-draw"><span class="tm">'+nm(x.h)+'</span> <span class="sc">'+x.hs+'-'+x.as+'</span> <span class="tm">'+nm(x.a)+'</span></div>').join('');
         }
       }catch(err){}
       tip.innerHTML=html;

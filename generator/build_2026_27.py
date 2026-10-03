@@ -667,6 +667,7 @@ def fd_round_map(lg, div):
 def main():
     all_teams = {}          # (code,div) -> set(canonical)
     skipped_bad = []        # 因队名未映射被跳过的联赛（map 有 bug，需修复）
+    backoff = []            # 场次倒退护栏的告警正文，循环后聚合成 1 条 ::warning（见下）
     # 2026-27 主源：titan007（全部已完赛轮次，R_N 即官方轮次）。
     # 不再依赖 ESPN 主源；ESPN 仅作兜底（titan007 抓取整联赛失败时才用）。
     # 历史赛季（2025-26 及更早）由各自独立 JSON 维护，本脚本只写 *.2026-27.json，不受影响。
@@ -759,8 +760,13 @@ def main():
             if old_m and len(recs) < len(old_m):
                 print(f"[{cn} {code}] [WARN] {lg}.{div} 新抓取 {len(recs)} 场 < 已有 {len(old_m)} 场"
                       f"（疑似上游队名写法变化 / 抓取不全），保留旧数据不改写")
-                print(f"::warning title=赛果数据:: {cn} {lg}.{div} 新抓取 {len(recs)} 场"
-                      f"少于已有 {len(old_m)} 场，已保留旧数据（疑上游队名未映射，请补 TITAN_CN_ALIAS）")
+                # ⚠️ 收集起来，循环结束后**聚合成一条** ::warning。
+                # 为什么：daily.yml 把整个 refresh.sh 跑在**一个 step** 里，而 GHA 注解
+                # 配额是「每 step、每级别各 10 条」—— 这里若按联赛逐条打（10 个联赛全触发
+                # 就是 10 条），会把同 step 里后打的更要紧的告警（sync_site.py 的「体检降级·
+                # 跳过该组写入」）静默挤掉。与 fixtures / sync_site 的既定做法保持一致。
+                backoff.append(f"{cn} {lg}.{div} 新抓取 {len(recs)} 场少于已有 {len(old_m)} 场，"
+                               f"已保留旧数据（疑上游队名未映射，请补 TITAN_CN_ALIAS）")
                 all_teams[(lg, div)] = ({r["team1"] for r in old_m}
                                         | {r["team2"] for r in old_m})
                 continue
@@ -773,6 +779,15 @@ def main():
               f"球队 {len(teams)}，{len(dates)} 个比赛日 -> {nround} 个轮次"
               f" [{round_src}] {of_note}"
               f" -> {os.path.basename(dst)}")
+
+    # 场次倒退护栏的告警：循环已走完 → **聚合成一条** ::warning（理由见循环内的注释）
+    if backoff:
+        body = "；".join(backoff)
+        if len(backoff) > 1:
+            body = f"共 {len(backoff)} 条：{body}"
+        if len(body) > 1100:
+            body = body[:1100] + f"…（已截断，共 {len(backoff)} 条，逐条见本步日志）"
+        print(f"::warning title=赛果数据::{body}")
 
     # 译名 / 队徽 覆盖检查
     print("\n=== 2026-27 新球队 译名/队徽 覆盖检查 ===")
