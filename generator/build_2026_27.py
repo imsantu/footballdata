@@ -20,7 +20,8 @@ fixturedownload 官方 Round Number -> 按日期窗口推导兜底）。轮次�
 """
 import csv, json, os, re, subprocess, sys, time, unicodedata, urllib.parse
 from collections import defaultdict, Counter
-from datetime import date
+from concurrent.futures import ThreadPoolExecutor
+from datetime import date, timedelta
 
 import os
 WS = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +33,10 @@ from season import SEASON_LONG, SEASON_TAG as SEASON  # noqa: E402
 # ESPN 比分接口无轮次字段，任何「按日期推算」的算法在遇到「轮次先赛 / 补赛」时都会错乱
 # （西甲 2026-27 第 1 轮有 4 场被推迟到 08-25~08-27，反而晚于 08-20~08-24 进行的第 2 轮）。
 # 所以只要 openfootball 收录了该联赛 2026-27 完整赛程，就一律采信它的官方 Matchday 编号。
-# 已知收录：en.1 / de.1 / es.1 / it.1 / fr.1 / en.2；de.2 / es.2 / it.2 / fr.2 无（404）。
+# 已知收录（2026-10-03 实测，均 HTTP 200）：en.1(380) / en.2(552) / de.1(306) /
+# es.1(380) / it.1(380) / fr.1(306)；de.2 / es.2 / it.2 / fr.2 无（404）。
+# ⚠️ 实测发现：原先因为下载 curl 缺 --compressed，de.1 / en.2 被误判成「源不存在」并锁
+#    7 天冷却（见下方 of_round_map 注释），于是这 2 个联赛长期退化成「按日期推导」。
 OF_DIR = os.path.join(WS, "assets", "of_2627")
 OF_BASE = "https://raw.githubusercontent.com/openfootball/football.json/master/2026-27"
 # 本工程队名 <-> openfootball 2026-27 队名的个别差异（归一化后的 key）。
@@ -41,9 +45,13 @@ OF_BASE = "https://raw.githubusercontent.com/openfootball/football.json/master/2
 OF_ALIAS = {"estactroyes": "estroyesac"}
 
 # ---- 官方轮次源（fixturedownload，兜底）----------------------------------
-# openfootball 只覆盖 6 个联赛，fixturedownload 的 CSV 带官方 "Round Number" 列，
-# 可作为第二顺位源。已探测：法乙 ligue-2 可用（306 行）；
-# 德乙 / 西乙 / 意乙 的所有候选 slug 均 404，仍无官方轮次源，只能沿用推导。
+# openfootball 覆盖 6 个联赛，fixturedownload 的 CSV 带官方 "Round Number" 列，
+# 可作为第二顺位源（实际是 fr.2 的唯一官方轮次源）。
+# ⚠️ 2026-10-03 实测：该站 slug 命名**不规则**，不是想当然的联赛名 ——
+#    英超=epl（不是 premier-league）、英冠=championship、西甲=la-liga、德甲=bundesliga、
+#    意甲=serie-a、法甲=ligue-1、法乙=ligue-2 均 200；而 la-liga-2 / 2-bundesliga /
+#    serie-b 等候选全部 404（sitemap 确认该站**根本不收录**西乙/德乙/意乙）。
+#    故这里只登记确实可用的 slug；未登记的联赛由 openfootball 或推导兜底。
 FD_BASE = "https://fixturedownload.com/download/%s-2026-UTC.csv"
 FD_SLUG = {("fr", 2): "ligue-2"}
 FD_DIR = os.path.join(WS, "assets", "fd_2627")
@@ -422,14 +430,21 @@ def titan_curl(url, out_path):
     写 .part 再 rename：避免 os.remove（沙箱有删除配额，超限后静默失败）。
     """
     tmp = out_path + ".part"
-    http, err = "", ""
+    http, ip, emsg, err = "", "", "", ""
     try:
         r = subprocess.run(
             ["curl", "-4", "-sSL", "--compressed", "--retry", "1", "--max-time", "35",
              "-A", TITAN_UA, "-H", "Referer: https://zq.titan007.com/",
-             "-o", tmp, "-w", "HTTP:%{http_code}", url],
+             "-o", tmp,
+             "-w", "HTTP:%{http_code} IP:%{remote_ip} ERR:%{errormsg}", url],
             capture_output=True, text=True, env=dict(os.environ))
-        http = (r.stdout or "").strip().split("HTTP:")[-1].strip()
+        w = (r.stdout or "").strip()
+        if "HTTP:" in w:
+            http = w.split("HTTP:")[-1].split()[0].strip()
+        if "IP:" in w:
+            ip = w.split("IP:")[-1].split("ERR:")[0].strip()
+        if "ERR:" in w:
+            emsg = w.split("ERR:")[-1].strip()
         if r.stderr:
             err = r.stderr.strip().splitlines()[-1]
     except Exception as e:
@@ -451,7 +466,17 @@ def titan_curl(url, out_path):
         except Exception:
             return False, "写盘失败"
         return True, ""
-    return False, (f"HTTP {http}" if http else (err or "空响应"))
+    # ⚠️ 2026-10-03 修：curl 在**连接层失败**时 %{http_code} 是字符串 "000"（**非空**！），
+    # 而旧写法 `f"HTTP {http}" if http else err` 里 "000" 是 truthy → 永远返回 "HTTP 000"，
+    # **把 curl 的真实错误码吞掉**。可 000 恰恰是最需要诊断的情形：DNS 失败(curl 6) /
+    # 连接被拒(7) / 连接超时(28) 三者对策完全不同。云端 2026-10-03 的注解只写着
+    # 「HTTP 000」，无法进一步定位，正是这个盲区造成的。
+    if http and http != "000":
+        return False, f"HTTP {http}"
+    detail = emsg or err or ("HTTP 000" if http else "空响应")
+    if ip:
+        detail = f"{detail}（IP {ip}）"
+    return False, detail[:200]
 
 
 def fetch_titan_season(code):
@@ -531,43 +556,67 @@ def fetch_titan_season(code):
     return recs
 
 
-def fetch_espn(code):
-    """下载 ESPN 整季比分（按月分窗，规避单请求 100 条上限），返回 events 列表。
+# ── ESPN 兜底抓取 ───────────────────────────────────────────────────────────
+# ⚠️ 2026-10-03 修：原实现按「自然月」请求 `?dates={月初}-{月末}`（**区间格式**），
+#    实测 ESPN 一律 HTTP 400 `{"code":400,"message":"Failed to get events endpoint."}`。
+#    也就是说「ESPN 兜底」自上线起**从未真正工作过**；而它的失败只打在本机日志里
+#    （`[warn] ... 抓取失败 / 无数据`，不是 GHA 注解），所以 2026-09-30 起云端连续
+#    6 天抓不到 titan007 时，站点静默停更而无人察觉。
+#    实测 ESPN 只认三种 dates：单日 `YYYYMMDD`、整年 `YYYY`（**上限 100 条且无分页**）、
+#    以及不传。区间 / 逗号 / 带横线格式全部 400 ⇒ **只能逐日枚举**。
+#    另：必须带 --compressed —— 服务端回 gzip 时不加会拿到 0x8b 开头的内容，
+#    json.load 报 UnicodeDecodeError（原实现正是如此）。
+#    成本：逐日 + 按联赛并行 ≈ 0.1s/天；赛季全程 ~360 天 → 单联赛约 40s。
+ESPN_UA = TITAN_UA
+ESPN_SEASON_START = "2026-07-01"   # 与 season.SEASON_LONG（2026-2027）对齐
+ESPN_TAIL_DAYS = 2                 # 多抓 2 天，兜住 UTC/北京时区差与 runner 日期边界
+ESPN_WORKERS = 10
 
-    2026-27 单联赛整季 380/462 场，远超 ESPN 单请求 100 条上限，故按自然月拆窗；
-    每月赛程远小于 100，安全。失败或空响应返回 []（由调用方决定是否跳过该联赛）。
+
+def _espn_one_day(code, d):
+    """抓 ESPN 某联赛某一天的 scoreboard；返回 events 列表（失败/无数据返回 []）。
+
+    ⚠️ 必须校验 JSON 完整性：curl 可能中途断开，留下**截断的半个文件**（体积正常、
+    内容非法）。只判体积会把坏文件当好文件，静默漏掉那一天的全部比赛。
     """
-    months = [(2026, 8, 31), (2026, 9, 30), (2026, 10, 31), (2026, 11, 30),
-              (2026, 12, 31), (2027, 1, 31), (2027, 2, 28), (2027, 3, 31),
-              (2027, 4, 30), (2027, 5, 31), (2027, 6, 30)]
+    p = f"/tmp/espn_{code}_{d}.json"
+    if os.path.exists(p):
+        try:
+            return json.load(open(p, encoding="utf-8")).get("events") or []
+        except Exception:
+            pass          # 截断的半个文件 → 走下面重抓
+    url = (f"https://site.api.espn.com/apis/site/v2/sports/soccer/{code}"
+           f"/scoreboard?dates={d.replace('-', '')}")
+    for _ in range(2):
+        try:
+            subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "2",
+                            "--retry-delay", "1", "--max-time", "30",
+                            "-A", ESPN_UA, "-o", p, url],
+                           capture_output=True, env=dict(os.environ))
+        except Exception:
+            pass
+        try:
+            return json.load(open(p, encoding="utf-8")).get("events") or []
+        except Exception:
+            time.sleep(0.5)
+    return []
+
+
+def fetch_espn(code):
+    """逐日枚举「赛季开始 ~ 今天」的 ESPN scoreboard，返回 events 列表。
+
+    titan007 整联赛抓取失败时才调用（见 main()）。逐日枚举是唯一可行方式（区间格式 400）。
+    返回 [] 表示抓取失败或无数据，由调用方决定是否跳过该联赛。
+    """
+    end = date.today() + timedelta(days=ESPN_TAIL_DAYS)
+    ds, d0 = [], date.fromisoformat(ESPN_SEASON_START)
+    while d0 <= end:
+        ds.append(d0.isoformat())
+        d0 += timedelta(days=1)
     events = []
-    for y, m, last in months:
-        a = f"{y}{m:02d}01"
-        b = f"{y}{m:02d}{last}"
-        url = (f"https://site.api.espn.com/apis/site/v2/sports/soccer/{code}"
-               f"/scoreboard?dates={a}-{b}")
-        p = f"/tmp/espn_{code}_{y}{m:02d}.json"
-        ok = False
-        for _ in range(3):
-            try:
-                # 显式透传环境（含沙箱/企业代理变量），确保子进程 curl 走与顶层命令相同的出口
-                subprocess.run(["curl", "-sSL", "--retry", "2", "--retry-delay", "1",
-                                "--max-time", "40", "-A", "Mozilla/5.0", "-o", p, url],
-                               check=True, capture_output=True, env=dict(os.environ))
-            except Exception:
-                pass
-            if os.path.exists(p) and os.path.getsize(p) > 200:
-                try:
-                    d = json.load(open(p, encoding="utf-8"))
-                except Exception:
-                    d = None
-                if d and isinstance(d.get("events"), list):
-                    events.extend(d["events"])
-                    ok = True
-                    break
-            time.sleep(1)
-        if not ok:
-            print(f"  [warn] {code} {y}-{m:02d} 抓取失败 / 无数据")
+    with ThreadPoolExecutor(max_workers=ESPN_WORKERS) as ex:
+        for ev in ex.map(lambda d: _espn_one_day(code, d), ds):
+            events.extend(ev)
     return events
 
 
@@ -664,22 +713,44 @@ def of_round_map(lg, div):
                     return None
             except Exception:
                 pass
-        ok = False
+        # ⚠️ 2026-10-03 修：这里的 curl 原先只有 `-sSL --max-time`（**没有 --compressed**）。
+        #    GitHub raw 在部分链路会回 gzip，于是 `json.load` 抛异常 → 被 `_bail()` 记成
+        #    「该联赛官方源不存在」并**锁 7 天**。实测 de.1 / en.2 其实都是 200（de.1 306 场、
+        #    en.2 552 场），却因为这条误判长期拿不到官方轮次，白白退化成「按日期推导」。
+        #    另外只有**真 404** 才该记冷却；网络抖动不该锁 7 天。
+        ok, code404 = False, False
         for _ in range(2):
             try:
-                subprocess.run(["curl", "-sSL", "--max-time", "25", "-o", dst,
-                                f"{OF_BASE}/{key}.json"], check=True, capture_output=True)
+                r = subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "2",
+                                    "--retry-delay", "1", "--max-time", "25",
+                                    "-A", TITAN_UA, "-w", "%{http_code}", "-o", dst,
+                                    f"{OF_BASE}/{key}.json"],
+                                   check=True, capture_output=True, text=True)
+                if (r.stdout or "").strip().endswith("404"):
+                    code404 = True
+                    break
                 json.load(open(dst, encoding="utf-8"))   # 完整性校验
                 ok = True
                 break
             except Exception:
-                try:
-                    os.remove(dst)
-                except Exception:
-                    pass
+                pass
         if not ok:
-            _bail()
+            try:
+                os.remove(dst)
+            except Exception:
+                pass
+            if code404:
+                _bail()
+            else:
+                print(f"  [openfootball] {key} 下载失败（非 404），本次不记 7 天冷却")
             return None
+        # 下载成功 → 清掉历史上的误判记录（否则会被 7 天冷却继续挡住）
+        if miss.pop(key, None):
+            try:
+                json.dump(miss, open(miss_f, "w", encoding="utf-8"),
+                          ensure_ascii=False, indent=1)
+            except Exception:
+                pass
     if not (os.path.exists(dst) and os.path.getsize(dst) > 500):
         _bail()
         return None
@@ -712,8 +783,11 @@ def fd_round_map(lg, div):
         ok = False
         for _ in range(2):
             try:
-                subprocess.run(["curl", "-sSL", "--max-time", "25", "-o", dst,
-                                FD_BASE % slug], check=True, capture_output=True)
+                # 与 of_round_map 同款参数：-4 + --compressed（CSV 同样可能被 gzip 压缩）
+                subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "2",
+                                "--retry-delay", "1", "--max-time", "25",
+                                "-A", TITAN_UA, "-o", dst, FD_BASE % slug],
+                               check=True, capture_output=True)
                 head = open(dst, encoding="utf-8-sig", errors="replace").readline()
                 if "Round Number" in head:
                     ok = True
