@@ -64,6 +64,14 @@ jobs:
           FD_GENERATOR_DIR: ${{ github.workspace }}/generator
           FD_PY: python3
           TZ: Asia/Shanghai
+          # ⚠️ titan007 中转（可选，2026-10-03 新增）：GitHub runner 的 Azure 出口 IP 段
+          #    被 titan007 **静默丢包**（表现为 HTTP 000 + 每次跑满 35s 超时；实测 20 次抓取
+          #    ×35s = 848s，与「运行每日更新」步骤实测 14m08s 逐秒吻合）。而普通 VPS 出口
+          #    可达（check-host 德/港/日/俄/美 5 节点全 200），故需一个**非云厂商出口**的中转。
+          #    模板里 `{url}` 替换成百分号编码后的原始 URL、`{raw}` 是未编码的原 URL；
+          #    多个用逗号分隔，按顺序在直连失败后依次尝试。
+          #    **未配置时值为空字符串 → 只试直连，行为与改造前逐字节一致。**
+          FD_TITAN_PROXY: ${{ secrets.FD_TITAN_PROXY }}
           # refresh.sh 仅在「= schedule」时做 0~5 分钟随机错峰；手动触发 / 看门狗补跑都立即跑
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           SCHEDULE: ${{ github.event.schedule }}
