@@ -17,6 +17,11 @@ import time
 
 
 def main():
+    # --force：解析失败时也**强制重写**一个全新的对象（只保留 generated）。
+    # 用途：refresh.sh 解决 rebase 冲突。冲突中的 meta.js 里带着 <<<<<<< / ======= /
+    # >>>>>>> 标记，raw_decode 必失败；平时那种情况直接 return 0（钩子绝不阻断提交），
+    # 但解冲突时我们要的正是「用本机当前时刻覆盖」，所以给一个显式开关。
+    force = "--force" in sys.argv[1:]
     try:
         root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
         meta = os.path.join(root, "assets/js/meta.js")
@@ -25,10 +30,15 @@ def main():
         text = open(meta, encoding="utf-8").read()
         marker = "window.SITE_META = "
         i = text.find(marker)
-        if i < 0:
+        obj = {}
+        if i >= 0:
+            try:
+                obj, _ = json.JSONDecoder().raw_decode(text[i + len(marker):])
+            except Exception:
+                if not force:
+                    return 0
+        elif not force:
             return 0
-        i += len(marker)
-        obj, _ = json.JSONDecoder().raw_decode(text[i:])
         # 顺手清掉残留的 srcUpdated 键（站点已不再展示数据源更新时间）
         obj.pop("srcUpdated", None)
         # generated = 最近一次部署/提交时间

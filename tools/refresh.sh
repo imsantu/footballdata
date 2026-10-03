@@ -261,8 +261,43 @@ else
                     if git rebase "origin/$br" >/dev/null 2>&1; then
                         echo "[OK] rebase 完成"
                     else
-                        git rebase --abort >/dev/null 2>&1 || true
-                        echo "[WARN] rebase 失败（疑似冲突），已 abort，改为直接 push"
+                        # ── meta.js 单点冲突自愈 ─────────────────────────────────
+                        # 为什么**必**冲突：assets/js/meta.js 是**单行时间戳**文件
+                        # （window.SITE_META = {"generated": "..."}）。云端每天回推会改它，
+                        # 本机每次跑 bump_meta.py 也改它 → 两边永远动同一行 → rebase 必冲突。
+                        # 实测（2026-10-03）：本机连续 3 次「rebase 失败（疑似冲突）→ 直接 push
+                        # 被 non-fast-forward 拒绝 → exit 1」，`git diff --diff-filter=U` 里
+                        # 冲突文件就是且只有这一个。**这才是「本机数据永远推不上去」的真正机制**
+                        # （此前归因为「云端双写同一批文件」，那个说法太笼统、无法定位）。
+                        # 本机这一份 = 本次运行时刻，语义上正是该保留的那一份 → 用 --force
+                        # 强制重写成当前时刻再继续。
+                        # ⚠️ 只认「冲突文件恰好只有 meta.js」；出现任何别的冲突仍照旧 abort，
+                        #    绝不把仓库留在 rebase 中间态（保持既有保守设计）。
+                        # ⚠️ 不用 `git checkout --theirs`：rebase 过程中 ours/theirs 与直觉相反
+                        #    （ours = origin 侧、theirs = 正在应用的本地提交），容易搞反。
+                        #    改用 bump_meta.py --force：它按定义写出
+                        #    `window.SITE_META = {"generated": <当前时刻>};`，与冲突标记无关。
+                        #    实测校正：不带 --force 时**恰好也能解**（find 命中的是第一个冲突
+                        #    分支里那一行，raw_decode 在 JSON 结束处即停）—— 但那是巧合，
+                        #    --force 把它变成确定行为（见 .verify/verify_bump_meta_force.sh）。
+                        rbdone=0; rbt=0
+                        while [ "$rbt" -lt 6 ]; do
+                            rbt=$((rbt + 1))
+                            conf="$(git diff --name-only --diff-filter=U 2>/dev/null | sort | tr '\n' ' ')"
+                            if [ "$conf" != "assets/js/meta.js " ]; then break; fi
+                            echo "[INFO] rebase 冲突仅限 assets/js/meta.js（单行时间戳）→ 用本机当前时刻强制重写后继续"
+                            "$PY" "$AUTO/bump_meta.py" --force >/dev/null 2>&1 || true
+                            git add assets/js/meta.js
+                            if GIT_EDITOR=true git rebase --continue >/dev/null 2>&1; then
+                                rbdone=1; break
+                            fi
+                        done
+                        if [ "$rbdone" = "1" ]; then
+                            echo "[OK] rebase 完成（已自动解决 meta.js 冲突）"
+                        else
+                            git rebase --abort >/dev/null 2>&1 || true
+                            echo "[WARN] rebase 失败（冲突：${conf:-未知}），已 abort，改为直接 push"
+                        fi
                     fi
                 fi
             fi
