@@ -18,7 +18,7 @@ fixturedownload 官方 Round Number -> 按日期窗口推导兜底）。轮次�
 
 产物：data/{code}.{div}.2026-27.json（openfootball JSON 结构，供 analyze_*.py 直接读取）
 """
-import csv, json, os, re, subprocess, sys, time, unicodedata
+import csv, json, os, re, subprocess, sys, time, unicodedata, urllib.parse
 from collections import defaultdict, Counter
 from datetime import date
 
@@ -372,6 +372,88 @@ def parse_titan_file(path):
     return out
 
 
+# ── titan007 抓取：中转回退 + 失败原因可诊断 ──────────────────────────────────
+# 背景（2026-10-03 实测）：GitHub Actions runner 从 2026-09-30 起**连续 6 天**抓不到
+# titan007（10 个联赛全失败），而本机（出口是中国香港）100% 成功 → 是**出口 IP**被挡，
+# 不是数据源挂了。对策：**直连优先，失败再试中转**。
+#   * 中转列表来自环境变量 FD_TITAN_PROXY（云端放 GitHub Secret），逗号分隔；
+#     模板里 `{url}` 替换成**百分号编码**后的原始 URL，`{raw}` 是未编码的原 URL。
+#     例：`https://my-relay.example.workers.dev/?url={url}`
+#   * ⚠️ **未配置时一个中转都不试**，抓取路径与改造前逐字节一致 —— 新逻辑绝不能影响
+#     本来正常的直连路径。
+#   * ⚠️ **不内置任何默认中转**：2026-10-03 实测公共免费 CORS 中转**全部不可用**
+#     （allorigins 520 / codetabs 522 / corsproxy.io 401 需 key / cors.lol 429 /
+#     test.cors.workers.dev 403 / cors.eu.org 520 / thingproxy 连不上 / whateverorigin 400），
+#     写死只会每天多几条无意义的失败日志。
+TITAN_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+TITAN_PROXY_ENV = "FD_TITAN_PROXY"
+# 抓取失败的原因，按联赛收集，循环结束后聚合成**一条** ::warning（配额理由见 main()）
+TITAN_FAILS = []
+
+
+def titan_proxy_list():
+    """从 FD_TITAN_PROXY 读中转模板列表（逗号分隔）。未配置返回 []。"""
+    raw = (os.environ.get(TITAN_PROXY_ENV) or "").strip()
+    return [x.strip() for x in raw.split(",") if x.strip()]
+
+
+def titan_urls(url):
+    """按优先级返回候选 URL：**直连优先**，其后依次是各中转。"""
+    cands = [url]
+    if not url:
+        return cands
+    enc = urllib.parse.quote(url, safe="")
+    for tpl in titan_proxy_list():
+        try:
+            cands.append(tpl.replace("{url}", enc).replace("{raw}", url))
+        except Exception:
+            pass
+    return cands
+
+
+def titan_curl(url, out_path):
+    """抓一个 URL 写进 out_path，返回 (ok, diag)。
+
+    diag = 失败原因（HTTP 码 / curl 错误 / 「被封禁页拦截」）。**这是本次新增的诊断能力**：
+    改造前这里 `except Exception: pass` 把 curl 的 stderr 与 HTTP 码**全吞掉**了，云端日志里
+    只剩一句「抓取失败/被拦截」，根本分不清是被 403、超时、连接重置还是挑战页挡住
+    （2026-10-03 定位到的诊断盲区）。
+    写 .part 再 rename：避免 os.remove（沙箱有删除配额，超限后静默失败）。
+    """
+    tmp = out_path + ".part"
+    http, err = "", ""
+    try:
+        r = subprocess.run(
+            ["curl", "-4", "-sSL", "--compressed", "--retry", "1", "--max-time", "35",
+             "-A", TITAN_UA, "-H", "Referer: https://zq.titan007.com/",
+             "-o", tmp, "-w", "HTTP:%{http_code}", url],
+            capture_output=True, text=True, env=dict(os.environ))
+        http = (r.stdout or "").strip().split("HTTP:")[-1].strip()
+        if r.stderr:
+            err = r.stderr.strip().splitlines()[-1]
+    except Exception as e:
+        err = str(e)
+    try:
+        head = open(tmp, encoding="utf-8", errors="replace").read(200)
+    except Exception:
+        head = ""
+    # WAF 拦截会返回 HTML 错误页
+    if "<!DOCTYPE" in head or "<html" in head:
+        return False, f"被封禁页拦截(HTTP {http or '?'})"
+    try:
+        size = os.path.getsize(tmp)
+    except Exception:
+        size = 0
+    if head and size > 500:
+        try:
+            os.replace(tmp, out_path)
+        except Exception:
+            return False, "写盘失败"
+        return True, ""
+    return False, (f"HTTP {http}" if http else (err or "空响应"))
+
+
 def fetch_titan_season(code):
     """抓取并解析 titan007 某联赛整季已完赛（全部轮次），返回 recs 列表
     [{date, team1, team2, score:{ft:[h,a]}, round, _src}] 或 None（抓取失败/无数据）。
@@ -398,35 +480,29 @@ def fetch_titan_season(code):
     sub_s = ("_" + str(sub)) if sub else ""
     url = TITAN_URL.format(season=TITAN_SEASON, SclassID=sc, sub=sub_s)
     p = f"/tmp/titan_{code}_{sc}.js"
-    ok = False
+    # 直连优先，其后依次是 FD_TITAN_PROXY 里的中转（未配置时只有直连这一项）
+    cands = titan_urls(url)
+    ok, diag, used = False, "", ""
     for _ in range(3):
-        try:
-            subprocess.run(
-                ["curl", "-4", "-sSL", "--compressed", "--retry", "1", "--max-time", "35", "-A",
-                 "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-                 "(KHTML, like Gecko) Chrome/120.0 Safari/537.36",
-                 "-H", "Referer: https://zq.titan007.com/", "-o", p, url],
-                check=True, capture_output=True, env=dict(os.environ))
-        except Exception:
-            pass
-        # WAF 拦截会返回 HTML 错误页；忽略之
-        try:
-            head = open(p, encoding="utf-8", errors="replace").read(200)
-        except Exception:
-            head = ""
-        if "<!DOCTYPE" in head or "<html" in head:
-            try:
-                os.remove(p)
-            except Exception:
-                pass
-            head = ""
-        if os.path.exists(p) and os.path.getsize(p) > 500 and head:
-            ok = True
+        for idx, cu in enumerate(cands):
+            good, why = titan_curl(cu, p)
+            if good:
+                ok = True
+                used = "直连" if idx == 0 else f"中转#{idx}"
+                break
+            diag = why
+        if ok:
             break
         time.sleep(1)
     if not ok:
-        print(f"  [titan007] {code} 抓取失败/被拦截，回退 ESPN")
+        # 把**真实原因**打出来（这是本次新增的诊断能力）：以前只报「抓取失败/被拦截」，
+        # 云端日志里看不出到底是被 403、超时、连接重置还是挑战页挡住。
+        print(f"  [titan007] {code} 抓取失败/被拦截（{diag}），回退 ESPN"
+              f"（候选 {len(cands)} 个：直连{'+中转' + str(len(cands) - 1) if len(cands) > 1 else '（未配置中转）'}）")
+        TITAN_FAILS.append(f"{code}：{diag}")
         return None
+    if used != "直连":
+        print(f"  [titan007] {code} 直连失败（{diag}）→ {used} 成功")
     raw = parse_titan_file(p)
     if not raw:
         print(f"  [titan007] {code} 无已完赛数据，回退 ESPN")
@@ -779,6 +855,20 @@ def main():
               f"球队 {len(teams)}，{len(dates)} 个比赛日 -> {nround} 个轮次"
               f" [{round_src}] {of_note}"
               f" -> {os.path.basename(dst)}")
+
+    # titan007 抓取失败：聚合成**一条** ::warning，并带上**真实原因**
+    # （HTTP 码 / 超时 / 连接重置 / 被封禁页拦截）。改造前这里连原因都不打，
+    # 云端只能看到 fixtures 那句「抓取失败且 ESPN 兜底无更新」，无从判断怎么修。
+    if TITAN_FAILS:
+        body = "；".join(TITAN_FAILS)
+        if len(TITAN_FAILS) > 1:
+            body = f"共 {len(TITAN_FAILS)} 个联赛：{body}"
+        if len(body) > 1100:
+            body = body[:1100] + f"…（已截断，共 {len(TITAN_FAILS)} 个，逐条见本步日志）"
+        hint = ("（未配置 FD_TITAN_PROXY，仅试了直连）" if len(titan_proxy_list()) == 0
+                else f"（已试 {len(titan_proxy_list())} 个中转，全部失败）")
+        print(f"::warning title=titan007 抓取失败::{body} {hint}")
+        del TITAN_FAILS[:]
 
     # 场次倒退护栏的告警：循环已走完 → **聚合成一条** ::warning（理由见循环内的注释）
     if backoff:

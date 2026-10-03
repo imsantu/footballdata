@@ -29,7 +29,6 @@ build_2026_27.py 只取已完赛（赛果用途），本脚本换个过滤条件
 import json
 import os
 import re
-import subprocess
 import sys
 import time
 from collections import Counter, defaultdict
@@ -40,15 +39,14 @@ if HERE not in sys.path:
 
 from build_2026_27 import (  # noqa: E402
     ESPN_MAP, LEAGUES, TITAN_CN_ALIAS, TITAN_LEAGUES, TITAN_SEASON, TITAN_URL,
-    fetch_espn,
+    fetch_espn, titan_curl, titan_urls,
 )
 from season import SEASON as CUR_SEASON  # noqa: E402  （赛季唯一来源）
 
 SITE = os.environ.get("FD_SITE_DIR") or os.path.dirname(HERE)
 OUT_DIR = os.path.join(SITE, "assets", "js", "data", "fixtures")
 CACHE_MAX_AGE = 30 * 60          # /tmp 缓存有效期（秒）：步骤 1 刚抓过就直接复用
-UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
+# （抓取用的 UA / Referer 已收敛到 build_2026_27.TITAN_UA + titan_curl，这里不再各存一份）
 
 SCHEMA = {
     "match": ["round", "kickoff", "home", "away", "state", "score"],
@@ -128,38 +126,27 @@ def reverse_map(code, cn):
 def fetch_file(code, sc, sub):
     """取得 titan007 赛季文件：优先复用 /tmp 缓存（30 分钟内），否则自行下载。
 
-    返回 (路径, 来源) 或 (None, None)。下载写 .part 再 rename —— 避免使用 os.remove
-    （沙箱有「每轮删除配额」，超限后删除会静默失败）。
+    返回 (路径, 来源) 或 (None, None)；来源 = "cache" / "net" / "proxyN"。
+    抓取统一走 build_2026_27.titan_curl（**直连优先 + FD_TITAN_PROXY 中转回退**，
+    并把失败原因 HTTP 码 / curl 错误 / 封禁页带出来）。
     """
     p = f"/tmp/titan_{code}_{sc}.js"
     if os.path.exists(p) and (time.time() - os.path.getmtime(p)) < CACHE_MAX_AGE:
         return p, "cache"
     url = TITAN_URL.format(season=TITAN_SEASON, SclassID=sc,
                            sub=("_" + str(sub)) if sub else "")
-    tmp = p + ".part"
-    last_err = ""
+    cands = titan_urls(url)
+    diag = ""
     for _ in range(3):
-        try:
-            r = subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "1",
-                                "--max-time", "35", "-A", UA,
-                                "-H", "Referer: https://zq.titan007.com/",
-                                "-o", tmp, "-w", "HTTP:%{http_code}", url],
-                               capture_output=True, text=True)
-            last_err = (r.stderr or "").strip().splitlines()[-1] if r.stderr else ""
-            code = r.stdout.strip().split("HTTP:")[-1] if r.stdout else ""
-        except Exception as e:
-            last_err = str(e)
-            code = ""
-        try:
-            head = open(tmp, encoding="utf-8", errors="replace").read(200)
-        except Exception:
-            head = ""
-        if head and "<!DOCTYPE" not in head and "<html" not in head \
-                and os.path.getsize(tmp) > 200:
-            os.replace(tmp, p)
-            return p, "net"
+        for idx, cu in enumerate(cands):
+            good, why = titan_curl(cu, p)
+            if good:
+                return p, ("net" if idx == 0 else f"proxy{idx}")
+            diag = why
         time.sleep(1)
-    print(f"  [titan007] {code} {url} 抓取失败（{last_err or '空响应/封禁页'}）")
+    # ⚠️ 顺带修掉一个日志 bug：原实现把 `-w` 输出的 HTTP 码赋给了局部变量 `code`，
+    #    而 `code` 正是**函数参数**（联赛代码）→ 日志里「联赛代码」位置打印的其实是 HTTP 码。
+    print(f"  [titan007] {code} {url} 抓取失败（{diag}）")
     return None, None
 
 
