@@ -201,11 +201,21 @@ else
         # 曾导致整个推送被 git 静默跳过、数据更新卡在本地不上线）
         rm -f .git/index.lock
         # 仅当生成器位于仓库内（云端/同仓模式：WS 以 SITE 开头）才回写随运行演化的
-        # 种子 HTML（football_big5_goals.html / football_mobile.html）；本机模式生成器
-        # 在仓库外（WorkBuddy 会话目录），跳过以免 git add 报错。
+        # 种子 HTML（football_big5_goals.html / football_mobile.html）；本机模式这两个
+        # 报告在仓库外（WorkBuddy 会话目录），跳过以免 git add 报错。
         case "$WS" in
-            "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html generator/football_champ_goals.html 2>/dev/null || true ;;
+            "$SITE"*) git add generator/football_big5_goals.html generator/football_mobile.html 2>/dev/null || true ;;
         esac
+        # ⚠️ football_champ_goals.html 必须**无条件** add，不能放进上面那个 case。
+        #    它的生成器是 $SITE/generator/build_champ_goals.py（两种模式都在仓库内，
+        #    refresh.sh 的步骤 5b 就是这么调的），产物固定落在 $SITE/generator/。
+        #    以前它被上面那个 case 一起门控 → 本机模式下永远不被 add → 工作区长期脏 →
+        #    下面的 `git rebase origin/<br>` 直接以「cannot rebase: You have unstaged
+        #    changes」失败 → abort → 改为直接 push 又被 non-fast-forward 拒绝 →
+        #    **本机数据永远推不上去**（2026-10-03 实测定位：`git status` 只有这一个
+        #    未暂存文件，清掉它 rebase 立刻成功）。此前把本机推不上去归因于「云端
+        #    双写同一批文件导致 rebase 冲突」，其实这个未暂存文件才是每次必失败的硬原因。
+        git add generator/football_champ_goals.html 2>/dev/null || true
         # ⚠️ 'tools/baseline' 必须在这里：审计基线是 sync_site.py 做「场次倒退 / 历史赛季
         # 一字不变」等体检的参照物。不提交它 → 云端下次仍是全新 checkout、仍读不到基线
         # → 又走「首跑」跳过全部体检 ⇒ 云端永远没有倒退保护（2026-09-29 修）。
