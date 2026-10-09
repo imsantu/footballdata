@@ -123,12 +123,20 @@ step "抓取 $SEASON 最新赛果" "$PY" "$WS/build_2026_27.py"
 # 1b) 站点已不再展示「数据源更新时间」，mark_fetch_stamp.py 步骤已移除（其写入的
 #     srcUpdated 现在无人读取，保留 mark_fetch_stamp.py 脚本本身以备将来复用）。
 
-# 1c) 2026-27 赛程表（fixtures）：各联赛全季赛程，含未开赛场次与开球时间。
-#     与步骤 1 完全同源 —— titan007 那份 jsData/matchResult 文件本来就是全季赛程
-#     （已完赛 + 未开赛），build_2026_27.py 只取已完赛，这里换个过滤条件把未开赛
-#     也留下。因此**直接复用步骤 1 刚抓的 /tmp 缓存**，几乎零额外网络开销。
-#     全量覆盖天然处理赛程调整 / 补赛；单联赛失败时保留旧数据 + 告警，不拖垮主线。
-step "抓取 $SEASON 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
+# 1c) 2026-27 赛程表（fixtures）：**已于 2026-10-09 从日常流程移除**。
+#     原因：站点全站（pages/*.html、assets/js/*.js、assets/css/*.css）对 fixtures 的
+#     引用为**零** —— pages/ 只有 4 个统计页 + more.html，manifest.js 的 PAGES 里也没有
+#     赛程页，这套数据没有任何页面读取，属于纯死数据。而它每天在云端的代价不小：
+#       ① 云端 titan007 全挂时 build_2026_27 不落 /tmp 缓存（titan_curl 只在成功时
+#          os.replace），于是 build_fixtures.fetch_file 缓存未命中 → **自己重抓
+#          3 轮 × 10 联赛**，是云端 run 耗时的第二个大头；
+#       ② 10 个联赛全失败时会先占满同 step 的 10 条 ::warning 配额，把后打的更要紧的
+#          告警静默挤掉（同 sync_site.py 里那段注解配额说明）。
+#     数据冻结在 2026-10-03（assets/js/data/fixtures/ 仍在仓库，供将来做赛程页复用）；
+#     脚本 generator/build_fixtures.py 也保留。
+#     ⚠️ 若要恢复：取消下面这行 step 的注释，并把 'assets/js/data/fixtures' 加回下方的
+#        git add 列表（少了它，新生成的 chunk 永远不会被提交）。
+# step "抓取 $SEASON 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
 
 # 2) 平局统计 · 五大联赛
 step "分析：平局·五大联赛"  "$PY" "$WS/analyze_all.py"
@@ -221,7 +229,6 @@ else
         # → 又走「首跑」跳过全部体检 ⇒ 云端永远没有倒退保护（2026-09-29 修）。
         if ! git add 'assets/js/meta.js' \
                      'assets/js/data/draws-big5' 'assets/js/data/draws-champ' 'assets/js/data/goals' 'assets/js/data/goals-champ' \
-                     'assets/js/data/fixtures' \
                      'assets/img/crests' 'assets/img/leaguelogos' \
                      'tools/baseline' \
                      'sw.js'; then
