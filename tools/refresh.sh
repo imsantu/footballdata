@@ -123,20 +123,15 @@ step "抓取 $SEASON 最新赛果" "$PY" "$WS/build_2026_27.py"
 # 1b) 站点已不再展示「数据源更新时间」，mark_fetch_stamp.py 步骤已移除（其写入的
 #     srcUpdated 现在无人读取，保留 mark_fetch_stamp.py 脚本本身以备将来复用）。
 
-# 1c) 2026-27 赛程表（fixtures）：**已于 2026-10-09 从日常流程移除**。
+# 1c) 2026-27 赛程表（fixtures）：**已于 2026-10-09 从日常流程移除**；其生成脚本
+#     generator/build_fixtures.py 亦已于 2026-10-12 删除（唯一数据源 titan007 已弃用）。
 #     原因：站点全站（pages/*.html、assets/js/*.js、assets/css/*.css）对 fixtures 的
 #     引用为**零** —— pages/ 只有 4 个统计页 + more.html，manifest.js 的 PAGES 里也没有
-#     赛程页，这套数据没有任何页面读取，属于纯死数据。而它每天在云端的代价不小：
-#       ① 云端 titan007 全挂时 build_2026_27 不落 /tmp 缓存（titan_curl 只在成功时
-#          os.replace），于是 build_fixtures.fetch_file 缓存未命中 → **自己重抓
-#          3 轮 × 10 联赛**，是云端 run 耗时的第二个大头；
-#       ② 10 个联赛全失败时会先占满同 step 的 10 条 ::warning 配额，把后打的更要紧的
-#          告警静默挤掉（同 sync_site.py 里那段注解配额说明）。
-#     数据冻结在 2026-10-03（assets/js/data/fixtures/ 仍在仓库，供将来做赛程页复用）；
-#     脚本 generator/build_fixtures.py 也保留。
-#     ⚠️ 若要恢复：取消下面这行 step 的注释，并把 'assets/js/data/fixtures' 加回下方的
-#        git add 列表（少了它，新生成的 chunk 永远不会被提交）。
-# step "抓取 $SEASON 赛程表" "$PY" "$SITE/generator/build_fixtures.py"
+#     赛程页，这套数据没有任何页面读取，属于纯死数据。
+#     数据冻结在 2026-10-03（assets/js/data/fixtures/ 仍在仓库，供将来做赛程页复用）。
+#     ⚠️ 若要恢复赛程页：需从 git 历史取回 generator/build_fixtures.py（本次删除之前的
+#        版本），并为它找一个能提供**完整赛季赛程**的数据源（titan007 已不可用，ESPN
+#        只提供已完赛结果）。
 
 # 2) 平局统计 · 五大联赛
 step "分析：平局·五大联赛"  "$PY" "$WS/analyze_all.py"

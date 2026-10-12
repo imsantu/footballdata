@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 """构建 2026-27 赛季数据（五大联赛 + 五大次级联赛）。
 
-数据源：titan007 静态赛果文件（https://zq.titan007.com/jsData/matchResult/2026-2027/s{SclassID}[_{SubSclassID}].js），
-自 2026-09-15 起为 2026-27 主源（赛后分钟级、全部轮次、R_N 即官方轮次）。
-选择它的原因：
-  - 赛果以静态 JS 文件暴露，赛后分钟级更新，远快于 ESPN（ESPN 偶尔漏录最新一日）；
-  - 覆盖全部 10 个联赛（含次级联赛）；队名经 cn_map 对齐为 openfootball 规范名。
-ESPN 仅作兜底（titan007 整联赛抓取失败时才用）。
+数据源：ESPN scoreboard API（site.api.espn.com），**逐日枚举**「赛季开始 ~ 今天」的
+已完赛结果。赛后分钟级更新，覆盖全部 10 个联赛（含次级联赛）。
+
+⚠️ 2026-10-12：ESPN 由「兜底」升为**唯一数据源**。
+   原主源 titan007 自 2026-09-30 起被 GitHub Actions 的 Azure 出口 IP 段拦截
+   （10 个联赛全部 HTTP/2 PROTOCOL_ERROR）；2026-10-04~10-12 连续 9 天实测由 ESPN
+   稳定产出、且与 titan007 逐场比分零差异 ⇒ 整条 titan007 抓取链路已移除。
+   （如需回退：从 git 历史取回本文件，参见提交 c7c4fb8 之前的版本。）
 
 队名一律映射为 openfootball 规范名（与译名表 / 队徽表键一致），映射表经人工核对
 （见下方 ESPN_MAP，键来自 ESPN 真实返回的 displayName，值为既有规范名）。
@@ -18,7 +20,7 @@ fixturedownload 官方 Round Number -> 按日期窗口推导兜底）。轮次�
 
 产物：data/{code}.{div}.2026-27.json（openfootball JSON 结构，供 analyze_*.py 直接读取）
 """
-import csv, json, os, re, subprocess, sys, time, unicodedata, urllib.parse
+import csv, json, os, re, subprocess, sys, time, unicodedata
 from collections import defaultdict, Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, timedelta
@@ -297,269 +299,16 @@ ESPN_MAP = {
 }
 
 
-# ---- titan007 数据源（2026-27 主源，全部已完赛轮次）----------------
-# 说明：titan007 赛果以静态 JS 文件暴露（页面主体是 JS 渲染，但赛果数据是静态文件）：
-#   https://zq.titan007.com/jsData/matchResult/{season}/s{SclassID}[_{SubSclassID}].js
-# 文件含 arrTeam=[队ID, 简体中文名, 繁体, 英文, '', 队徽, 0] 与
-#   jh["R_N"]=[[赛果记录],...]；单条记录：
-#   [matchId, SclassID, status, 'YYYY-MM-DD HH:MM', homeId, awayId, 'FT比分', 'HT比分', ...]
-#   status==-1 或第 7 字段形如 'X-Y' 即已完赛。
-# 队名经 cn_map（简体中文 -> 规范英文名）对齐；个别中文写法差异用 TITAN_CN_ALIAS 修正。
-# 自 2026-09-15 起，2026-27 直接以 titan007 为准：取全部已完赛轮次（R_N 即官方轮次），
-# 不再依赖 ESPN 主源（ESPN 仅作兜底，titan007 整联赛抓取失败时才用）。
-# 历史赛季（2025-26 及更早）由各自独立 JSON 维护，本脚本只写 *.2026-27.json，不受影响。
-# 任何抓取/解析失败都只告警、回退 ESPN，绝不中断主流程。
-TITAN_SEASON = SEASON_LONG
-TITAN_URL = "https://zq.titan007.com/jsData/matchResult/{season}/s{SclassID}{sub}.js"
-# 流水线联赛 -> (titan007 SclassID, SubSclassID)；SubSclassID=0 时文件无后缀。
-# 下列 ID 全部由直抓页面 <title> 与 data 文件 arrLeague 核对，非站点导航（导航 ID 已过时）。
-TITAN_LEAGUES = {
-    "eng.1": (36, 0), "ger.1": (8, 0), "esp.1": (31, 0), "ita.1": (34, 2948), "fra.1": (11, 0),
-    "eng.2": (37, 87), "ger.2": (9, 132), "esp.2": (33, 546), "ita.2": (40, 261), "fra.2": (12, 1778),
-}
-# titan007 简体中文写法 -> cn_map 采用的写法（用于对齐规范英文名）。键来自实测未匹配名。
-TITAN_CN_ALIAS = {
-    "曼彻斯特联": "曼联", "曼彻斯特城": "曼城", "托特纳姆热刺": "热刺",
-    "云达不莱梅": "云达不来梅", "柏林联合": "柏林联",
-    "巴伦西亚": "瓦伦西亚", "赫塔菲": "赫塔费",
-    "弗洛西诺尼": "弗罗西诺内",
-    "伯明翰": "伯明翰城", "南安普敦": "南安普顿", "卡迪夫城": "加的夫城",
-    "布里斯托城": "布里斯托尔城", "查尔顿": "查尔顿竞技", "谢菲尔德联队": "谢菲尔德联",
-    "奥斯纳布鲁克": "奥斯纳布吕克", "德累斯顿": "德累斯顿迪纳摩", "比勒菲尔德": "比勒费尔德",
-    "荷尔斯泰因": "荷尔斯泰因基尔",
-    "埃登斯": "埃登塞", "安道尔FC": "安道尔", "皇家奥维耶多": "奥维耶多",
-    # 西乙 Castilla-La Mancha 球队：titan007 自 2026-09-28 前后改用「卡斯迪隆」，
-    # cn_map / 队徽表沿用「卡斯特利翁」。漏了这条会让西乙 6 场赛果 + 42 场赛程
-    # 被判为「未映射」而静默跳过 → 场次倒退 → sync_site.py 体检失败 → 全站当天不更新。
-    "卡斯迪隆": "卡斯特利翁",
-    "凯勒雷斯": "卡拉雷塞", "卡坦萨罗": "卡坦扎罗", "史泰比亚": "斯塔比亚",
-    "阿维利诺": "阿韦利诺", "阿雷佐": "阿雷索",
-    "USL敦刻尔克": "敦刻尔克", "阿纳西": "阿讷西",
-}
+# ---- 通用 HTTP User-Agent -------------------------------------------------
+# 抓取外部数据源（ESPN / openfootball / fixturedownload）统一使用的 UA。
+HTTP_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
+           "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
 
 
-def parse_titan_file(path):
-    """解析 titan007 matchResult JS 文件，返回已完赛列表
-    [{round,date,home_cn,away_cn,ft}]。解析失败返回 []。"""
-    try:
-        s = open(path, encoding="utf-8", errors="replace").read()
-    except Exception:
-        return []
-    id2cn = {}
-    m = re.search(r'var arrTeam\s*=\s*(\[.*?\]);', s, re.S)
-    if m:
-        inner = m.group(1).strip()
-        if inner.startswith('['):
-            inner = inner[1:-1]
-        for part in re.findall(r'\[[^\]]*\]', inner):
-            cells = part[1:-1].split(',')
-            if len(cells) >= 2:
-                try:
-                    id2cn[int(cells[0].strip())] = cells[1].strip().strip("'\"")
-                except Exception:
-                    pass
-    out = []
-    for rm in re.finditer(r'jh\["R_(\d+)"\]\s*=\s*\[(.*?)\];', s, re.S):
-        rn = int(rm.group(1))
-        for rec in re.findall(r'\[([^\]]*)\]', rm.group(2)):
-            cells = [c.strip() for c in rec.split(',')]
-            if len(cells) < 7:
-                continue
-            try:
-                hid, aid = int(cells[4]), int(cells[5])
-            except Exception:
-                continue
-            ft = cells[6].strip().strip("'\"")
-            status = cells[2].strip().strip("'\"")
-            if status != '-1' and not re.match(r'^\d+-\d+$', ft or ''):
-                continue
-            dt = cells[3].strip().strip("'\"").strip()[:10]
-            out.append({"round": rn, "date": dt,
-                        "home_cn": id2cn.get(hid, str(hid)),
-                        "away_cn": id2cn.get(aid, str(aid)), "ft": ft})
-    return out
-
-
-# ── titan007 抓取：中转回退 + 失败原因可诊断 ──────────────────────────────────
-# 背景（2026-10-03 实测）：GitHub Actions runner 从 2026-09-30 起**连续 6 天**抓不到
-# titan007（10 个联赛全失败），而本机（出口是中国香港）100% 成功 → 是**出口 IP**被挡，
-# 不是数据源挂了。对策：**直连优先，失败再试中转**。
-#   * 中转列表来自环境变量 FD_TITAN_PROXY（云端放 GitHub Secret），逗号分隔；
-#     模板里 `{url}` 替换成**百分号编码**后的原始 URL，`{raw}` 是未编码的原 URL。
-#     例：`https://my-relay.example.workers.dev/?url={url}`
-#   * ⚠️ **未配置时一个中转都不试**，抓取路径与改造前逐字节一致 —— 新逻辑绝不能影响
-#     本来正常的直连路径。
-#   * ⚠️ **不内置任何默认中转**：2026-10-03 实测公共免费 CORS 中转**全部不可用**
-#     （allorigins 520 / codetabs 522 / corsproxy.io 401 需 key / cors.lol 429 /
-#     test.cors.workers.dev 403 / cors.eu.org 520 / thingproxy 连不上 / whateverorigin 400），
-#     写死只会每天多几条无意义的失败日志。
-TITAN_UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
-            "(KHTML, like Gecko) Chrome/120.0 Safari/537.36")
-TITAN_PROXY_ENV = "FD_TITAN_PROXY"
-# 抓取失败的原因，按联赛收集，循环结束后聚合成**一条** ::warning（配额理由见 main()）
-TITAN_FAILS = []
-
-
-def titan_proxy_list():
-    """从 FD_TITAN_PROXY 读中转模板列表（逗号分隔）。未配置返回 []。"""
-    raw = (os.environ.get(TITAN_PROXY_ENV) or "").strip()
-    return [x.strip() for x in raw.split(",") if x.strip()]
-
-
-def titan_urls(url):
-    """按优先级返回候选 URL：**直连优先**，其后依次是各中转。"""
-    cands = [url]
-    if not url:
-        return cands
-    enc = urllib.parse.quote(url, safe="")
-    for tpl in titan_proxy_list():
-        try:
-            cands.append(tpl.replace("{url}", enc).replace("{raw}", url))
-        except Exception:
-            pass
-    return cands
-
-
-def titan_curl(url, out_path):
-    """抓一个 URL 写进 out_path，返回 (ok, diag)。
-
-    diag = 失败原因（HTTP 码 / curl 错误 / 「被封禁页拦截」）。**这是本次新增的诊断能力**：
-    改造前这里 `except Exception: pass` 把 curl 的 stderr 与 HTTP 码**全吞掉**了，云端日志里
-    只剩一句「抓取失败/被拦截」，根本分不清是被 403、超时、连接重置还是挑战页挡住
-    （2026-10-03 定位到的诊断盲区）。
-    写 .part 再 rename：避免 os.remove（沙箱有删除配额，超限后静默失败）。
-    """
-    tmp = out_path + ".part"
-    http, ip, emsg, err = "", "", "", ""
-    try:
-        r = subprocess.run(
-            ["curl", "-4", "-sSL", "--compressed", "--retry", "1", "--max-time", "35",
-             "-A", TITAN_UA, "-H", "Referer: https://zq.titan007.com/",
-             "-o", tmp,
-             "-w", "HTTP:%{http_code} IP:%{remote_ip} ERR:%{errormsg}", url],
-            capture_output=True, text=True, env=dict(os.environ))
-        w = (r.stdout or "").strip()
-        if "HTTP:" in w:
-            http = w.split("HTTP:")[-1].split()[0].strip()
-        if "IP:" in w:
-            ip = w.split("IP:")[-1].split("ERR:")[0].strip()
-        if "ERR:" in w:
-            emsg = w.split("ERR:")[-1].strip()
-        if r.stderr:
-            err = r.stderr.strip().splitlines()[-1]
-    except Exception as e:
-        err = str(e)
-    try:
-        head = open(tmp, encoding="utf-8", errors="replace").read(200)
-    except Exception:
-        head = ""
-    # WAF 拦截会返回 HTML 错误页
-    if "<!DOCTYPE" in head or "<html" in head:
-        return False, f"被封禁页拦截(HTTP {http or '?'})"
-    try:
-        size = os.path.getsize(tmp)
-    except Exception:
-        size = 0
-    if head and size > 500:
-        try:
-            os.replace(tmp, out_path)
-        except Exception:
-            return False, "写盘失败"
-        return True, ""
-    # ⚠️ 2026-10-03 修：curl 在**连接层失败**时 %{http_code} 是字符串 "000"（**非空**！），
-    # 而旧写法 `f"HTTP {http}" if http else err` 里 "000" 是 truthy → 永远返回 "HTTP 000"，
-    # **把 curl 的真实错误码吞掉**。可 000 恰恰是最需要诊断的情形：DNS 失败(curl 6) /
-    # 连接被拒(7) / 连接超时(28) 三者对策完全不同。云端 2026-10-03 的注解只写着
-    # 「HTTP 000」，无法进一步定位，正是这个盲区造成的。
-    if http and http != "000":
-        return False, f"HTTP {http}"
-    detail = emsg or err or ("HTTP 000" if http else "空响应")
-    if ip:
-        detail = f"{detail}（IP {ip}）"
-    return False, detail[:200]
-
-
-def fetch_titan_season(code):
-    """抓取并解析 titan007 某联赛整季已完赛（全部轮次），返回 recs 列表
-    [{date, team1, team2, score:{ft:[h,a]}, round, _src}] 或 None（抓取失败/无数据）。
-    2026-27 主源：titan007 的 R_N 即官方轮次，无需额外推导。best-effort，失败返回 None
-    由调用方回退 ESPN。"""
-    CN = {}
-    for f in ("cn_map.json", "cn_map_champ.json"):
-        p = os.path.join(WS, "assets", f)
-        if os.path.exists(p):
-            try:
-                CN.update(json.load(open(p, encoding="utf-8")))
-            except Exception:
-                pass
-    # 反向中文->规范名（限定本联赛 canonical 集合，规避跨联赛重名）
-    rev = {}
-    for c in ESPN_MAP.get(code, {}).values():
-        cv = CN.get(c)
-        if cv:
-            rev.setdefault(cv, c)
-    if not rev:
-        print(f"  [titan007] {code} 无反向映射表，回退 ESPN")
-        return None
-    sc, sub = TITAN_LEAGUES[code]
-    sub_s = ("_" + str(sub)) if sub else ""
-    url = TITAN_URL.format(season=TITAN_SEASON, SclassID=sc, sub=sub_s)
-    p = f"/tmp/titan_{code}_{sc}.js"
-    # 直连优先，其后依次是 FD_TITAN_PROXY 里的中转（未配置时只有直连这一项）
-    cands = titan_urls(url)
-    ok, diag, used = False, "", ""
-    for _ in range(3):
-        for idx, cu in enumerate(cands):
-            good, why = titan_curl(cu, p)
-            if good:
-                ok = True
-                used = "直连" if idx == 0 else f"中转#{idx}"
-                break
-            diag = why
-        if ok:
-            break
-        time.sleep(1)
-    if not ok:
-        # 把**真实原因**打出来（这是本次新增的诊断能力）：以前只报「抓取失败/被拦截」，
-        # 云端日志里看不出到底是被 403、超时、连接重置还是挑战页挡住。
-        print(f"  [titan007] {code} 抓取失败/被拦截（{diag}），回退 ESPN"
-              f"（候选 {len(cands)} 个：直连{'+中转' + str(len(cands) - 1) if len(cands) > 1 else '（未配置中转）'}）")
-        TITAN_FAILS.append(f"{code}：{diag}")
-        return None
-    if used != "直连":
-        print(f"  [titan007] {code} 直连失败（{diag}）→ {used} 成功")
-    raw = parse_titan_file(p)
-    if not raw:
-        print(f"  [titan007] {code} 无已完赛数据，回退 ESPN")
-        return None
-    recs, unmapped = [], set()
-    max_rn = 0
-    for r in raw:
-        h = rev.get(r["home_cn"]) or rev.get(TITAN_CN_ALIAS.get(r["home_cn"], ""))
-        a = rev.get(r["away_cn"]) or rev.get(TITAN_CN_ALIAS.get(r["away_cn"], ""))
-        if not h or not a:
-            unmapped.add(r["home_cn"]); unmapped.add(r["away_cn"]); continue
-        try:
-            hs, as_ = (int(x) for x in r["ft"].split("-"))
-        except Exception:
-            continue
-        max_rn = max(max_rn, r["round"])
-        recs.append({"date": r["date"], "team1": h, "team2": a,
-                     "score": {"ft": [hs, as_]}, "round": f"{r['round']}. Round",
-                     "_src": "titan007"})
-    if unmapped:
-        print(f"  [titan007 warn] {code} 有未映射队名 {sorted(unmapped)}，相关场次跳过")
-    if not recs:
-        print(f"  [titan007] {code} 无可用场次，回退 ESPN")
-        return None
-    print(f"  [titan007] {code} 整季已完赛 {len(recs)} 场（R1..R{max_rn}），作为 2026-27 主源")
-    return recs
-
-
-# ── ESPN 兜底抓取 ───────────────────────────────────────────────────────────
+# ── ESPN 抓取（2026-27 唯一数据源）───────────────────────────────────────────
 # ⚠️ 2026-10-03 修：原实现按「自然月」请求 `?dates={月初}-{月末}`（**区间格式**），
 #    实测 ESPN 一律 HTTP 400 `{"code":400,"message":"Failed to get events endpoint."}`。
-#    也就是说「ESPN 兜底」自上线起**从未真正工作过**；而它的失败只打在本机日志里
+#    也就是说「ESPN 兜底」当时自上线起**从未真正工作过**；而它的失败只打在本机日志里
 #    （`[warn] ... 抓取失败 / 无数据`，不是 GHA 注解），所以 2026-09-30 起云端连续
 #    6 天抓不到 titan007 时，站点静默停更而无人察觉。
 #    实测 ESPN 只认三种 dates：单日 `YYYYMMDD`、整年 `YYYY`（**上限 100 条且无分页**）、
@@ -567,7 +316,7 @@ def fetch_titan_season(code):
 #    另：必须带 --compressed —— 服务端回 gzip 时不加会拿到 0x8b 开头的内容，
 #    json.load 报 UnicodeDecodeError（原实现正是如此）。
 #    成本：逐日 + 按联赛并行 ≈ 0.1s/天；赛季全程 ~360 天 → 单联赛约 40s。
-ESPN_UA = TITAN_UA
+ESPN_UA = HTTP_UA
 ESPN_SEASON_START = "2026-07-01"   # 与 season.SEASON_LONG（2026-2027）对齐
 ESPN_TAIL_DAYS = 2                 # 多抓 2 天，兜住 UTC/北京时区差与 runner 日期边界
 ESPN_WORKERS = 10
@@ -605,7 +354,7 @@ def _espn_one_day(code, d):
 def fetch_espn(code):
     """逐日枚举「赛季开始 ~ 今天」的 ESPN scoreboard，返回 events 列表。
 
-    titan007 整联赛抓取失败时才调用（见 main()）。逐日枚举是唯一可行方式（区间格式 400）。
+    titan007 已被移除（2026-10-12），ESPN 是本脚本唯一数据源（见 main()）。逐日枚举是唯一可行方式（区间格式 400）。
     返回 [] 表示抓取失败或无数据，由调用方决定是否跳过该联赛。
     """
     end = date.today() + timedelta(days=ESPN_TAIL_DAYS)
@@ -723,7 +472,7 @@ def of_round_map(lg, div):
             try:
                 r = subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "2",
                                     "--retry-delay", "1", "--max-time", "25",
-                                    "-A", TITAN_UA, "-w", "%{http_code}", "-o", dst,
+                                    "-A", HTTP_UA, "-w", "%{http_code}", "-o", dst,
                                     f"{OF_BASE}/{key}.json"],
                                    check=True, capture_output=True, text=True)
                 if (r.stdout or "").strip().endswith("404"):
@@ -786,7 +535,7 @@ def fd_round_map(lg, div):
                 # 与 of_round_map 同款参数：-4 + --compressed（CSV 同样可能被 gzip 压缩）
                 subprocess.run(["curl", "-4", "-sSL", "--compressed", "--retry", "2",
                                 "--retry-delay", "1", "--max-time", "25",
-                                "-A", TITAN_UA, "-o", dst, FD_BASE % slug],
+                                "-A", HTTP_UA, "-o", dst, FD_BASE % slug],
                                check=True, capture_output=True)
                 head = open(dst, encoding="utf-8-sig", errors="replace").readline()
                 if "Round Number" in head:
@@ -818,85 +567,75 @@ def main():
     all_teams = {}          # (code,div) -> set(canonical)
     skipped_bad = []        # 因队名未映射被跳过的联赛（map 有 bug，需修复）
     backoff = []            # 场次倒退护栏的告警正文，循环后聚合成 1 条 ::warning（见下）
-    # 2026-27 主源：titan007（全部已完赛轮次，R_N 即官方轮次）。
-    # 不再依赖 ESPN 主源；ESPN 仅作兜底（titan007 抓取整联赛失败时才用）。
+    # 2026-27 唯一数据源：ESPN（逐日枚举，覆盖全部 10 个联赛）。
+    # 原主源 titan007 已被 GitHub Actions 的 Azure 出口 IP 段拦截（见文件头说明），
+    # 整条抓取链路已于 2026-10-12 移除。
     # 历史赛季（2025-26 及更早）由各自独立 JSON 维护，本脚本只写 *.2026-27.json，不受影响。
-    print("\n════════ 2026-27 主源：titan007（全部已完赛轮次）════════")
+    print("\n════════ 2026-27 数据源：ESPN（逐日枚举）════════")
     for code, cn, lg, div in LEAGUES:
-        recs = fetch_titan_season(code)      # 返回 recs 列表或 None
-        if recs is not None:
-            # ── titan007 主路径：轮次直接取官方 R_N，无需 openfootball/fixturedownload 推导
-            skipped = 0
-            round_src = "titan007"
+        events = fetch_espn(code)
+        if not events:
+            print(f"[{cn} {code}] ✗ 整季抓取为空，跳过（保留旧数据）"); continue
+        mp = ESPN_MAP[code]
+        recs, unknown = parse_espn(events, mp)
+
+        # 校验：ESPN 中出现的所有队名都必须已映射（map 不全 = 数据会错，必须修）
+        if unknown:
+            print(f"[{cn} {code}] ✗ 未映射 ESPN 队名 {sorted(unknown)} —— 跳过该联赛")
+            skipped_bad.append(f"{cn} {code}: {sorted(unknown)}")
+            continue
+        if len(set(mp.values())) != len(mp):
+            dup = [k for k, v in mp.items() if list(mp.values()).count(v) > 1]
+            print(f"[{cn} {code}] ✗ 映射目标重复 {dup} —— 跳过该联赛")
+            skipped_bad.append(f"{cn} {code}: 映射重复 {dup}")
+            continue
+        if not recs:
+            print(f"[{cn} {code}] · 暂无已完赛（FT）场次，跳过（保留旧数据）"); continue
+
+        skipped = 0   # 仅作占位，保持下方日志格式一致
+
+        # 轮次：ESPN 比分接口没有轮次字段，但绝不能「一个日期 = 一轮」——
+        # 一轮联赛通常横跨周五~周一，按日期编号会把第二个周末的比赛标成「第 5 轮」。
+        # 正确做法见 assign_rounds()：先按日期聚成「比赛窗口」，再按单轮容量切分。
+        nteams = len({r["team1"] for r in recs} | {r["team2"] for r in recs})
+        nround = assign_rounds(recs, max(1, nteams // 2))     # 无官方轮次时的兜底推导
+        dates = sorted({r["date"] for r in recs if r["date"]})
+
+        # 官方轮次覆盖：ESPN 无轮次字段，而「按日期推算」在补赛/提前进行时必然错乱。
+        # 依次尝试 openfootball（官方 Matchday）-> fixturedownload（官方 Round Number），
+        # 任一源能 100% 命中全部已赛场次就采信它；否则沿用推导轮次并说明原因。
+        round_src, of_note = "derived", "按日期窗口推导"
+        sources = [("openfootball", None, of_round_map(lg, div)),
+                   ("fixturedownload", FD_ALIAS, fd_round_map(lg, div))]
+        for src_name, tbl, src_map in sources:
+            if not src_map:
+                continue
+            # 先试算不落盘：命中不全时若逐个改写，会让官方轮次与推导轮次混在同一赛季里
+            probe, miss = {}, []
+            for r in recs:
+                n = src_map.get((_nkey(r["team1"], tbl), _nkey(r["team2"], tbl)))
+                if n:
+                    probe[id(r)] = f"{n}. Round"
+                else:
+                    miss.append(f"{r['team1']} vs {r['team2']}")
+            if len(probe) != len(recs):
+                of_note = (f"{src_name} 仅命中 {len(probe)}/{len(recs)}，沿用推导轮次"
+                           + (f"：{'; '.join(miss[:3])}" if miss else ""))
+                continue
+            for r in recs:
+                r["round"] = probe[id(r)]
+            round_src = "official"
             nround = len({r["round"] for r in recs})
-            dates = sorted({r["date"] for r in recs if r["date"]})
-            of_note = "titan007 官方轮次（R_N）"
-        else:
-            # ── ESPN 兜底分支（仅 titan007 整联赛抓取失败）──
-            events = fetch_espn(code)
-            if not events:
-                print(f"[{cn} {code}] ✗ 整季抓取为空，跳过（保留旧数据）"); continue
-            mp = ESPN_MAP[code]
-            recs, unknown = parse_espn(events, mp)
-
-            # 校验：ESPN 中出现的所有队名都必须已映射（map 不全 = 数据会错，必须修）
-            if unknown:
-                print(f"[{cn} {code}] ✗ 未映射 ESPN 队名 {sorted(unknown)} —— 跳过该联赛")
-                skipped_bad.append(f"{cn} {code}: {sorted(unknown)}")
-                continue
-            if len(set(mp.values())) != len(mp):
-                dup = [k for k, v in mp.items() if list(mp.values()).count(v) > 1]
-                print(f"[{cn} {code}] ✗ 映射目标重复 {dup} —— 跳过该联赛")
-                skipped_bad.append(f"{cn} {code}: 映射重复 {dup}")
-                continue
-            if not recs:
-                print(f"[{cn} {code}] · 暂无已完赛（FT）场次，跳过（保留旧数据）"); continue
-
-            # 只取 ESPN 真实存在的赛果（FT 且有比分）
-            skipped = 0   # ESPN 侧无需「跳过无比分」计数，仅作占位保持日志一致
-
-            # 轮次：ESPN 比分接口没有轮次字段，但绝不能「一个日期 = 一轮」——
-            # 一轮联赛通常横跨周五~周一，按日期编号会把第二个周末的比赛标成「第 5 轮」。
-            # 正确做法见 assign_rounds()：先按日期聚成「比赛窗口」，再按单轮容量切分。
-            nteams = len({r["team1"] for r in recs} | {r["team2"] for r in recs})
-            nround = assign_rounds(recs, max(1, nteams // 2))     # 无官方轮次时的兜底推导
-            dates = sorted({r["date"] for r in recs if r["date"]})
-
-            # 官方轮次覆盖：ESPN 无轮次字段，而「按日期推算」在补赛/提前进行时必然错乱。
-            # 依次尝试 openfootball（官方 Matchday）-> fixturedownload（官方 Round Number），
-            # 任一源能 100% 命中全部已赛场次就采信它；否则沿用推导轮次并说明原因。
-            round_src, of_note = "derived", "按日期窗口推导"
-            sources = [("openfootball", None, of_round_map(lg, div)),
-                       ("fixturedownload", FD_ALIAS, fd_round_map(lg, div))]
-            for src_name, tbl, src_map in sources:
-                if not src_map:
-                    continue
-                # 先试算不落盘：命中不全时若逐个改写，会让官方轮次与推导轮次混在同一赛季里
-                probe, miss = {}, []
-                for r in recs:
-                    n = src_map.get((_nkey(r["team1"], tbl), _nkey(r["team2"], tbl)))
-                    if n:
-                        probe[id(r)] = f"{n}. Round"
-                    else:
-                        miss.append(f"{r['team1']} vs {r['team2']}")
-                if len(probe) != len(recs):
-                    of_note = (f"{src_name} 仅命中 {len(probe)}/{len(recs)}，沿用推导轮次"
-                               + (f"：{'; '.join(miss[:3])}" if miss else ""))
-                    continue
-                for r in recs:
-                    r["round"] = probe[id(r)]
-                round_src = "official"
-                nround = len({r["round"] for r in recs})
-                of_note = f"采信 {src_name} 官方轮次（{len(recs)}/{len(recs)} 命中）"
-                break
-            if round_src == "derived" and not sources[0][2] and not sources[1][2]:
-                of_note = "两个官方源都无该联赛 2026-27 赛程，按日期窗口推导"
+            of_note = f"采信 {src_name} 官方轮次（{len(recs)}/{len(recs)} 命中）"
+            break
+        if round_src == "derived" and not sources[0][2] and not sources[1][2]:
+            of_note = "两个官方源都无该联赛 2026-27 赛程，按日期窗口推导"
 
         out = {"name": f"{cn} {SEASON}", "roundSource": round_src, "matches": recs}
         dst = os.path.join(D, f"{lg}.{div}.2026-27.json")
 
         # ── 场次倒退护栏（本联赛级、非致命）──
-        # 为什么需要：titan007 会不定期改队名写法（2026-09-28 前后把西乙「卡斯特利翁」
+        # 为什么需要：上游数据源会不定期改队名写法（titan007 时代曾把西乙「卡斯特利翁」
         # 改成「卡斯迪隆」）。未映射的场次被静默跳过 → 本联赛场次反而比已有数据少。
         # 若照写，下游 sync_site.py 的「场次倒退」体检会判定失败并 exit 1，**全站当天
         # 不更新**（连其它 9 个正常联赛一起陪葬）。这里改为：只保留本联赛旧文件 +
@@ -916,7 +655,7 @@ def main():
                 # 就是 10 条），会把同 step 里后打的更要紧的告警（sync_site.py 的「体检降级·
                 # 跳过该组写入」）静默挤掉。与 fixtures / sync_site 的既定做法保持一致。
                 backoff.append(f"{cn} {lg}.{div} 新抓取 {len(recs)} 场少于已有 {len(old_m)} 场，"
-                               f"已保留旧数据（疑上游队名未映射，请补 TITAN_CN_ALIAS）")
+                               f"已保留旧数据（疑上游队名未映射，请补 ESPN_MAP）")
                 all_teams[(lg, div)] = ({r["team1"] for r in old_m}
                                         | {r["team2"] for r in old_m})
                 continue
@@ -929,20 +668,6 @@ def main():
               f"球队 {len(teams)}，{len(dates)} 个比赛日 -> {nround} 个轮次"
               f" [{round_src}] {of_note}"
               f" -> {os.path.basename(dst)}")
-
-    # titan007 抓取失败：聚合成**一条** ::warning，并带上**真实原因**
-    # （HTTP 码 / 超时 / 连接重置 / 被封禁页拦截）。改造前这里连原因都不打，
-    # 云端只能看到 fixtures 那句「抓取失败且 ESPN 兜底无更新」，无从判断怎么修。
-    if TITAN_FAILS:
-        body = "；".join(TITAN_FAILS)
-        if len(TITAN_FAILS) > 1:
-            body = f"共 {len(TITAN_FAILS)} 个联赛：{body}"
-        if len(body) > 1100:
-            body = body[:1100] + f"…（已截断，共 {len(TITAN_FAILS)} 个，逐条见本步日志）"
-        hint = ("（未配置 FD_TITAN_PROXY，仅试了直连）" if len(titan_proxy_list()) == 0
-                else f"（已试 {len(titan_proxy_list())} 个中转，全部失败）")
-        print(f"::warning title=titan007 抓取失败::{body} {hint}")
-        del TITAN_FAILS[:]
 
     # 场次倒退护栏的告警：循环已走完 → **聚合成一条** ::warning（理由见循环内的注释）
     if backoff:

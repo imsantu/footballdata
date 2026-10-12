@@ -20,7 +20,7 @@
 # 展示码：chunk 文件名（assets/js/data/<group>/<league>/<SEASON>.js）、日志、前端一致
 SEASON = "2026-27"
 
-# 数据源长码：titan007 的 matchResult/{season}/ 路径
+# 数据源长码：赛季的「长年份」写法（2026-2027）；用于与外部数据源的赛季区间对齐
 SEASON_LONG = "2026-2027"
 
 # 生成器内部标签：build_2026_27.py 写进 data/*.json 的 name 字段（历史沿用，勿改）
