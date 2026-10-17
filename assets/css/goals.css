@@ -79,8 +79,8 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .seq-filter .seq-search:focus{border-color:var(--accent);}
 /* 2球/3球胶囊：未选中=实心本色（与色带同色，直观分明），选中=同色+勾选标记，颜色不再强弱区分 */
 .seq-filter .seq-tg{padding:6px 14px;border:1.5px solid transparent;border-radius:18px;background:var(--card);color:var(--text2);font-weight:700;font-size:13px;cursor:pointer;transition:background .15s,border-color .15s,color .15s,filter .15s;opacity:1;}
-.seq-filter .seq-tg[data-b="2"]{color:#fff;background:var(--green);border-color:var(--green);}
-.seq-filter .seq-tg[data-b="3"]{color:#fff;background:var(--accent);border-color:var(--accent);}
+.seq-filter .seq-tg[data-b="2"]{color:#fff;background:var(--accent);border-color:var(--accent);}
+.seq-filter .seq-tg[data-b="3"]{color:#fff;background:var(--green);border-color:var(--green);}
 .seq-filter .seq-tg:hover{filter:brightness(1.08);}
 .seq-filter .seq-tg.on{font-weight:800;}
 .seq-filter .seq-tg.on::after{content:' ✓';font-weight:800;}
@@ -90,10 +90,10 @@ body { font-family:"PingFang SC","Microsoft YaHei","Helvetica Neue",Arial,sans-s
 .seq-chip.on{opacity:1;color:var(--text-strong);border-color:var(--accent);background:var(--card2);}
 .seq-row.seq-hidden .seq-cnt{display:none;}
 /* ---- 合并球队表（分布 + 2/3 指标）---- */
-.team-table .col-2{background:rgba(0,184,148,.10);}
-.team-table .col-3{background:color-mix(in srgb,var(--accent) 12%,transparent);}
-.team-table .b2-h{color:var(--green);}
-.team-table .b3-h{color:var(--accent);}
+.team-table .col-2{background:color-mix(in srgb,var(--accent) 12%,transparent);}
+.team-table .col-3{background:color-mix(in srgb,var(--green) 10%,transparent);}
+.team-table .b2-h{color:var(--accent);}
+.team-table .b3-h{color:var(--green);}
 /* 净胜球数：正绿负红零灰，跟主站的「涨跌」提示保持一致 */
 .team-table .gd-pos{color:var(--green);}
 .team-table .gd-neg{color:#e74c3c;}
@@ -193,8 +193,8 @@ td.col-sel .bar { background:var(--accent); }
 .seq-strip { display:flex; flex:1; gap:2px; min-width:280px; }
 .sq { flex:1 1 0; height:20px; border-radius:2px; min-width:3px; cursor:pointer; }
 .sq.s0 { background:var(--border); }
-.sq.s2 { background:var(--green); }
-.sq.s3 { background:var(--accent); }
+.sq.s2 { background:var(--accent); }
+.sq.s3 { background:var(--green); }
 .seq-cnt { font-size:11.5px; color:var(--text-dim); flex:0 0 auto; white-space:nowrap; }
 .seq-table { width:100%; border-collapse:collapse; font-size:13px; background:var(--card); border-radius:10px; overflow:hidden; margin-bottom:8px; }
 .seq-table th, .seq-table td { padding:8px; text-align:center; border-bottom:1px solid var(--border); color:var(--text2); }
