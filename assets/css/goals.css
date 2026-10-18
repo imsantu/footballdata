@@ -161,6 +161,12 @@ td.col-sel .bar { background:var(--accent); }
 .avg-cmp { cursor:pointer; }
 .crest { width:24px; height:24px; object-fit:contain; vertical-align:middle; margin-right:6px; border-radius:4px; background:transparent; padding:1px; filter:drop-shadow(0 0 1px rgba(0,0,0,.55)); }
 [data-theme="light"] .crest, [data-theme="light"] .league-tab img { filter:drop-shadow(0 0 1px rgba(0,0,0,.3)); }
+/* 深色主题：联赛 logo 多为深色（英超紫狮 1.10:1、德甲 BUNDESLIGA / 法甲 LIGUE 1 黑字）
+   在 --bg #0f1117 上几乎融底 → 给 22px 方框垫一层浅色贴片（不重绘、不改品牌色），
+   视觉上呈现为圆角小图标。padding 靠全局 box-sizing:border-box 内缩 2px。 */
+[data-theme="dark"] .league-tab img, [data-theme="dark"] .lg-logo {
+  background:rgba(255,255,255,.92); padding:2px; border-radius:5px;
+}
 .crest-fallback { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; color:#fff; font-size:11px; font-weight:700; margin-right:6px; vertical-align:middle; }
 .note { font-size:12px; color:var(--text-muted); background:var(--card); padding:12px 14px; border-radius:8px; border:1px solid var(--border); margin:10px 0 4px; }
 .legend { display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 4px; }
