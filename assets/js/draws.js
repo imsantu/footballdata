@@ -154,12 +154,26 @@ function fmtText(t){
 }
 function buildLeagueTabs(){
   const el = document.getElementById('leagueTabs');
+  // 百分比口径必须跟「当前视图」一致，否则会和下方 KPI 对不上（2026-10-26 用户提出）：
+  //   单赛季视图 → 该赛季平局率（与 KPI 同一数据源 LG().seasons[currentSeason]）
+  //   赛季总览 / 横向对照 → 近五季（或近三季）合计平局率，与那两个视图的跨赛季口径一致
+  const crossView = showBig5 || curView === 'overview';
   const lg = DATA.leagues.map(l=>{
+    const s = l.seasons[currentSeason] || {};
     const cr = (CMP().rows.find(r=>r.code===l.code)||{});
-    const s0 = l.seasons[winSeq()[0]];
-    return '<div class="league-tab'+(l.code===curLeague && !showBig5?' active':'')+'" data-k="'+l.code+'">'+
+    let rate = null, tip = '';
+    if(crossView){
+      rate = cr.drawRate != null ? cr.drawRate : null;
+      tip = l.cn + ' ' + WLAB() + '合计平局率' + (rate != null ? '：' + rate + '%（' + cr.totalDraws + ' 平 / ' + cr.totalMatches + ' 场）' : '：暂无数据');
+    } else {
+      rate = s.totalMatches ? s.drawRate : null;
+      tip = l.cn + ' ' + fmtSeason(currentSeason) + (rate != null
+        ? '：' + rate + '%（' + s.totalDraws + ' 平 / ' + s.totalMatches + ' 场）'
+        : '：暂无数据');
+    }
+    return '<div class="league-tab'+(l.code===curLeague && !showBig5?' active':'')+'" data-k="'+l.code+'" title="'+tip+'">'+
       '<img src="'+lgLogo(l.code)+'" alt="'+l.cn+'">'+l.cn+
-      '<span class="rt">'+(cr.drawRate!=null?cr.drawRate:'–')+'%</span></div>';
+      '<span class="rt">'+(rate!=null?rate:'–')+'%</span></div>';
   }).join('');
   // 模块六：横向对照，作为第 6 个一级 Tab，放在最后一个联赛之后（文案与徽标见 CFG）
   const big5 = '<div class="league-tab big5'+(showBig5?' active':'')+'" data-k="__big5__">'+CFG.badge+CFG.label+'<span class="rt">对照</span></div>';
